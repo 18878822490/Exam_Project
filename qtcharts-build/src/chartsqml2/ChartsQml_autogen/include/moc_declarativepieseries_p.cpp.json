@@ -1,0 +1,240 @@
+{
+    "classes": [
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "PieSlice"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativePieSlice",
+            "lineNumber": 26,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "brushFilename",
+                    "notify": "brushFilenameChanged",
+                    "read": "brushFilename",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setBrushFilename"
+                }
+            ],
+            "qualifiedClassName": "DeclarativePieSlice",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "brushFilename",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "brushFilenameChanged",
+                    "returnType": "void"
+                }
+            ],
+            "slots": [
+                {
+                    "access": "private",
+                    "index": 1,
+                    "name": "handleBrushChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QPieSlice"
+                }
+            ]
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "DefaultProperty",
+                    "value": "seriesChildren"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "PieSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativePieSeries",
+            "interfaces": [
+                [
+                    {
+                        "className": "QQmlParserStatus",
+                        "id": "\"org.qt-project.Qt.QQmlParserStatus\""
+                    }
+                ]
+            ],
+            "lineNumber": 50,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "at",
+                    "returnType": "QPieSlice*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "find",
+                    "returnType": "QPieSlice*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "value",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "append",
+                    "returnType": "DeclarativePieSlice*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "slice",
+                            "type": "QPieSlice*"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "remove",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "clear",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "seriesChildren",
+                    "read": "seriesChildren",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QQmlListProperty<QObject>",
+                    "user": false
+                }
+            ],
+            "qualifiedClassName": "DeclarativePieSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "slice",
+                            "type": "QPieSlice*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "sliceAdded",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "slice",
+                            "type": "QPieSlice*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "sliceRemoved",
+                    "returnType": "void"
+                }
+            ],
+            "slots": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "slices",
+                            "type": "QList<QPieSlice*>"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "handleAdded",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "slices",
+                            "type": "QList<QPieSlice*>"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "handleRemoved",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QPieSeries"
+                },
+                {
+                    "access": "public",
+                    "name": "QQmlParserStatus"
+                }
+            ]
+        }
+    ],
+    "inputFile": "declarativepieseries_p.h",
+    "outputRevision": 68
+}

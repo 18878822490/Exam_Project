@@ -1,0 +1,34 @@
+{
+    "classes": [
+        {
+            "className": "LineChartItem",
+            "interfaces": [
+                [
+                    {
+                        "className": "QGraphicsItem",
+                        "id": "\"org.qt-project.Qt.QGraphicsItem\""
+                    }
+                ]
+            ],
+            "lineNumber": 27,
+            "object": true,
+            "qualifiedClassName": "LineChartItem",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "handleSeriesUpdated",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "XYChart"
+                }
+            ]
+        }
+    ],
+    "inputFile": "linechartitem_p.h",
+    "outputRevision": 68
+}

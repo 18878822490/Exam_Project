@@ -1,0 +1,340 @@
+{
+    "classes": [
+        {
+            "className": "QCandlestickSeries",
+            "lineNumber": 14,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "count",
+                    "notify": "countChanged",
+                    "read": "count",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "maximumColumnWidth",
+                    "notify": "maximumColumnWidthChanged",
+                    "read": "maximumColumnWidth",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setMaximumColumnWidth"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "minimumColumnWidth",
+                    "notify": "minimumColumnWidthChanged",
+                    "read": "minimumColumnWidth",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setMinimumColumnWidth"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "bodyWidth",
+                    "notify": "bodyWidthChanged",
+                    "read": "bodyWidth",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setBodyWidth"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "bodyOutlineVisible",
+                    "notify": "bodyOutlineVisibilityChanged",
+                    "read": "bodyOutlineVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setBodyOutlineVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "capsWidth",
+                    "notify": "capsWidthChanged",
+                    "read": "capsWidth",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setCapsWidth"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 6,
+                    "name": "capsVisible",
+                    "notify": "capsVisibilityChanged",
+                    "read": "capsVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setCapsVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 7,
+                    "name": "increasingColor",
+                    "notify": "increasingColorChanged",
+                    "read": "increasingColor",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setIncreasingColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 8,
+                    "name": "decreasingColor",
+                    "notify": "decreasingColorChanged",
+                    "read": "decreasingColor",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setDecreasingColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 9,
+                    "name": "brush",
+                    "notify": "brushChanged",
+                    "read": "brush",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QBrush",
+                    "user": false,
+                    "write": "setBrush"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 10,
+                    "name": "pen",
+                    "notify": "penChanged",
+                    "read": "pen",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QPen",
+                    "user": false,
+                    "write": "setPen"
+                }
+            ],
+            "qualifiedClassName": "QCandlestickSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "QCandlestickSet*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "clicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "status",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "set",
+                            "type": "QCandlestickSet*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "hovered",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "QCandlestickSet*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "pressed",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "QCandlestickSet*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "released",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "QCandlestickSet*"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "doubleClicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "sets",
+                            "type": "QList<QCandlestickSet*>"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "candlestickSetsAdded",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "sets",
+                            "type": "QList<QCandlestickSet*>"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "candlestickSetsRemoved",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 7,
+                    "name": "countChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "maximumColumnWidthChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 9,
+                    "name": "minimumColumnWidthChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 10,
+                    "name": "bodyWidthChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 11,
+                    "name": "bodyOutlineVisibilityChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 12,
+                    "name": "capsWidthChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 13,
+                    "name": "capsVisibilityChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 14,
+                    "name": "increasingColorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 15,
+                    "name": "decreasingColorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 16,
+                    "name": "brushChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 17,
+                    "name": "penChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractSeries"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qcandlestickseries.h",
+    "outputRevision": 68
+}

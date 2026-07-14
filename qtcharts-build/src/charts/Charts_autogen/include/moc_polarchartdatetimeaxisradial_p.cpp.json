@@ -1,0 +1,44 @@
+{
+    "classes": [
+        {
+            "className": "PolarChartDateTimeAxisRadial",
+            "lineNumber": 23,
+            "object": true,
+            "qualifiedClassName": "PolarChartDateTimeAxisRadial",
+            "slots": [
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "tick",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "handleTickCountChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "format",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "handleFormatChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "PolarChartAxisRadial"
+                }
+            ]
+        }
+    ],
+    "inputFile": "polarchartdatetimeaxisradial_p.h",
+    "outputRevision": 68
+}

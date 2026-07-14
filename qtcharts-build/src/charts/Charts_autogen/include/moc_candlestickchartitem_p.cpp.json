@@ -1,0 +1,74 @@
+{
+    "classes": [
+        {
+            "className": "CandlestickChartItem",
+            "lineNumber": 26,
+            "object": true,
+            "qualifiedClassName": "CandlestickChartItem",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "handleDomainUpdated",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 1,
+                    "name": "handleLayoutUpdated",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 2,
+                    "name": "handleCandlesticksUpdated",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 3,
+                    "name": "handleCandlestickSeriesChange",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "sets",
+                            "type": "QList<QCandlestickSet*>"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "handleCandlestickSetsAdd",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "sets",
+                            "type": "QList<QCandlestickSet*>"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "handleCandlestickSetsRemove",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "index": 6,
+                    "name": "handleDataStructureChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "ChartItem"
+                }
+            ]
+        }
+    ],
+    "inputFile": "candlestickchartitem_p.h",
+    "outputRevision": 68
+}

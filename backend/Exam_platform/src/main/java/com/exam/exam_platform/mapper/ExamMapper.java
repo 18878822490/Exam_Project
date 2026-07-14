@@ -108,6 +108,15 @@ public class ExamMapper {
                 """, examId, question.getId(), sortNo, question.getScore());
     }
 
+    public int countExamQuestions(Long examId) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM exam_questions WHERE exam_id = ?",
+                Integer.class,
+                examId
+        );
+        return count == null ? 0 : count;
+    }
+
     public void updateTotalScore(Long examId, int totalScore) {
         jdbcTemplate.update("UPDATE exams SET total_score = ? WHERE id = ?", totalScore, examId);
     }
@@ -191,6 +200,10 @@ public class ExamMapper {
     }
 
     public Long copyExam(Long sourceExamId, String title, Long createdBy) {
+        return copyExam(sourceExamId, title, createdBy, null, null);
+    }
+
+    public Long copyExam(Long sourceExamId, String title, Long createdBy, LocalDateTime startTime, LocalDateTime endTime) {
         Exam source = findById(sourceExamId);
         if (source == null) {
             return null;
@@ -198,8 +211,8 @@ public class ExamMapper {
         Exam target = new Exam();
         target.setTitle(title == null || title.isBlank() ? source.getTitle() + " 副本" : title.trim());
         target.setSubject(source.getSubject());
-        target.setStartTime(source.getStartTime());
-        target.setEndTime(source.getEndTime());
+        target.setStartTime(startTime == null ? source.getStartTime() : startTime);
+        target.setEndTime(endTime == null ? source.getEndTime() : endTime);
         target.setDuration(source.getDuration());
         target.setTotalScore(source.getTotalScore());
         target.setStatus("草稿");
@@ -234,32 +247,51 @@ public class ExamMapper {
                 createdBy);
     }
 
-    public List<Map<String, Object>> listPublished(String className) {
+    public List<Map<String, Object>> listPublished(String className, String studentNo) {
+        String normalizedStudentNo = studentNo == null || studentNo.isBlank() ? null : studentNo.trim();
         if (className == null || className.isBlank()) {
             return jdbcTemplate.queryForList("""
                     SELECT ep.id AS publish_id, ep.exam_id, ep.class_id, ep.class_name,
                            COALESCE(ep.start_time, e.start_time) AS start_time,
                            COALESCE(ep.end_time, e.end_time) AS end_time,
-                           ep.status, ep.created_by AS publish_created_by, ep.created_time AS publish_created_time,
+                           CASE
+                               WHEN ? IS NOT NULL AND EXISTS (
+                                   SELECT 1 FROM scores sc WHERE sc.exam_id = e.id AND sc.student_no = ?
+                               ) THEN '已完成'
+                               WHEN COALESCE(ep.start_time, e.start_time) IS NOT NULL
+                                    AND NOW() < COALESCE(ep.start_time, e.start_time) THEN '未开始'
+                               ELSE '已发布'
+                           END AS status,
+                           ep.status AS publish_status,
+                           ep.created_by AS publish_created_by, ep.created_time AS publish_created_time,
                            e.id, e.title, e.subject, e.duration, e.total_score, e.status AS exam_status,
                            e.created_by, e.created_time
                     FROM exam_publish ep
                     INNER JOIN exams e ON e.id = ep.exam_id
                     ORDER BY ep.id DESC
-                    """);
+                    """, normalizedStudentNo, normalizedStudentNo);
         }
         return jdbcTemplate.queryForList("""
                 SELECT ep.id AS publish_id, ep.exam_id, ep.class_id, ep.class_name,
                        COALESCE(ep.start_time, e.start_time) AS start_time,
                        COALESCE(ep.end_time, e.end_time) AS end_time,
-                       ep.status, ep.created_by AS publish_created_by, ep.created_time AS publish_created_time,
+                       CASE
+                           WHEN ? IS NOT NULL AND EXISTS (
+                               SELECT 1 FROM scores sc WHERE sc.exam_id = e.id AND sc.student_no = ?
+                           ) THEN '已完成'
+                           WHEN COALESCE(ep.start_time, e.start_time) IS NOT NULL
+                                AND NOW() < COALESCE(ep.start_time, e.start_time) THEN '未开始'
+                           ELSE '已发布'
+                       END AS status,
+                       ep.status AS publish_status,
+                       ep.created_by AS publish_created_by, ep.created_time AS publish_created_time,
                        e.id, e.title, e.subject, e.duration, e.total_score, e.status AS exam_status,
                        e.created_by, e.created_time
                 FROM exam_publish ep
                 INNER JOIN exams e ON e.id = ep.exam_id
                 WHERE ep.class_name = ?
                 ORDER BY ep.id DESC
-                """, className);
+                """, normalizedStudentNo, normalizedStudentNo, className);
     }
 
     public Map<String, Object> dashboardStats(Long teacherId) {

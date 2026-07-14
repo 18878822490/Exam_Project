@@ -39,6 +39,7 @@ Rectangle {
     property string publishDraftSubject: "Java"
     property string publishDraftStart: "2026-06-20 09:00"
     property string publishDraftEnd: "2026-06-20 11:00"
+    property int publishTargetScore: 100
     property var selectedClassExam: ({})
     property var profile: ({})
     property var dashboard: ({})
@@ -62,15 +63,15 @@ Rectangle {
         {"title": "题库管理", "page": 1},
         {"title": "发布考试", "page": 2},
         {"title": "批改试卷", "page": 3},
-        {"title": "我的班级", "page": 4}
+        {"title": "成绩分析", "page": 4}
     ]
-    property var pageTitles: ["教师首页", "题库管理", "发布考试", "批改试卷", "我的班级", "个人中心"]
+    property var pageTitles: ["教师首页", "题库管理", "发布考试", "批改试卷", "班级成绩分析", "个人中心"]
     property var pageSubtitles: [
         "教学数据、考试进度与待办提醒",
         "左侧浏览题目，右侧查看题目详情、答案与解析",
         "配置试卷、筛选题目、查看并发布考试",
         "选择试卷和学生，仅批改高数大题与编程题",
-        "查看所教班级、考试概况与学生成绩",
+        "按班级、考试和时间查看成绩趋势、分布、排名与薄弱题",
         "管理账号资料、安全密码与系统偏好"
     ]
 
@@ -105,6 +106,14 @@ Rectangle {
     }
 
     function switchPage(page) {
+        if (page === 3) {
+            teacherApi.openMarkWorkbench()
+            return
+        }
+        if (page === 4) {
+            teacherApi.openScoreAnalysisWorkbench()
+            return
+        }
         if (page === currentPage) {
             animationKey += 1
             return
@@ -333,21 +342,77 @@ Rectangle {
         showToast("已移出试卷")
     }
 
-    function smartGeneratePaper(subject, counts) {
+    function smartGeneratePaper(subject, counts, difficulty, knowledgePoint) {
         var generated = []
         var typeNames = Object.keys(counts)
+        var used = {}
+        var targetScore = paperTargetScore()
+        var currentScore = 0
+        var cleanDifficulty = cleanFilterText(difficulty)
+        var cleanKnowledge = String(knowledgePoint || "").trim()
+        var missing = []
+        var blockedByScore = 0
         for (var i = 0; i < typeNames.length; ++i) {
             var typeName = typeNames[i]
-            var rows = questionsFor(subject, typeName, "")
             var need = Number(counts[typeName] || 0)
-            for (var j = 0; j < rows.length && j < need; ++j) {
+            if (need <= 0) continue
+            var rows = searchQuestionPool("", subject, typeName, cleanDifficulty, cleanKnowledge)
+            var picked = 0
+            var available = rows ? rows.length : 0
+            for (var j = 0; j < rows.length && picked < need; ++j) {
                 var q = rows[j]
-                if (!q.score) q.score = questionTypeScore(normalizeType(q.type))
+                var id = String(q.id || q.questionId || "")
+                if (id.length > 0 && used[id]) continue
+                if (id.length > 0) used[id] = true
+                var score = questionScoreValue(q)
+                if (currentScore + score > targetScore) {
+                    blockedByScore += 1
+                    continue
+                }
+                q.score = score
                 generated.push(q)
+                currentScore += score
+                picked += 1
+            }
+            if (picked < need) {
+                missing.push(typeName + " " + picked + "/" + need + "（可用" + available + "）")
             }
         }
         selectedPaperQuestions = generated
-        showToast(generated.length > 0 ? ("已智能生成 " + generated.length + " 道题") : "当前条件没有可用题目")
+        if (generated.length > 0) {
+            publishPaperMode = true
+            animationKey += 1
+        }
+        if (generated.length > 0) {
+            var note = missing.length > 0 ? ("；不足：" + missing.join("，")) : ""
+            if (blockedByScore > 0) note += "；部分题目因满分限制未加入"
+            showToast("已智能生成 " + generated.length + " 道题，总分 " + currentScore + "/" + targetScore + note)
+        } else if (missing.length > 0) {
+            showToast("没有生成成功：" + missing.join("，") + "，请放宽筛选或补充题库")
+        } else {
+            showToast("题型数量为 0 或满分限制过低，无法生成试卷")
+        }
+    }
+
+    function saveCurrentDraft(name, subject, startText, endText) {
+        updatePublishDraft(name, subject, startText, endText)
+        if (selectedPaperQuestions.length === 0) {
+            showToast("请先添加或生成题目")
+            return -1
+        }
+        if (paperTotalScore() > paperTargetScore()) {
+            showToast("当前试卷总分超过设定满分，不能保存草稿")
+            return -1
+        }
+        var paperId = teacherApi.createDraftPaperFromQuestions(publishDraftName, publishDraftSubject, publishDraftStart, publishDraftEnd, selectedPaperQuestions)
+        if (paperId > 0) {
+            activePaperId = paperId
+            refreshAll()
+            showToast("草稿已保存，首页草稿列表已更新")
+        } else {
+            showToast("草稿保存失败：" + teacherApi.lastError())
+        }
+        return paperId
     }
 
     function selectReviewExam(exam, index) {
@@ -405,10 +470,35 @@ Rectangle {
     function questionTypeScore(type) {
         if (type === "单选题") return 3
         if (type === "多选题") return 5
+        if (type === "判断题") return 3
         if (type === "填空题") return 2
         if (type === "高数大题") return 10
         if (type === "编程题" || type === "代码题") return 15
         return 3
+    }
+
+    function paperTargetScore() {
+        var value = Math.round(Number(publishTargetScore || 100))
+        return value > 0 ? value : 100
+    }
+
+    function setPublishTargetScore(value) {
+        var next = Math.round(Number(value || 100))
+        if (isNaN(next) || next <= 0) next = 100
+        publishTargetScore = Math.max(1, Math.min(500, next))
+        if (paperTotalScore() > publishTargetScore) {
+            showToast("当前试卷总分已超过设定满分，请移除题目或调高满分")
+        }
+    }
+
+    function questionScoreValue(question) {
+        if (!question) return 0
+        var explicitScore = Number(question.score || question.paper_score || question.questionScore || 0)
+        return explicitScore > 0 ? explicitScore : questionTypeScore(normalizeType(question.type || question.content))
+    }
+
+    function canAppendQuestion(question) {
+        return paperTotalScore() + questionScoreValue(question) <= paperTargetScore()
     }
 
     function nextQuestionId() {
@@ -437,28 +527,63 @@ Rectangle {
     }
 
     function normalizeType(type) {
-        return type === "代码题" ? "编程题" : type
+        var text = String(type || "").trim()
+        var lower = text.toLowerCase()
+        if (text === "判断" || lower === "judge" || lower === "truefalse" || lower === "true/false") return "判断题"
+        if (text === "代码题" || lower === "program" || lower === "coding" || lower === "code") return "编程题"
+        if (lower === "single" || lower === "singlechoice" || text === "单选" || text === "选择题") return "单选题"
+        if (lower === "multiple" || lower === "multiplechoice" || lower === "multi" || text === "多选") return "多选题"
+        if (lower === "blank" || lower === "fill" || text === "填空") return "填空题"
+        if (lower === "math" || text === "高数题") return "高数大题"
+        return text
+    }
+
+    function cleanFilterText(value) {
+        var text = String(value || "").trim()
+        return text.indexOf("全部") >= 0 ? "" : text
+    }
+
+    function normalizeSubject(subject) {
+        var text = String(subject || "").trim()
+        var lower = text.toLowerCase()
+        if (text === "高等数学" || text === "数学" || lower === "math" || lower === "advanced mathematics") return "高数"
+        if (lower === "cpp" || lower === "c plus plus" || text === "C＋＋") return "C++"
+        if (lower === "java") return "Java"
+        if (text === "数据结构与算法") return "数据结构"
+        if (lower === "mysql" || lower === "database") return "数据库"
+        return text
+    }
+
+    function normalizeDifficultyText(difficulty) {
+        var text = cleanFilterText(difficulty)
+        var lower = text.toLowerCase()
+        if (lower === "easy" || text === "简单") return "基础"
+        if (lower === "medium" || lower === "middle" || lower === "normal" || text === "中") return "中等"
+        if (lower === "hard" || lower === "difficult" || text === "难") return "困难"
+        return text
     }
 
     function isKnownQuestionType(type) {
         var value = normalizeType(String(type || ""))
-        return value === "单选题" || value === "多选题" || value === "填空题"
+        return value === "单选题" || value === "多选题" || value === "判断题" || value === "填空题"
                 || value === "高数大题" || value === "编程题"
     }
 
     function questionText(question) {
         if (!question) return ""
-        if (!isKnownQuestionType(question.type) && String(question.type || "").length > 0) {
-            return String(question.type)
+        var content = String(question.content || "")
+        var typeValue = String(question.type || "")
+        if (isKnownQuestionType(content) && !isKnownQuestionType(typeValue) && typeValue.length > 0) {
+            return typeValue
         }
-        return String(question.content || "")
+        return content
     }
 
     function questionTypeText(question) {
         if (!question) return "--"
         if (isKnownQuestionType(question.type)) return normalizeType(question.type)
         if (isKnownQuestionType(question.content)) return normalizeType(question.content)
-        return String(question.content || "--")
+        return String(question.type || "--")
     }
 
     function cleanQuestionOption(value) {
@@ -497,24 +622,56 @@ Rectangle {
 
     function typeOptions(subject) {
         if (subject === "高数") {
-            return ["单选题", "多选题", "填空题", "高数大题"]
+            return ["单选题", "多选题", "判断题", "填空题", "高数大题"]
         }
-        return ["单选题", "多选题", "填空题", "编程题"]
+        return ["单选题", "多选题", "判断题", "填空题", "编程题"]
     }
 
-    function questionsFor(subject, type, keyword) {
+    function questionsFor(subject, type, keyword, difficulty, knowledgePoint) {
         var result = []
         var key = (keyword || "").trim()
+        var cleanDifficulty = normalizeDifficultyText(difficulty)
+        var cleanKnowledge = String(knowledgePoint || "").trim()
+        var cleanSubject = normalizeSubject(subject)
+        var cleanType = normalizeType(type)
         for (var i = 0; i < questions.length; ++i) {
             var q = questions[i]
-            var qType = normalizeType(q.type)
-            if ((subject === "" || q.subject === subject)
-                    && (type === "" || qType === type)
-                    && (key === "" || String(q.content).indexOf(key) >= 0)) {
+            var qType = normalizeType(questionTypeText(q))
+            var qSubject = normalizeSubject(q.subject)
+            var qDifficulty = normalizeDifficultyText(q.difficulty)
+            var searchable = [
+                questionText(q),
+                q.answer,
+                q.analysis,
+                q.knowledgePoint,
+                q.subject,
+                questionTypeText(q)
+            ].join(" ")
+            if ((cleanSubject === "" || qSubject === cleanSubject)
+                    && (cleanType === "" || qType === cleanType)
+                    && (cleanDifficulty === "" || qDifficulty === cleanDifficulty)
+                    && (cleanKnowledge === "" || String(q.knowledgePoint || "").indexOf(cleanKnowledge) >= 0)
+                    && (key === "" || searchable.indexOf(key) >= 0)) {
                 result.push(q)
             }
         }
         return result
+    }
+
+    function searchQuestionPool(keyword, subject, type, difficulty, knowledgePoint) {
+        var cleanDifficulty = cleanFilterText(difficulty)
+        var cleanKnowledge = String(knowledgePoint || "").trim()
+        var rows = teacherApi.searchQuestionsAdvanced(keyword || "", subject || "", type || "", cleanDifficulty, cleanKnowledge)
+        if ((!rows || rows.length === 0) && String(subject || "").trim().length > 0) {
+            rows = teacherApi.searchQuestionsAdvanced(keyword || "", "", type || "", cleanDifficulty, cleanKnowledge)
+        }
+        if (!rows || rows.length === 0) {
+            rows = questionsFor(subject || "", type || "", keyword || "", cleanDifficulty, cleanKnowledge)
+        }
+        if ((!rows || rows.length === 0) && String(subject || "").trim().length > 0) {
+            rows = questionsFor("", type || "", keyword || "", cleanDifficulty, cleanKnowledge)
+        }
+        return rows || []
     }
 
     function selectedQuestion() {
@@ -539,9 +696,13 @@ Rectangle {
     function paperTotalScore() {
         var total = 0
         for (var i = 0; i < selectedPaperQuestions.length; ++i) {
-            total += Number(selectedPaperQuestions[i].score || questionTypeScore(normalizeType(selectedPaperQuestions[i].type)))
+            total += questionScoreValue(selectedPaperQuestions[i])
         }
         return total
+    }
+
+    function paperRemainingScore() {
+        return Math.max(0, paperTargetScore() - paperTotalScore())
     }
 
     function togglePublishClass(className, checked) {
@@ -597,7 +758,8 @@ Rectangle {
             root.refreshAll()
             var count = Number(result.successCount || 0)
             var status = String(result.status || "")
-            root.showToast(count > 0 ? ("OCR已识别导入 " + count + " 道题") : ("OCR导入" + (status.length > 0 ? status : "失败") + "，请查看导入日志"))
+            var message = String(result.message || "")
+            root.showToast(count > 0 ? ("OCR已识别导入 " + count + " 道题") : ("OCR导入" + (status.length > 0 ? status : "失败") + (message.length > 0 ? ("：" + message) : "，请查看导入日志")))
         }
     }
 
@@ -2677,8 +2839,8 @@ Rectangle {
             columnSpacing: root.narrowShell ? 12 : 18
             rowSpacing: root.narrowShell ? 12 : 18
 
-            QuestionListCard { Layout.fillWidth: true; Layout.columnSpan: parent.width > 1100 ? 3 : 1; Layout.preferredHeight: root.narrowShell ? 640 : 600 }
-            QuestionDetailCard { Layout.fillWidth: true; Layout.columnSpan: parent.width > 1100 ? 2 : 1; Layout.preferredHeight: root.narrowShell ? 730 : 600; question: root.selectedQuestion() }
+            QuestionListCard { Layout.fillWidth: true; Layout.columnSpan: parent.width > 1100 ? 3 : 1; Layout.preferredHeight: root.narrowShell ? 680 : 640 }
+            QuestionDetailCard { Layout.fillWidth: true; Layout.columnSpan: parent.width > 1100 ? 2 : 1; Layout.preferredHeight: root.narrowShell ? 760 : 640; question: root.selectedQuestion() }
         }
 
         OcrImportCard { width: parent.width; height: root.narrowShell ? 180 : 126; enterDelay: 180 }
@@ -2745,10 +2907,20 @@ Rectangle {
                 Text { text: "题目详情"; color: "#111827"; font.pixelSize: 28; font.bold: true; Layout.fillWidth: true }
                 Text { text: root.questionTypeText(detail.question); color: "#2563eb"; font.pixelSize: 18; font.bold: true }
             }
-            DetailBlock { title: "题目"; text: root.questionText(detail.question) || "请选择左侧题目" }
-            OptionGrid { Layout.fillWidth: true; question: detail.question }
-            DetailBlock { title: "答案"; text: detail.question.answer || "--"; accent: true }
-            DetailBlock { title: "解析"; text: detail.question.analysis || "暂无解析" }
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 16
+                    DetailBlock { title: "题目"; text: root.questionText(detail.question) || "请选择左侧题目" }
+                    OptionGrid { Layout.fillWidth: true; question: detail.question }
+                    DetailBlock { title: "答案"; text: detail.question.answer || "--"; accent: true }
+                    DetailBlock { title: "解析"; text: detail.question.analysis || "暂无解析"; large: true }
+                }
+            }
         }
     }
 
@@ -2811,17 +2983,45 @@ Rectangle {
         property string title: ""
         property string text: ""
         property bool accent: false
+        property bool large: false
         Layout.fillWidth: true
-        Layout.preferredHeight: accent ? 86 : 126
+        Layout.preferredHeight: large
+                                ? Math.max(root.narrowShell ? 230 : 210, Math.min(root.narrowShell ? 380 : 320, bodyText.implicitHeight + 74))
+                                : Math.max(accent ? 96 : 136, Math.min(root.narrowShell ? 260 : 220, bodyText.implicitHeight + 58))
         radius: 18
         color: accent ? "#eff6ff" : "#ffffff"
         border.color: accent ? "#bfdbfe" : "#e5edf6"
-        Column {
+        clip: true
+        ColumnLayout {
             anchors.fill: parent
             anchors.margins: 14
             spacing: 6
-            Text { text: detailBlock.title; color: "#64748b"; font.pixelSize: 17; font.bold: true }
-            Text { width: parent.width; text: detailBlock.text; color: "#111827"; font.pixelSize: 19; font.bold: true; wrapMode: Text.WordWrap; elide: Text.ElideRight; maximumLineCount: 4 }
+            Text {
+                Layout.fillWidth: true
+                text: detailBlock.title
+                color: "#64748b"
+                font.pixelSize: detailBlock.large ? 18 : 17
+                font.bold: true
+            }
+            ScrollView {
+                id: detailBodyScroll
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                contentWidth: availableWidth
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: bodyText.implicitHeight > height + 2 ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                Text {
+                    id: bodyText
+                    width: Math.max(0, detailBodyScroll.availableWidth)
+                    text: detailBlock.text
+                    color: "#111827"
+                    font.pixelSize: detailBlock.large ? 17 : 18
+                    font.bold: detailBlock.accent
+                    lineHeight: detailBlock.large ? 1.2 : 1.12
+                    wrapMode: Text.WrapAnywhere
+                }
+            }
         }
     }
 
@@ -2891,8 +3091,16 @@ Rectangle {
                     columnSpacing: root.narrowShell ? 12 : 18
                     rowSpacing: root.narrowShell ? 12 : 18
 
-                    PublishConfigCard { id: publishConfig; Layout.fillWidth: true; Layout.columnSpan: parent.width > 1180 ? 2 : 1; Layout.preferredHeight: root.narrowShell ? 900 : 760 }
-                    PublishQuestionCard { Layout.fillWidth: true; Layout.columnSpan: parent.width > 1180 ? 3 : 1; Layout.preferredHeight: root.narrowShell ? 780 : 760; subject: publishConfig.subject; typeName: publishConfig.selectedType }
+                    PublishConfigCard { id: publishConfig; Layout.fillWidth: true; Layout.columnSpan: parent.width > 1180 ? 2 : 1; Layout.preferredHeight: root.narrowShell ? 960 : 840 }
+                    PublishQuestionCard {
+                        Layout.fillWidth: true
+                        Layout.columnSpan: parent.width > 1180 ? 3 : 1
+                        Layout.preferredHeight: root.narrowShell ? 820 : 840
+                        subject: publishConfig.subject
+                        typeName: publishConfig.selectedType
+                        difficulty: publishConfig.selectedDifficulty
+                        knowledgePoint: publishConfig.selectedKnowledgePoint
+                    }
                 }
             }
         }
@@ -2917,11 +3125,24 @@ Rectangle {
                             Text { text: "可调整题目顺序后发布考试"; color: "#64748b"; font.pixelSize: 14 }
                         }
                         Rectangle {
-                            Layout.preferredWidth: 116
+                            Layout.preferredWidth: 146
                             Layout.preferredHeight: 42
                             radius: 21
                             color: "#eff6ff"
                             Text { anchors.centerIn: parent; text: "共 " + root.selectedPaperQuestions.length + " 题"; color: "#2563eb"; font.pixelSize: 15; font.bold: true }
+                        }
+                        Rectangle {
+                            Layout.preferredWidth: 156
+                            Layout.preferredHeight: 42
+                            radius: 21
+                            color: root.paperTotalScore() > root.paperTargetScore() ? "#fef2f2" : "#ecfdf3"
+                            Text {
+                                anchors.centerIn: parent
+                                text: root.paperTotalScore() + "/" + root.paperTargetScore() + " 分"
+                                color: root.paperTotalScore() > root.paperTargetScore() ? "#ef4444" : "#16a34a"
+                                font.pixelSize: 15
+                                font.bold: true
+                            }
                         }
                     }
                 }
@@ -2945,6 +3166,7 @@ Rectangle {
         property color barColor: "#3b82f6"
         property int targetValue: 0
         property alias value: ratioSlider.value
+        signal edited()
         Layout.fillWidth: true
         spacing: 12
         function playToTarget() {
@@ -2966,7 +3188,10 @@ Rectangle {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: ratioSlider.value = Math.max(ratioSlider.from, ratioSlider.value - 1)
+                onClicked: {
+                    ratioSlider.value = Math.max(ratioSlider.from, ratioSlider.value - 1)
+                    ratioRow.edited()
+                }
             }
         }
         Slider {
@@ -2976,6 +3201,9 @@ Rectangle {
             to: 50
             stepSize: 1
             snapMode: Slider.SnapAlways
+            onPressedChanged: {
+                if (!pressed) ratioRow.edited()
+            }
             NumberAnimation {
                 id: ratioEnter
                 target: ratioSlider
@@ -3020,7 +3248,10 @@ Rectangle {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: ratioSlider.value = Math.min(ratioSlider.to, ratioSlider.value + 1)
+                onClicked: {
+                    ratioSlider.value = Math.min(ratioSlider.to, ratioSlider.value + 1)
+                    ratioRow.edited()
+                }
             }
         }
         Rectangle {
@@ -3047,12 +3278,83 @@ Rectangle {
         property string paperName: paperNameField.text
         property string startText: startBox.value
         property string endText: endBox.value
+        property string selectedDifficulty: difficultyCombo.currentText
+        property string selectedKnowledgePoint: knowledgePointField.text
+        property bool ratioClamping: false
         function playRatioRows() {
             singleRatio.playToTarget()
             multiRatio.playToTarget()
             judgeRatio.playToTarget()
             blankRatio.playToTarget()
             appRatio.playToTarget()
+            Qt.callLater(function() { config.enforceAllRatioLimits() })
+        }
+        function ratioTypeFor(row) {
+            if (row === singleRatio) return "单选题"
+            if (row === multiRatio) return "多选题"
+            if (row === judgeRatio) return "判断题"
+            if (row === blankRatio) return "填空题"
+            return config.subject === "高数" ? "高数大题" : "编程题"
+        }
+        function ratioRows() {
+            return [singleRatio, multiRatio, judgeRatio, blankRatio, appRatio]
+        }
+        function ratioPlanScore() {
+            var total = 0
+            var rows = ratioRows()
+            for (var i = 0; i < rows.length; ++i) {
+                total += Math.round(rows[i].value) * root.questionTypeScore(ratioTypeFor(rows[i]))
+            }
+            return total
+        }
+        function limitedCounts(rawCounts) {
+            var result = ({})
+            var total = 0
+            var order = ["单选题", "多选题", "判断题", "填空题", config.subject === "高数" ? "高数大题" : "编程题"]
+            for (var i = 0; i < order.length; ++i) {
+                var typeName = order[i]
+                var score = root.questionTypeScore(typeName)
+                var requested = Math.max(0, Math.round(Number(rawCounts[typeName] || 0)))
+                var allowed = Math.max(0, Math.floor((root.paperTargetScore() - total) / score))
+                var count = Math.min(requested, allowed)
+                result[typeName] = count
+                total += count * score
+            }
+            return result
+        }
+        function ratioCounts() {
+            var typeName = config.subject === "高数" ? "高数大题" : "编程题"
+            var raw = {
+                "单选题": Math.round(singleRatio.value),
+                "多选题": Math.round(multiRatio.value),
+                "判断题": Math.round(judgeRatio.value),
+                "填空题": Math.round(blankRatio.value)
+            }
+            raw[typeName] = Math.round(appRatio.value)
+            return config.limitedCounts(raw)
+        }
+        function enforceRatioLimit(row) {
+            if (ratioClamping) return
+            ratioClamping = true
+            var rows = ratioRows()
+            var otherScore = 0
+            for (var i = 0; i < rows.length; ++i) {
+                if (rows[i] === row) continue
+                otherScore += Math.round(rows[i].value) * root.questionTypeScore(ratioTypeFor(rows[i]))
+            }
+            var score = root.questionTypeScore(ratioTypeFor(row))
+            var maxCount = Math.max(0, Math.floor((root.paperTargetScore() - otherScore) / score))
+            if (Math.round(row.value) > maxCount) {
+                row.value = maxCount
+                root.showToast("已按满分 " + root.paperTargetScore() + " 分限制题型数量")
+            }
+            ratioClamping = false
+        }
+        function enforceAllRatioLimits() {
+            var rows = ratioRows()
+            for (var i = 0; i < rows.length; ++i) {
+                enforceRatioLimit(rows[i])
+            }
         }
         onActiveTabChanged: {
             if (activeTab === 1) Qt.callLater(function() { config.playRatioRows() })
@@ -3107,6 +3409,41 @@ Rectangle {
                 Text { text: "基础配置"; color: "#111827"; font.pixelSize: 22; font.bold: true }
                 AppField { id: paperNameField; Layout.fillWidth: true; placeholderText: "试卷名称，例如：Java期末考试"; text: "Java期末考试" }
                 AppCombo { id: subjectCombo; Layout.fillWidth: true; model: ["Java", "C++", "高数", "数据结构", "数据库"] }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+                    AppField {
+                        id: targetScoreField
+                        Layout.fillWidth: true
+                        placeholderText: "试卷满分"
+                        text: String(root.publishTargetScore)
+                        validator: IntValidator { bottom: 1; top: 500 }
+                        onEditingFinished: {
+                            root.setPublishTargetScore(text)
+                            text = String(root.publishTargetScore)
+                            config.enforceAllRatioLimits()
+                        }
+                        onAccepted: {
+                            root.setPublishTargetScore(text)
+                            text = String(root.publishTargetScore)
+                            config.enforceAllRatioLimits()
+                        }
+                    }
+                    Rectangle {
+                        Layout.preferredWidth: 148
+                        Layout.preferredHeight: 58
+                        radius: 16
+                        color: root.paperTotalScore() > root.paperTargetScore() ? "#fef2f2" : "#ecfdf3"
+                        border.color: root.paperTotalScore() > root.paperTargetScore() ? "#fecaca" : "#bbf7d0"
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.paperTotalScore() + "/" + root.paperTargetScore() + " 分"
+                            color: root.paperTotalScore() > root.paperTargetScore() ? "#ef4444" : "#16a34a"
+                            font.pixelSize: 17
+                            font.bold: true
+                        }
+                    }
+                }
                 DateBox { id: startBox; Layout.fillWidth: true; label: "开始时间"; value: "2026-06-20 09:00" }
                 DateBox { id: endBox; Layout.fillWidth: true; label: "结束时间"; value: "2026-06-20 11:00" }
 
@@ -3166,26 +3503,36 @@ Rectangle {
                 onVisibleChanged: {
                     if (visible) Qt.callLater(function() { config.playRatioRows() })
                 }
-                Text { text: "题型比例"; color: "#111827"; font.pixelSize: 22; font.bold: true }
-                SmartRatioRow { id: singleRatio; label: "单选题"; barColor: "#3b82f6"; targetValue: 22 }
-                SmartRatioRow { id: multiRatio; label: "多选题"; barColor: "#6d5dfc"; targetValue: 5 }
-                SmartRatioRow { id: judgeRatio; label: "判断题"; barColor: "#f59e0b"; targetValue: 5 }
-                SmartRatioRow { id: blankRatio; label: "填空题"; barColor: "#a855f7"; targetValue: 3 }
-                SmartRatioRow { id: appRatio; label: config.subject === "高数" ? "高数大题" : "编程题"; barColor: "#ef4444"; targetValue: 2 }
+                RowLayout {
+                    Layout.fillWidth: true
+                    Text { text: "题型比例"; color: "#111827"; font.pixelSize: 22; font.bold: true; Layout.fillWidth: true }
+                    Rectangle {
+                        Layout.preferredWidth: 146
+                        Layout.preferredHeight: 38
+                        radius: 14
+                        color: config.ratioPlanScore() > root.paperTargetScore() ? "#fef2f2" : "#eff6ff"
+                        Text {
+                            anchors.centerIn: parent
+                            text: config.ratioPlanScore() + "/" + root.paperTargetScore() + " 分"
+                            color: config.ratioPlanScore() > root.paperTargetScore() ? "#ef4444" : "#2563eb"
+                            font.pixelSize: 15
+                            font.bold: true
+                        }
+                    }
+                }
+                SmartRatioRow { id: singleRatio; label: "单选题"; barColor: "#3b82f6"; targetValue: 12; onEdited: config.enforceRatioLimit(singleRatio) }
+                SmartRatioRow { id: multiRatio; label: "多选题"; barColor: "#6d5dfc"; targetValue: 5; onEdited: config.enforceRatioLimit(multiRatio) }
+                SmartRatioRow { id: judgeRatio; label: "判断题"; barColor: "#f59e0b"; targetValue: 4; onEdited: config.enforceRatioLimit(judgeRatio) }
+                SmartRatioRow { id: blankRatio; label: "填空题"; barColor: "#a855f7"; targetValue: 3; onEdited: config.enforceRatioLimit(blankRatio) }
+                SmartRatioRow { id: appRatio; label: config.subject === "高数" ? "高数大题" : "编程题"; barColor: "#ef4444"; targetValue: 1; onEdited: config.enforceRatioLimit(appRatio) }
                 Item { Layout.fillHeight: true }
                 SuccessButton {
                     Layout.fillWidth: true
                     text: "一键生成试卷"
                     onClicked: {
-                        var typeName = config.subject === "高数" ? "高数大题" : "编程题"
-                        var counts = {
-                            "单选题": Math.round(singleRatio.value),
-                            "多选题": Math.round(multiRatio.value),
-                            "判断题": Math.round(judgeRatio.value),
-                            "填空题": Math.round(blankRatio.value)
-                        }
-                        counts[typeName] = Math.round(appRatio.value)
-                        root.smartGeneratePaper(config.subject, counts)
+                        var counts = config.ratioCounts()
+                        root.updatePublishDraft(config.paperName, config.subject, config.startText, config.endText)
+                        root.smartGeneratePaper(config.subject, counts, config.selectedDifficulty, config.selectedKnowledgePoint)
                     }
                 }
             }
@@ -3195,6 +3542,8 @@ Rectangle {
                 visible: config.activeTab === 2
                 spacing: 16
                 Text { text: "高级规则"; color: "#111827"; font.pixelSize: 22; font.bold: true }
+                AppCombo { id: difficultyCombo; Layout.fillWidth: true; model: ["全部难度", "基础", "中等", "困难"] }
+                AppField { id: knowledgePointField; Layout.fillWidth: true; placeholderText: "知识点筛选，例如：数组、函数、导数" }
                 SettingSwitch { Layout.fillWidth: true; label: "禁止重复题目"; description: "同一试卷内不重复抽取相同题目"; checked: true }
                 SettingSwitch { Layout.fillWidth: true; label: "按章节顺序排列"; description: "按知识点章节整理题目顺序"; checked: false }
                 SettingSwitch { Layout.fillWidth: true; label: "随机打乱选项"; description: "客观题发布前自动打乱选项"; checked: true }
@@ -3205,7 +3554,10 @@ Rectangle {
                     SuccessButton {
                         Layout.fillWidth: true
                         text: "一键生成试卷"
-                        onClicked: root.smartGeneratePaper(config.subject, {"单选题": 12, "多选题": 6, "填空题": 5, "编程题": 2, "高数大题": 2})
+                        onClicked: {
+                            root.updatePublishDraft(config.paperName, config.subject, config.startText, config.endText)
+                            root.smartGeneratePaper(config.subject, config.limitedCounts({"单选题": 12, "多选题": 6, "填空题": 5, "编程题": 2, "高数大题": 2}), config.selectedDifficulty, config.selectedKnowledgePoint)
+                        }
                     }
                     SoftButton {
                         Layout.preferredWidth: 112
@@ -3226,12 +3578,13 @@ Rectangle {
                 SoftButton {
                     width: root.narrowShell ? parent.width : (parent.width - 20) / 3
                     text: "复制以往试卷"
-                    onClicked: {
-                        var id = teacherApi.copyExamAsDraft("Java期末考试", startBox.value, endBox.value)
-                        root.showToast(id > 0 ? "已复制为草稿" : "复制失败：" + teacherApi.lastError())
-                    }
+                    onClicked: copyPaperPopup.open()
                 }
-                SoftButton { width: root.narrowShell ? (parent.width - 10) / 2 : (parent.width - 20) / 3; text: "保存草稿"; onClicked: root.showToast("草稿已保存") }
+                SoftButton {
+                    width: root.narrowShell ? (parent.width - 10) / 2 : (parent.width - 20) / 3
+                    text: "保存草稿"
+                    onClicked: root.saveCurrentDraft(config.paperName, config.subject, config.startText, config.endText)
+                }
                 SoftButton {
                     width: root.narrowShell ? (parent.width - 10) / 2 : (parent.width - 20) / 3
                     text: "查看试卷"
@@ -3239,6 +3592,137 @@ Rectangle {
                         root.updatePublishDraft(paperNameField.text, subjectCombo.currentText, startBox.value, endBox.value)
                         root.publishPaperMode = true
                         root.animationKey += 1
+                    }
+                }
+            }
+            Item {
+                Layout.preferredWidth: 0
+                Layout.preferredHeight: 0
+                Layout.minimumWidth: 0
+                Layout.minimumHeight: 0
+                Popup {
+                    id: copyPaperPopup
+                    parent: Overlay.overlay
+                    width: Math.min(root.width - 56, 560)
+                    height: Math.min(root.height - 96, 520)
+                    x: Math.max(28, (root.width - width) / 2)
+                    y: Math.max(48, (root.height - height) / 2)
+                    modal: true
+                    focus: true
+                    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+                    padding: 0
+                background: Rectangle {
+                    radius: 24
+                    color: "#ffffff"
+                    border.color: "#dbe7f6"
+                    layer.enabled: true
+                }
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 22
+                        spacing: 14
+                        RowLayout {
+                            Layout.fillWidth: true
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+                                Text { text: "复制以往试卷"; color: "#111827"; font.pixelSize: 24; font.bold: true }
+                                Text { text: "从真实考试列表选择一张，复制为新的草稿后继续编辑。"; color: "#64748b"; font.pixelSize: 14 }
+                            }
+                            SoftButton {
+                                Layout.preferredWidth: 42
+                                text: "×"
+                                onClicked: copyPaperPopup.close()
+                            }
+                        }
+                        ListView {
+                            id: copyPaperList
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            clip: true
+                            spacing: 10
+                            model: root.orderedExams()
+                            boundsBehavior: Flickable.DragOverBounds
+                            boundsMovement: Flickable.FollowBoundsBehavior
+                            maximumFlickVelocity: 7600
+                            flickDeceleration: 3200
+                            reuseItems: true
+                            cacheBuffer: height * 2
+                            ScrollBar.vertical: ScrollBar {
+                                policy: copyPaperList.contentHeight > copyPaperList.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+                                width: 12
+                                contentItem: Rectangle { radius: 6; color: "#9fb3cc" }
+                                background: Rectangle { radius: 6; color: "#edf2f8" }
+                            }
+                            delegate: Rectangle {
+                                width: ListView.view.width - (copyPaperList.contentHeight > copyPaperList.height ? 18 : 0)
+                                height: 78
+                                radius: 18
+                                color: copyMouse.containsMouse ? "#eef6ff" : "#f8fbff"
+                                border.color: copyMouse.containsMouse ? "#bfdbfe" : "#e5edf6"
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 14
+                                    spacing: 12
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 5
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.name || modelData.title || "未命名试卷"
+                                            color: "#111827"
+                                            font.pixelSize: 16
+                                            font.bold: true
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: (modelData.subject || "综合") + " · " + (modelData.status || "草稿") + " · " + root.examDate(modelData)
+                                            color: "#64748b"
+                                            font.pixelSize: 13
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                    Rectangle {
+                                        Layout.preferredWidth: 92
+                                        Layout.preferredHeight: 34
+                                        radius: 12
+                                        color: "#2563eb"
+                                        Text { anchors.centerIn: parent; text: "复制"; color: "#ffffff"; font.pixelSize: 14; font.bold: true }
+                                    }
+                                }
+                                MouseArea {
+                                    id: copyMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        var sourceName = modelData.name || modelData.title || "未命名试卷"
+                                        var id = teacherApi.copyExamAsDraftById(Number(modelData.id || 0), sourceName + " 副本")
+                                        if (id > 0) {
+                                            root.activePaperId = id
+                                            root.refreshAll()
+                                            root.selectedPaperQuestions = teacherApi.getPaperQuestions(id)
+                                            root.updatePublishDraft(sourceName + " 副本", modelData.subject || config.subject, startBox.value, endBox.value)
+                                            root.publishPaperMode = true
+                                            copyPaperPopup.close()
+                                            root.animationKey += 1
+                                            root.showToast("已复制为草稿，可调整题目后发布")
+                                        } else {
+                                            root.showToast("复制失败：" + teacherApi.lastError())
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Text {
+                            visible: root.orderedExams().length === 0
+                            Layout.fillWidth: true
+                            text: "暂无可复制的试卷"
+                            color: "#94a3b8"
+                            font.pixelSize: 15
+                            horizontalAlignment: Text.AlignHCenter
+                        }
                     }
                 }
             }
@@ -3477,8 +3961,31 @@ Rectangle {
         property string subject: "Java"
         property string typeName: "单选题"
         property string searchText: searchField.text
-        property var rows: root.questionsFor(subject, typeName, searchText)
+        property string difficulty: ""
+        property string knowledgePoint: ""
+        property bool backendLoaded: false
+        property var backendRows: []
+        property var rows: backendLoaded ? backendRows : root.questionsFor(subject, typeName, searchText, difficulty, knowledgePoint)
         property var currentQuestion: rows.length > 0 ? rows[Math.min(root.publishQuestionIndex, rows.length - 1)] : ({})
+        property string emptyText: backendLoaded
+                                   ? ("后端题库中没有匹配「" + subject + " · " + typeName + "」的题目，请检查科目、题型、难度或知识点筛选。")
+                                   : "正在读取题库..."
+        function refreshFromBackend(showEmptyToast) {
+            var cleanDifficulty = root.cleanFilterText(difficulty)
+            var cleanKnowledge = String(knowledgePoint || "").trim()
+            var rows = root.searchQuestionPool(searchText, subject, typeName, cleanDifficulty, cleanKnowledge)
+            backendRows = rows ? rows : []
+            backendLoaded = true
+            root.publishQuestionIndex = 0
+            if (backendRows.length === 0 && showEmptyToast) {
+                root.showToast("没有找到题目，请检查科目、题型、难度、知识点或题库数据")
+            }
+        }
+        Component.onCompleted: Qt.callLater(function() { qcard.refreshFromBackend(false) })
+        onSubjectChanged: Qt.callLater(function() { qcard.refreshFromBackend(false) })
+        onTypeNameChanged: Qt.callLater(function() { qcard.refreshFromBackend(false) })
+        onDifficultyChanged: Qt.callLater(function() { qcard.refreshFromBackend(false) })
+        onKnowledgePointChanged: Qt.callLater(function() { qcard.refreshFromBackend(false) })
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 24
@@ -3495,14 +4002,13 @@ Rectangle {
                     Layout.preferredWidth: 96
                     text: "搜索"
                     onClicked: {
-                        root.publishQuestionIndex = 0
-                        if (qcard.rows.length === 0) root.showToast("没有找到题目")
+                        qcard.refreshFromBackend(true)
                     }
                 }
             }
-            DetailBlock { title: "题目"; text: root.questionText(qcard.currentQuestion) || "当前筛选条件下暂无题目"; Layout.preferredHeight: 150 }
+            DetailBlock { title: "题目"; text: root.questionText(qcard.currentQuestion) || qcard.emptyText; Layout.preferredHeight: 150 }
             DetailBlock { title: "答案"; text: qcard.currentQuestion.answer || "--"; accent: true }
-            DetailBlock { title: "解析"; text: qcard.currentQuestion.analysis || "暂无解析"; Layout.preferredHeight: 120 }
+            DetailBlock { title: "解析"; text: qcard.currentQuestion.analysis || "暂无解析"; large: true }
             RowLayout {
                 Layout.fillWidth: true
                 SoftButton {
@@ -3528,6 +4034,22 @@ Rectangle {
                     }
                 }
             }
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 46
+                radius: 16
+                color: root.paperRemainingScore() <= 0 ? "#fff7ed" : "#f8fbff"
+                border.color: root.paperRemainingScore() <= 0 ? "#fed7aa" : "#e5edf6"
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 16
+                    anchors.rightMargin: 16
+                    spacing: 10
+                    Text { text: "当前总分"; color: "#64748b"; font.pixelSize: 14; font.bold: true }
+                    Text { text: root.paperTotalScore() + "/" + root.paperTargetScore() + " 分"; color: root.paperTotalScore() > root.paperTargetScore() ? "#ef4444" : "#2563eb"; font.pixelSize: 17; font.bold: true; Layout.fillWidth: true }
+                    Text { text: "剩余 " + root.paperRemainingScore() + " 分"; color: root.paperRemainingScore() <= 0 ? "#f97316" : "#16a34a"; font.pixelSize: 14; font.bold: true }
+                }
+            }
             PrimaryButton {
                 Layout.fillWidth: true
                 text: "添加到试卷"
@@ -3537,9 +4059,21 @@ Rectangle {
                         return
                     }
                     var q = qcard.currentQuestion
-                    if (!q.score) q.score = root.questionTypeScore(root.normalizeType(q.type))
+                    var qid = String(q.id || q.questionId || "")
+                    for (var i = 0; i < root.selectedPaperQuestions.length; ++i) {
+                        if (String(root.selectedPaperQuestions[i].id || root.selectedPaperQuestions[i].questionId || "") === qid) {
+                            root.showToast("该题已在试卷中")
+                            return
+                        }
+                    }
+                    var score = root.questionScoreValue(q)
+                    if (root.paperTotalScore() + score > root.paperTargetScore()) {
+                        root.showToast("加入该题后总分会超过 " + root.paperTargetScore() + " 分，不能添加")
+                        return
+                    }
+                    q.score = score
                     root.selectedPaperQuestions = root.selectedPaperQuestions.concat([q])
-                    root.showToast("已添加到试卷")
+                    root.showToast("已添加到试卷，当前总分 " + root.paperTotalScore() + "/" + root.paperTargetScore())
                 }
             }
         }
@@ -3575,12 +4109,12 @@ Rectangle {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     radius: 18
-                    color: "#eff6ff"
+                    color: root.paperTotalScore() > root.paperTargetScore() ? "#fef2f2" : "#eff6ff"
                     border.color: "transparent"
                     Text {
                         anchors.centerIn: parent
-                        text: "总分 " + root.paperTotalScore()
-                        color: "#2563eb"
+                        text: "总分 " + root.paperTotalScore() + "/" + root.paperTargetScore()
+                        color: root.paperTotalScore() > root.paperTargetScore() ? "#ef4444" : "#2563eb"
                         font.pixelSize: 16
                         font.bold: true
                     }
@@ -3669,13 +4203,13 @@ Rectangle {
                         root.showToast("请选择发布班级")
                         return
                     }
-                    var counts = {}
-                    for (var i = 0; i < root.selectedPaperQuestions.length; ++i) {
-                        var t = root.normalizeType(root.selectedPaperQuestions[i].type)
-                        counts[t] = (counts[t] || 0) + 1
+                    if (root.paperTotalScore() > root.paperTargetScore()) {
+                        root.showToast("当前试卷总分超过设定满分，不能发布")
+                        return
                     }
-                    var paperId = teacherApi.createDraftPaper(preview.titleText, preview.subject, preview.startText, preview.endText, counts)
+                    var paperId = teacherApi.createDraftPaperFromQuestions(preview.titleText, preview.subject, preview.startText, preview.endText, root.selectedPaperQuestions)
                     if (paperId > 0 && teacherApi.publishExam(paperId, root.selectedPublishClasses, preview.startText, preview.endText)) {
+                        root.activePaperId = paperId
                         root.refreshAll()
                         root.showToast("考试已发布")
                     } else {

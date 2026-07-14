@@ -1,0 +1,38 @@
+{
+    "classes": [
+        {
+            "className": "QBoxSetPrivate",
+            "lineNumber": 27,
+            "object": true,
+            "qualifiedClassName": "QBoxSetPrivate",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "restructuredBox",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 1,
+                    "name": "updatedBox",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 2,
+                    "name": "updatedLayout",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qboxset_p.h",
+    "outputRevision": 68
+}

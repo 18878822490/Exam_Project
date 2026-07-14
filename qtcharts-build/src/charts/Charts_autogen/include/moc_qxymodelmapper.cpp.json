@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "QXYModelMapper",
+            "lineNumber": 21,
+            "object": true,
+            "qualifiedClassName": "QXYModelMapper",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qxymodelmapper.h",
+    "outputRevision": 68
+}

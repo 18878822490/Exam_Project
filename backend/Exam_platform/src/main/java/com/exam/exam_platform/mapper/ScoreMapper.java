@@ -155,10 +155,118 @@ public class ScoreMapper {
         return jdbcTemplate.queryForList(sql.toString(), args.toArray());
     }
 
+    public List<Map<String, Object>> listReviewExams(Long teacherId) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT e.id,
+                       e.title,
+                       e.subject,
+                       COALESCE(MIN(COALESCE(ep.start_time, e.start_time)), e.start_time) AS start_time,
+                       COALESCE(MAX(COALESCE(ep.end_time, e.end_time)), e.end_time) AS end_time,
+                       DATE_FORMAT(COALESCE(MIN(COALESCE(ep.start_time, e.start_time)), e.start_time, e.created_time), '%Y-%m-%d') AS exam_date,
+                       e.total_score,
+                       e.status,
+                       COALESCE((SELECT COUNT(DISTINCT sa.student_no)
+                                 FROM student_answers sa
+                                 WHERE sa.exam_id = e.id), 0) AS submitted_count,
+                       COALESCE((SELECT COUNT(DISTINCT sa.student_no)
+                                 FROM student_answers sa
+                                 WHERE sa.exam_id = e.id
+                                   AND NOT EXISTS (
+                                       SELECT 1
+                                       FROM student_answers pending
+                                       WHERE pending.exam_id = sa.exam_id
+                                         AND pending.student_no = sa.student_no
+                                         AND pending.review_status = '待批改'
+                                   )), 0) AS completed_count,
+                       COALESCE((SELECT COUNT(DISTINCT sa.student_no)
+                                 FROM student_answers sa
+                                 WHERE sa.exam_id = e.id
+                                   AND EXISTS (
+                                       SELECT 1
+                                       FROM student_answers pending
+                                       WHERE pending.exam_id = sa.exam_id
+                                         AND pending.student_no = sa.student_no
+                                         AND pending.review_status = '待批改'
+                                   )), 0) AS pending_student_count,
+                       COALESCE((SELECT COUNT(*)
+                                 FROM student_answers sa
+                                 WHERE sa.exam_id = e.id AND sa.review_status = '待批改'), 0) AS pending_answer_count,
+                       ROUND(COALESCE((SELECT AVG(sc.total_score)
+                                       FROM scores sc
+                                       WHERE sc.exam_id = e.id), 0), 1) AS average_score,
+                       CASE
+                           WHEN COALESCE((SELECT COUNT(DISTINCT sa.student_no)
+                                          FROM student_answers sa
+                                          WHERE sa.exam_id = e.id), 0) = 0 THEN '暂无提交'
+                           WHEN COALESCE((SELECT COUNT(*)
+                                          FROM student_answers sa
+                                          WHERE sa.exam_id = e.id AND sa.review_status = '待批改'), 0) = 0 THEN '已批改'
+                           ELSE '待批改'
+                       END AS review_status
+                FROM exams e
+                LEFT JOIN exam_publish ep ON ep.exam_id = e.id
+                WHERE 1=1
+                """);
+        List<Object> args = new java.util.ArrayList<>();
+        if (teacherId != null) {
+            sql.append(" AND e.created_by = ?");
+            args.add(teacherId);
+        }
+        sql.append("""
+                GROUP BY e.id, e.title, e.subject, e.start_time, e.end_time, e.total_score, e.status, e.created_time
+                ORDER BY pending_answer_count DESC, submitted_count DESC, e.id DESC
+                """);
+        return jdbcTemplate.queryForList(sql.toString(), args.toArray());
+    }
+
+    public List<Map<String, Object>> listReviewStudents(Long examId, String status) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT review.*,
+                       CASE
+                           WHEN review.pending_count = 0 THEN '已批改'
+                           WHEN review.pending_count = review.answer_count THEN '待批改'
+                           ELSE '批改中'
+                       END AS review_status
+                FROM (
+                    SELECT sa.exam_id,
+                           e.title AS exam_title,
+                           e.subject,
+                           sa.student_id,
+                           sa.student_name,
+                           sa.student_no,
+                           sa.class_name,
+                           COUNT(*) AS answer_count,
+                           SUM(CASE WHEN sa.review_status = '待批改' THEN 1 ELSE 0 END) AS pending_count,
+                           COALESCE(MAX(sc.total_score), SUM(COALESCE(sa.score, 0))) AS score
+                    FROM student_answers sa
+                    INNER JOIN exams e ON e.id = sa.exam_id
+                    LEFT JOIN scores sc ON sc.exam_id = sa.exam_id AND sc.student_no = sa.student_no
+                    WHERE sa.exam_id = ?
+                    GROUP BY sa.exam_id, e.title, e.subject, sa.student_id, sa.student_name, sa.student_no, sa.class_name
+                ) review
+                WHERE 1=1
+                """);
+        List<Object> args = new java.util.ArrayList<>();
+        args.add(examId);
+        if (status != null && !status.isBlank()) {
+            sql.append("""
+                    AND CASE
+                            WHEN review.pending_count = 0 THEN '已批改'
+                            WHEN review.pending_count = review.answer_count THEN '待批改'
+                            ELSE '批改中'
+                        END = ?
+                    """);
+            args.add(status.trim());
+        }
+        sql.append(" ORDER BY review.pending_count DESC, review.student_no");
+        return jdbcTemplate.queryForList(sql.toString(), args.toArray());
+    }
+
     public List<Map<String, Object>> listStudentAnswers(Long examId, String studentNo, String status) {
         StringBuilder sql = new StringBuilder("""
                 SELECT sa.*, q.subject, q.type, q.content, q.answer AS standard_answer,
-                       q.analysis, q.knowledge_point, eq.sort_no, eq.score AS question_score
+                       q.analysis, q.knowledge_point, eq.sort_no, eq.score AS question_score,
+                       CASE WHEN q.type IN ('单选题', '多选题', '判断题', '填空题') THEN 1 ELSE 0 END AS is_objective
                 FROM student_answers sa
                 INNER JOIN questions q ON q.id = sa.question_id
                 LEFT JOIN exam_questions eq ON eq.exam_id = sa.exam_id AND eq.question_id = sa.question_id
@@ -176,7 +284,14 @@ public class ScoreMapper {
     }
 
     public Map<String, Object> findAnswerById(Long answerId) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT * FROM student_answers WHERE id = ? LIMIT 1", answerId);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
+                SELECT sa.*, eq.score AS question_score, q.type
+                FROM student_answers sa
+                LEFT JOIN exam_questions eq ON eq.exam_id = sa.exam_id AND eq.question_id = sa.question_id
+                LEFT JOIN questions q ON q.id = sa.question_id
+                WHERE sa.id = ?
+                LIMIT 1
+                """, answerId);
         return rows.isEmpty() ? null : rows.get(0);
     }
 

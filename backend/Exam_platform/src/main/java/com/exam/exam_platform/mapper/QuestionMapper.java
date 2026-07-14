@@ -1,6 +1,7 @@
 package com.exam.exam_platform.mapper;
 
 import com.exam.exam_platform.entity.Question;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -156,23 +157,18 @@ public class QuestionMapper {
         StringBuilder sql = new StringBuilder("SELECT * FROM questions WHERE 1=1");
         List<Object> args = new ArrayList<>();
         if (hasText(subject)) {
-            sql.append(" AND subject = ?");
-            args.add(subject.trim());
+            appendInFilter(sql, args, "subject", subjectAliases(subject));
         }
         if (hasText(type)) {
-            String trimmedType = type.trim();
-            if ("编程题".equals(trimmedType) || "代码题".equals(trimmedType)) {
-                sql.append(" AND (type = ? OR type = ?)");
-                args.add("编程题");
-                args.add("代码题");
-            } else {
-                sql.append(" AND type = ?");
-                args.add(trimmedType);
-            }
+            List<String> aliases = typeAliases(type);
+            sql.append(" AND (");
+            appendInClause(sql, args, "type", aliases);
+            sql.append(" OR ");
+            appendInClause(sql, args, "content", aliases);
+            sql.append(")");
         }
         if (hasText(difficulty)) {
-            sql.append(" AND difficulty = ?");
-            args.add(difficulty.trim());
+            appendInFilter(sql, args, "difficulty", difficultyAliases(difficulty));
         }
         if (hasText(knowledgePoint)) {
             sql.append(" AND knowledge_point LIKE ?");
@@ -202,16 +198,19 @@ public class QuestionMapper {
     }
 
     public List<Question> randomQuestions(String subject, String type, String difficulty, String knowledgePoint, int count) {
-        StringBuilder sql = new StringBuilder("SELECT * FROM questions WHERE type = ?");
+        StringBuilder sql = new StringBuilder("SELECT * FROM questions WHERE ");
         List<Object> args = new ArrayList<>();
-        args.add(type);
+        List<String> typeValues = typeAliases(type);
+        sql.append("(");
+        appendInClause(sql, args, "type", typeValues);
+        sql.append(" OR ");
+        appendInClause(sql, args, "content", typeValues);
+        sql.append(")");
         if (hasText(subject)) {
-            sql.append(" AND subject = ?");
-            args.add(subject.trim());
+            appendInFilter(sql, args, "subject", subjectAliases(subject));
         }
         if (hasText(difficulty)) {
-            sql.append(" AND difficulty = ?");
-            args.add(difficulty.trim());
+            appendInFilter(sql, args, "difficulty", difficultyAliases(difficulty));
         }
         if (hasText(knowledgePoint)) {
             sql.append(" AND knowledge_point LIKE ?");
@@ -377,6 +376,64 @@ public class QuestionMapper {
         );
     }
 
+    public Map<String, Object> findImportLog(Long logId) {
+        try {
+            return jdbcTemplate.queryForMap("SELECT * FROM question_import_logs WHERE id = ? LIMIT 1", logId);
+        } catch (EmptyResultDataAccessException exception) {
+            return Map.of();
+        }
+    }
+
+    public int countRollbackCandidates(Map<String, Object> log, int windowSeconds) {
+        if (log == null || log.isEmpty()) {
+            return 0;
+        }
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM questions q
+                WHERE q.created_by <=> ?
+                  AND q.created_time BETWEEN DATE_SUB(?, INTERVAL ? SECOND) AND DATE_ADD(?, INTERVAL ? SECOND)
+                  AND NOT EXISTS (SELECT 1 FROM exam_questions eq WHERE eq.question_id = q.id)
+                  AND NOT EXISTS (SELECT 1 FROM student_answers sa WHERE sa.question_id = q.id)
+                  AND NOT EXISTS (SELECT 1 FROM practice_answers pa WHERE pa.question_id = q.id)
+                """, Integer.class,
+                log.get("user_id"),
+                log.get("created_time"),
+                windowSeconds,
+                log.get("created_time"),
+                windowSeconds);
+        return count == null ? 0 : count;
+    }
+
+    public int deleteRollbackCandidates(Map<String, Object> log, int windowSeconds) {
+        if (log == null || log.isEmpty()) {
+            return 0;
+        }
+        return jdbcTemplate.update("""
+                DELETE q
+                FROM questions q
+                WHERE q.created_by <=> ?
+                  AND q.created_time BETWEEN DATE_SUB(?, INTERVAL ? SECOND) AND DATE_ADD(?, INTERVAL ? SECOND)
+                  AND NOT EXISTS (SELECT 1 FROM exam_questions eq WHERE eq.question_id = q.id)
+                  AND NOT EXISTS (SELECT 1 FROM student_answers sa WHERE sa.question_id = q.id)
+                  AND NOT EXISTS (SELECT 1 FROM practice_answers pa WHERE pa.question_id = q.id)
+                """,
+                log.get("user_id"),
+                log.get("created_time"),
+                windowSeconds,
+                log.get("created_time"),
+                windowSeconds);
+    }
+
+    public boolean markImportLogRolledBack(Long logId, int deletedCount) {
+        return jdbcTemplate.update("""
+                UPDATE question_import_logs
+                SET status = '已撤回',
+                    message = CONCAT(COALESCE(message, ''), '；已撤回删除 ', ?, ' 道题')
+                WHERE id = ?
+                """, deletedCount, logId) > 0;
+    }
+
     private void bindQuestion(PreparedStatement statement, Question question, boolean update) throws SQLException {
         statement.setString(1, question.getSubject());
         statement.setString(2, question.getType());
@@ -413,7 +470,154 @@ public class QuestionMapper {
         if (createdTime != null) {
             question.setCreatedTime(createdTime.toLocalDateTime());
         }
+        repairSwappedTypeAndContent(question);
         return question;
+    }
+
+    private void repairSwappedTypeAndContent(Question question) {
+        String type = question.getType();
+        String content = question.getContent();
+        if (isKnownQuestionType(content) && !isKnownQuestionType(type) && hasText(type)) {
+            question.setType(normalizeTypeValue(content));
+            question.setContent(type);
+        } else if (isKnownQuestionType(type)) {
+            question.setType(normalizeTypeValue(type));
+        }
+    }
+
+    private void appendInFilter(StringBuilder sql, List<Object> args, String column, List<String> values) {
+        sql.append(" AND ");
+        appendInClause(sql, args, column, values);
+    }
+
+    private void appendInClause(StringBuilder sql, List<Object> args, String column, List<String> values) {
+        List<String> cleaned = distinctValues(values);
+        if (cleaned.isEmpty()) {
+            sql.append("1=1");
+            return;
+        }
+        if (cleaned.size() == 1) {
+            sql.append(column).append(" = ?");
+            args.add(cleaned.get(0));
+            return;
+        }
+        sql.append(column).append(" IN (");
+        for (int i = 0; i < cleaned.size(); i++) {
+            if (i > 0) {
+                sql.append(", ");
+            }
+            sql.append("?");
+            args.add(cleaned.get(i));
+        }
+        sql.append(")");
+    }
+
+    private List<String> subjectAliases(String subject) {
+        String text = trimText(subject);
+        String lower = text.toLowerCase();
+        if ("高数".equals(text) || "高等数学".equals(text) || "数学".equals(text) || "math".equals(lower)) {
+            return List.of("高数", "高等数学", "数学", "math");
+        }
+        if ("c++".equals(lower) || "cpp".equals(lower) || "c＋＋".equals(text)) {
+            return List.of("C++", "cpp", "CPP", "C＋＋");
+        }
+        if ("java".equals(lower)) {
+            return List.of("Java", "java", "JAVA");
+        }
+        if ("数据结构与算法".equals(text)) {
+            return List.of("数据结构", "数据结构与算法");
+        }
+        if ("database".equals(lower) || "mysql".equals(lower)) {
+            return List.of("数据库", "database", "MySQL", "mysql");
+        }
+        return List.of(text);
+    }
+
+    private List<String> typeAliases(String type) {
+        String normalized = normalizeTypeValue(type);
+        if ("单选题".equals(normalized)) {
+            return List.of("单选题", "单选", "选择题", "single", "singleChoice", "singlechoice");
+        }
+        if ("多选题".equals(normalized)) {
+            return List.of("多选题", "多选", "multiple", "multipleChoice", "multiplechoice", "multi");
+        }
+        if ("判断题".equals(normalized)) {
+            return List.of("判断题", "判断", "judge", "truefalse", "true/false");
+        }
+        if ("填空题".equals(normalized)) {
+            return List.of("填空题", "填空", "blank", "fill");
+        }
+        if ("高数大题".equals(normalized)) {
+            return List.of("高数大题", "高数题", "数学大题", "math");
+        }
+        if ("编程题".equals(normalized)) {
+            return List.of("编程题", "代码题", "program", "coding", "code");
+        }
+        return List.of(trimText(type));
+    }
+
+    private List<String> difficultyAliases(String difficulty) {
+        String text = trimText(difficulty);
+        String lower = text.toLowerCase();
+        if ("基础".equals(text) || "简单".equals(text) || "easy".equals(lower)) {
+            return List.of("基础", "简单", "easy");
+        }
+        if ("中等".equals(text) || "中".equals(text) || "medium".equals(lower) || "middle".equals(lower) || "normal".equals(lower)) {
+            return List.of("中等", "中", "medium", "middle", "normal");
+        }
+        if ("困难".equals(text) || "难".equals(text) || "hard".equals(lower) || "difficult".equals(lower)) {
+            return List.of("困难", "难", "hard", "difficult");
+        }
+        return List.of(text);
+    }
+
+    private String normalizeTypeValue(String type) {
+        String text = trimText(type);
+        String lower = text.toLowerCase();
+        if ("single".equals(lower) || "singlechoice".equals(lower) || "单选".equals(text) || "选择题".equals(text)) {
+            return "单选题";
+        }
+        if ("multiple".equals(lower) || "multiplechoice".equals(lower) || "multi".equals(lower) || "多选".equals(text)) {
+            return "多选题";
+        }
+        if ("judge".equals(lower) || "truefalse".equals(lower) || "true/false".equals(lower) || "判断".equals(text)) {
+            return "判断题";
+        }
+        if ("blank".equals(lower) || "fill".equals(lower) || "填空".equals(text)) {
+            return "填空题";
+        }
+        if ("program".equals(lower) || "coding".equals(lower) || "code".equals(lower) || "代码题".equals(text)) {
+            return "编程题";
+        }
+        if ("math".equals(lower) || "高数题".equals(text) || "数学大题".equals(text)) {
+            return "高数大题";
+        }
+        return text;
+    }
+
+    private boolean isKnownQuestionType(String type) {
+        String normalized = normalizeTypeValue(type);
+        return "单选题".equals(normalized)
+                || "多选题".equals(normalized)
+                || "判断题".equals(normalized)
+                || "填空题".equals(normalized)
+                || "高数大题".equals(normalized)
+                || "编程题".equals(normalized);
+    }
+
+    private List<String> distinctValues(List<String> values) {
+        List<String> result = new ArrayList<>();
+        for (String value : values) {
+            String text = trimText(value);
+            if (!text.isEmpty() && !result.contains(text)) {
+                result.add(text);
+            }
+        }
+        return result;
+    }
+
+    private String trimText(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private Long readNullableLong(ResultSet rs, String column) throws SQLException {

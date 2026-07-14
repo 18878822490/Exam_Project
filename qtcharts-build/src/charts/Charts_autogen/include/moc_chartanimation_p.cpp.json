@@ -1,0 +1,26 @@
+{
+    "classes": [
+        {
+            "className": "ChartAnimation",
+            "lineNumber": 24,
+            "object": true,
+            "qualifiedClassName": "ChartAnimation",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "startChartAnimation",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QVariantAnimation"
+                }
+            ]
+        }
+    ],
+    "inputFile": "chartanimation_p.h",
+    "outputRevision": 68
+}

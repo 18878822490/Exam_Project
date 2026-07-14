@@ -72,6 +72,22 @@ Rectangle {
 
     Component.onCompleted: refreshAll()
 
+    Timer {
+        id: notificationRefreshTimer
+        interval: 30000
+        repeat: true
+        running: true
+        triggeredOnStart: false
+        onTriggered: {
+            if (root.examMode || root.practiceExamMode) {
+                return
+            }
+            root.exams = studentApi.getPublishedExams()
+            root.scoreHistory = studentApi.getScoreHistory("")
+            root.syncActiveReportSubject()
+        }
+    }
+
     function refreshAll() {
         profile = studentApi.getStudentProfile()
         exams = studentApi.getPublishedExams()
@@ -575,7 +591,7 @@ Rectangle {
         for (var i = 0; i < upcoming.length; ++i) {
             var exam = upcoming[i].exam
             rows.push({
-                "title": "考试提醒",
+                "title": examStatus(exam, i) === "未开放" ? "考试未开放" : "新考试发布",
                 "body": examSubject(exam) + " · " + examTitle(exam) + " · " + formatExamTime(exam),
                 "time": countdownShortLabel(examStartDate(exam)),
                 "color": "#f59e0b",

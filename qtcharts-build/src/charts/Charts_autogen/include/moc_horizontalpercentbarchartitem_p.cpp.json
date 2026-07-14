@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "HorizontalPercentBarChartItem",
+            "lineNumber": 22,
+            "object": true,
+            "qualifiedClassName": "HorizontalPercentBarChartItem",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "AbstractBarChartItem"
+                }
+            ]
+        }
+    ],
+    "inputFile": "horizontalpercentbarchartitem_p.h",
+    "outputRevision": 68
+}

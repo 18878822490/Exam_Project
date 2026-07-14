@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "QXYLegendMarker",
+            "lineNumber": 15,
+            "object": true,
+            "qualifiedClassName": "QXYLegendMarker",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QLegendMarker"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qxylegendmarker.h",
+    "outputRevision": 68
+}

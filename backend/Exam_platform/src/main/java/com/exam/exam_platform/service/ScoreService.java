@@ -107,6 +107,21 @@ public class ScoreService {
         return scoreMapper.listStudentAnswers(examId, studentNo.trim(), status);
     }
 
+    public List<Map<String, Object>> listReviewExams(Long teacherId) {
+        return scoreMapper.listReviewExams(teacherId);
+    }
+
+    public List<Map<String, Object>> listReviewStudents(Long examId, String status) {
+        if (examId == null) {
+            throw new IllegalArgumentException("考试ID不能为空");
+        }
+        return scoreMapper.listReviewStudents(examId, status);
+    }
+
+    public List<Map<String, Object>> listReviewStudentAnswers(Long examId, String studentNo, String status) {
+        return listStudentAnswers(examId, studentNo, status);
+    }
+
     public List<Map<String, Object>> studentHistory(String studentNo, String subject) {
         if (studentNo == null || studentNo.isBlank()) {
             throw new IllegalArgumentException("学生学号不能为空");
@@ -129,6 +144,10 @@ public class ScoreService {
         Map<String, Object> answer = scoreMapper.findAnswerById(request.getAnswerId());
         if (answer == null) {
             throw new IllegalArgumentException("答卷不存在");
+        }
+        Double maxScore = toNullableDouble(answer.get("question_score"));
+        if (maxScore != null && request.getScore() > maxScore) {
+            throw new IllegalArgumentException("评分不能超过本题满分：" + maxScore);
         }
 
         scoreMapper.updateReviewScore(request.getAnswerId(), request.getScore(), request.getComment());
@@ -224,7 +243,7 @@ public class ScoreService {
     }
 
     private boolean isObjective(String type) {
-        return "单选题".equals(type) || "多选题".equals(type) || "填空题".equals(type);
+        return "单选题".equals(type) || "多选题".equals(type) || "判断题".equals(type) || "填空题".equals(type);
     }
 
     private boolean sameAnswer(String left, String right) {
@@ -266,5 +285,19 @@ public class ScoreService {
             return number.doubleValue();
         }
         return Double.parseDouble(String.valueOf(value));
+    }
+
+    private Double toNullableDouble(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof BigDecimal decimal) {
+            return decimal.doubleValue();
+        }
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() ? null : Double.parseDouble(text);
     }
 }

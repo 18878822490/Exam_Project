@@ -1,0 +1,517 @@
+{
+    "classes": [
+        {
+            "classInfos": [
+                {
+                    "name": "DefaultProperty",
+                    "value": "declarativeChildren"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "LineSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeLineSeries",
+            "interfaces": [
+                [
+                    {
+                        "className": "QQmlParserStatus",
+                        "id": "\"org.qt-project.Qt.QQmlParserStatus\""
+                    }
+                ]
+            ],
+            "lineNumber": 27,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "x",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "y",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 11,
+                    "name": "append",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "oldX",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "oldY",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "newX",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "newY",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 12,
+                    "name": "replace",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "newX",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "newY",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 13,
+                    "name": "replace",
+                    "returnType": "void",
+                    "revision": 259
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "x",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "y",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 14,
+                    "name": "remove",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 15,
+                    "name": "remove",
+                    "returnType": "void",
+                    "revision": 259
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "count",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 16,
+                    "name": "removePoints",
+                    "returnType": "void",
+                    "revision": 513
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "x",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "y",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 17,
+                    "name": "insert",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 18,
+                    "name": "clear",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 19,
+                    "name": "at",
+                    "returnType": "QPointF"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "count",
+                    "notify": "countChanged",
+                    "read": "count",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "axisX",
+                    "notify": "axisXChanged",
+                    "read": "axisX",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisX"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "axisY",
+                    "notify": "axisYChanged",
+                    "read": "axisY",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisY"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "axisXTop",
+                    "notify": "axisXTopChanged",
+                    "read": "axisXTop",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisXTop"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "axisYRight",
+                    "notify": "axisYRightChanged",
+                    "read": "axisYRight",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisYRight"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "axisAngular",
+                    "notify": "axisAngularChanged",
+                    "read": "axisAngular",
+                    "required": false,
+                    "revision": 259,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisAngular"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 6,
+                    "name": "axisRadial",
+                    "notify": "axisRadialChanged",
+                    "read": "axisRadial",
+                    "required": false,
+                    "revision": 259,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisRadial"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 7,
+                    "name": "width",
+                    "notify": "widthChanged",
+                    "read": "width",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setWidth"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 8,
+                    "name": "style",
+                    "notify": "styleChanged",
+                    "read": "style",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "Qt::PenStyle",
+                    "user": false,
+                    "write": "setStyle"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 9,
+                    "name": "capStyle",
+                    "notify": "capStyleChanged",
+                    "read": "capStyle",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "Qt::PenCapStyle",
+                    "user": false,
+                    "write": "setCapStyle"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 10,
+                    "name": "declarativeChildren",
+                    "read": "declarativeChildren",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QQmlListProperty<QObject>",
+                    "user": false
+                }
+            ],
+            "qualifiedClassName": "DeclarativeLineSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "count",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "countChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "axisXChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "axisYChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "axisXTopChanged",
+                    "returnType": "void",
+                    "revision": 258
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "axisYRightChanged",
+                    "returnType": "void",
+                    "revision": 258
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "axisAngularChanged",
+                    "returnType": "void",
+                    "revision": 259
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "axisRadialChanged",
+                    "returnType": "void",
+                    "revision": 259
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "width",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "widthChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "style",
+                            "type": "Qt::PenStyle"
+                        }
+                    ],
+                    "index": 8,
+                    "name": "styleChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "capStyle",
+                            "type": "Qt::PenCapStyle"
+                        }
+                    ],
+                    "index": 9,
+                    "name": "capStyleChanged",
+                    "returnType": "void",
+                    "revision": 257
+                }
+            ],
+            "slots": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 10,
+                    "name": "handleCountChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QLineSeries"
+                },
+                {
+                    "access": "public",
+                    "name": "DeclarativeXySeries"
+                },
+                {
+                    "access": "public",
+                    "name": "QQmlParserStatus"
+                }
+            ]
+        }
+    ],
+    "inputFile": "declarativelineseries_p.h",
+    "outputRevision": 68
+}

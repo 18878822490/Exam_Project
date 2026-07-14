@@ -1,0 +1,26 @@
+{
+    "classes": [
+        {
+            "className": "QAbstractSeriesPrivate",
+            "lineNumber": 41,
+            "object": true,
+            "qualifiedClassName": "QAbstractSeriesPrivate",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "countChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qabstractseries_p.h",
+    "outputRevision": 68
+}

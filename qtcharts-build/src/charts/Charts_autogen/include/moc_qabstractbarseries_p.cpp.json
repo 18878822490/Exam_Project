@@ -1,0 +1,222 @@
+{
+    "classes": [
+        {
+            "className": "QAbstractBarSeriesPrivate",
+            "lineNumber": 28,
+            "object": true,
+            "qualifiedClassName": "QAbstractBarSeriesPrivate",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "clicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "pressed",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "released",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "doubleClicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 4,
+                    "name": "updatedBars",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 5,
+                    "name": "updatedLayout",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 6,
+                    "name": "restructuredBars",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "visible",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "labelsVisibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "visibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 9,
+                    "name": "setValueChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "count",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 10,
+                    "name": "setValueAdded",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "count",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 11,
+                    "name": "setValueRemoved",
+                    "returnType": "void"
+                }
+            ],
+            "slots": [
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 12,
+                    "name": "handleSetValueChange",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "count",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 13,
+                    "name": "handleSetValueAdd",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "count",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 14,
+                    "name": "handleSetValueRemove",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractSeriesPrivate"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qabstractbarseries_p.h",
+    "outputRevision": 68
+}

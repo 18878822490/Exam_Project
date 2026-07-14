@@ -1,0 +1,16 @@
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/../EWIEGA46WW/moc_declarativeforeigntypes_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/../EWIEGA46WW/moc_declarativeopenglrendernode_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativeareaseries_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativeaxes_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativebarseries_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativeboxplotseries_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativecandlestickseries_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativecategoryaxis_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativechart_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativelineseries_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativemargins_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativepieseries_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativepolarchart_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativescatterseries_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativesplineseries_p.cpp.json
+D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include/moc_declarativexypoint_p.cpp.json

@@ -1,0 +1,92 @@
+{
+    "classes": [
+        {
+            "className": "ChartValueAxisX",
+            "lineNumber": 23,
+            "object": true,
+            "qualifiedClassName": "ChartValueAxisX",
+            "slots": [
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "tick",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "handleTickCountChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "tick",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "handleMinorTickCountChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "format",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "handleLabelFormatChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "interval",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "handleTickIntervalChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "anchor",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "handleTickAnchorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "type",
+                            "type": "QValueAxis::TickType"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "handleTickTypeChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "HorizontalAxis"
+                }
+            ]
+        }
+    ],
+    "inputFile": "chartvalueaxisx_p.h",
+    "outputRevision": 68
+}

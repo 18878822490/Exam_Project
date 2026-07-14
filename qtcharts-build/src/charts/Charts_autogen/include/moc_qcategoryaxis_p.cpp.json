@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "QCategoryAxisPrivate",
+            "lineNumber": 27,
+            "object": true,
+            "qualifiedClassName": "QCategoryAxisPrivate",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QValueAxisPrivate"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qcategoryaxis_p.h",
+    "outputRevision": 68
+}

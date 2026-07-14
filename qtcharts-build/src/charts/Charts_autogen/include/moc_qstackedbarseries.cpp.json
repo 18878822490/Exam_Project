@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "QStackedBarSeries",
+            "lineNumber": 14,
+            "object": true,
+            "qualifiedClassName": "QStackedBarSeries",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractBarSeries"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qstackedbarseries.h",
+    "outputRevision": 68
+}

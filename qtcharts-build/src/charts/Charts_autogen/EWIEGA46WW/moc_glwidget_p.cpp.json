@@ -1,0 +1,42 @@
+{
+    "classes": [
+        {
+            "className": "GLWidget",
+            "lineNumber": 36,
+            "object": true,
+            "qualifiedClassName": "GLWidget",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "cleanup",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "series",
+                            "type": "const QXYSeries*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "cleanXYSeriesResources",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QOpenGLWidget"
+                },
+                {
+                    "access": "protected",
+                    "name": "QOpenGLFunctions"
+                }
+            ]
+        }
+    ],
+    "inputFile": "glwidget_p.h",
+    "outputRevision": 68
+}

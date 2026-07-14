@@ -1,0 +1,306 @@
+{
+    "classes": [
+        {
+            "className": "QAbstractBarSeries",
+            "enums": [
+                {
+                    "isClass": false,
+                    "isFlag": false,
+                    "name": "LabelsPosition",
+                    "values": [
+                        "LabelsCenter",
+                        "LabelsInsideEnd",
+                        "LabelsInsideBase",
+                        "LabelsOutsideEnd"
+                    ]
+                }
+            ],
+            "lineNumber": 16,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "barWidth",
+                    "read": "barWidth",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setBarWidth"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "count",
+                    "notify": "countChanged",
+                    "read": "count",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "labelsVisible",
+                    "notify": "labelsVisibleChanged",
+                    "read": "isLabelsVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setLabelsVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "labelsFormat",
+                    "notify": "labelsFormatChanged",
+                    "read": "labelsFormat",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setLabelsFormat"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "labelsPosition",
+                    "notify": "labelsPositionChanged",
+                    "read": "labelsPosition",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "LabelsPosition",
+                    "user": false,
+                    "write": "setLabelsPosition"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "labelsAngle",
+                    "notify": "labelsAngleChanged",
+                    "read": "labelsAngle",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setLabelsAngle"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 6,
+                    "name": "labelsPrecision",
+                    "notify": "labelsPrecisionChanged",
+                    "read": "labelsPrecision",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setLabelsPrecision"
+                }
+            ],
+            "qualifiedClassName": "QAbstractBarSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "clicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "status",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "hovered",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "pressed",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "released",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "doubleClicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 5,
+                    "name": "countChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 6,
+                    "name": "labelsVisibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "format",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "labelsFormatChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "position",
+                            "type": "QAbstractBarSeries::LabelsPosition"
+                        }
+                    ],
+                    "index": 8,
+                    "name": "labelsPositionChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "angle",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 9,
+                    "name": "labelsAngleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "precision",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 10,
+                    "name": "labelsPrecisionChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "sets",
+                            "type": "QList<QBarSet*>"
+                        }
+                    ],
+                    "index": 11,
+                    "name": "barsetsAdded",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "sets",
+                            "type": "QList<QBarSet*>"
+                        }
+                    ],
+                    "index": 12,
+                    "name": "barsetsRemoved",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractSeries"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qabstractbarseries.h",
+    "outputRevision": 68
+}

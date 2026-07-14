@@ -73,9 +73,11 @@ public class ExamController {
     @PostMapping("/{id}/copy")
     public ApiResponse<Exam> copy(@PathVariable Long id,
                                   @RequestParam(required = false) String title,
-                                  @RequestParam(required = false) Long createdBy) {
+                                  @RequestParam(required = false) Long createdBy,
+                                  @RequestParam(required = false) java.time.LocalDateTime startTime,
+                                  @RequestParam(required = false) java.time.LocalDateTime endTime) {
         try {
-            return ApiResponse.success("复制成功", examService.copyExam(id, title, createdBy));
+            return ApiResponse.success("复制成功", examService.copyExam(id, title, createdBy, startTime, endTime));
         } catch (IllegalArgumentException exception) {
             return ApiResponse.fail(exception.getMessage());
         }
@@ -92,8 +94,9 @@ public class ExamController {
     }
 
     @GetMapping("/published")
-    public ApiResponse<List<Map<String, Object>>> published(@RequestParam(required = false) String className) {
-        return ApiResponse.success("查询成功", examService.listPublished(className));
+    public ApiResponse<List<Map<String, Object>>> published(@RequestParam(required = false) String className,
+                                                            @RequestParam(required = false) String studentNo) {
+        return ApiResponse.success("查询成功", examService.listPublished(className, studentNo));
     }
 
     @GetMapping("/dashboard")

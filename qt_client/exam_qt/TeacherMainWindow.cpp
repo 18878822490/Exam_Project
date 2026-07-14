@@ -2,7 +2,10 @@
 
 #include "AppConfig.h"
 #include "LoginWindow.h"
+#include "ScorePrintWindow.h"
 #include "TeacherDataRepository.h"
+#include "TeacherMarkWindow.h"
+#include "TeacherScoreAnalysisWindow.h"
 
 #include <QQmlContext>
 #include <QQuickWidget>
@@ -28,8 +31,10 @@
 #include <QPainter>
 #include <QPrintDialog>
 #include <QPrinter>
+#include <QQuickItem>
 #include <QScreen>
 #include <QQmlError>
+#include <QStackedWidget>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QUrl>
@@ -182,6 +187,10 @@ TeacherMainWindow::TeacherMainWindow(qint64 teacherId,
                                      QWidget *parent)
     : QMainWindow(parent)
     , view(new QQuickWidget(this))
+    , centralStack(new QStackedWidget(this))
+    , markWorkbench(new TeacherMarkWindow(this))
+    , scorePrintWorkbench(new ScorePrintWindow(this))
+    , scoreAnalysisWorkbench(new TeacherScoreAnalysisWindow(this))
     , repository(new TeacherDataRepository(teacherId, this))
     , teacherId(teacherId)
     , fallbackTeacherName(teacherName)
@@ -205,6 +214,9 @@ TeacherMainWindow::TeacherMainWindow(qint64 teacherId,
                                      ? QStringLiteral("无法连接数据库。")
                                      : repository->lastError());
     }
+    markWorkbench->setRepository(repository);
+    scorePrintWorkbench->setRepository(repository);
+    scoreAnalysisWorkbench->setRepository(repository);
 
     view->setResizeMode(QQuickWidget::SizeRootObjectToView);
     view->setClearColor(QColor(QStringLiteral("#eef3fb")));
@@ -227,7 +239,34 @@ TeacherMainWindow::TeacherMainWindow(qint64 teacherId,
                                       : messages.join(QLatin1Char('\n')));
     });
     view->setSource(QUrl(QStringLiteral("qrc:/qml/TeacherMain.qml")));
-    setCentralWidget(view);
+    centralStack->addWidget(view);
+    centralStack->addWidget(markWorkbench);
+    centralStack->addWidget(scoreAnalysisWorkbench);
+    centralStack->addWidget(scorePrintWorkbench);
+    centralStack->setCurrentWidget(view);
+    setCentralWidget(centralStack);
+
+    connect(markWorkbench, &TeacherMarkWindow::backRequested, this, [this]() {
+        centralStack->setCurrentWidget(view);
+    });
+    connect(markWorkbench, &TeacherMarkWindow::pageRequested, this, &TeacherMainWindow::openTeacherPage);
+    connect(markWorkbench, &TeacherMarkWindow::minimizeRequested, this, &TeacherMainWindow::minimizeWindow);
+    connect(markWorkbench, &TeacherMarkWindow::maximizeRequested, this, &TeacherMainWindow::toggleMaximizeWindow);
+    connect(markWorkbench, &TeacherMarkWindow::closeRequested, this, &TeacherMainWindow::closeWindow);
+    connect(scoreAnalysisWorkbench, &TeacherScoreAnalysisWindow::backRequested, this, [this]() {
+        centralStack->setCurrentWidget(view);
+    });
+    connect(scoreAnalysisWorkbench, &TeacherScoreAnalysisWindow::pageRequested, this, &TeacherMainWindow::openTeacherPage);
+    connect(scoreAnalysisWorkbench, &TeacherScoreAnalysisWindow::printReportRequested, this, &TeacherMainWindow::openScorePrintWorkbench);
+    connect(scoreAnalysisWorkbench, &TeacherScoreAnalysisWindow::minimizeRequested, this, &TeacherMainWindow::minimizeWindow);
+    connect(scoreAnalysisWorkbench, &TeacherScoreAnalysisWindow::maximizeRequested, this, &TeacherMainWindow::toggleMaximizeWindow);
+    connect(scoreAnalysisWorkbench, &TeacherScoreAnalysisWindow::closeRequested, this, &TeacherMainWindow::closeWindow);
+    connect(scorePrintWorkbench, &ScorePrintWindow::backRequested, this, [this]() {
+        centralStack->setCurrentWidget(scoreAnalysisWorkbench);
+    });
+    connect(scorePrintWorkbench, &ScorePrintWindow::minimizeRequested, this, &TeacherMainWindow::minimizeWindow);
+    connect(scorePrintWorkbench, &ScorePrintWindow::maximizeRequested, this, &TeacherMainWindow::toggleMaximizeWindow);
+    connect(scorePrintWorkbench, &ScorePrintWindow::closeRequested, this, &TeacherMainWindow::closeWindow);
 }
 
 QVariantMap TeacherMainWindow::getTeacherProfile() const
@@ -266,6 +305,15 @@ QVariantList TeacherMainWindow::getQuestions() const
 QVariantList TeacherMainWindow::searchQuestions(const QString &keyword, const QString &type, const QString &difficulty) const
 {
     return repository->searchQuestions(keyword, type, difficulty);
+}
+
+QVariantList TeacherMainWindow::searchQuestionsAdvanced(const QString &keyword,
+                                                        const QString &subject,
+                                                        const QString &type,
+                                                        const QString &difficulty,
+                                                        const QString &knowledgePoint) const
+{
+    return repository->searchQuestionsAdvanced(keyword, subject, type, difficulty, knowledgePoint);
 }
 
 QVariantList TeacherMainWindow::getImportLogs() const
@@ -529,11 +577,29 @@ int TeacherMainWindow::createDraftPaper(const QString &name,
     return repository->createDraftPaper(name, subject, parseDateTime(startTime), parseDateTime(endTime), counts);
 }
 
+int TeacherMainWindow::createDraftPaperFromQuestions(const QString &name,
+                                                     const QString &subject,
+                                                     const QString &startTime,
+                                                     const QString &endTime,
+                                                     const QVariantList &questions)
+{
+    return repository->createDraftPaperFromQuestions(name,
+                                                     subject,
+                                                     parseDateTime(startTime),
+                                                     parseDateTime(endTime),
+                                                     questions);
+}
+
 int TeacherMainWindow::copyExamAsDraft(const QString &examName,
                                        const QString &startTime,
                                        const QString &endTime)
 {
     return repository->copyExamAsDraft(examName, parseDateTime(startTime), parseDateTime(endTime));
+}
+
+int TeacherMainWindow::copyExamAsDraftById(int examId, const QString &copyTitle)
+{
+    return repository->copyExamAsDraftById(examId, copyTitle);
 }
 
 bool TeacherMainWindow::publishExam(int paperId,
@@ -591,6 +657,49 @@ void TeacherMainWindow::logout()
     login->raise();
     login->activateWindow();
     close();
+}
+
+void TeacherMainWindow::openMarkWorkbench()
+{
+    markWorkbench->loadExam();
+    markWorkbench->loadStudents();
+    centralStack->setCurrentWidget(markWorkbench);
+    markWorkbench->playEnterAnimation();
+    markWorkbench->setFocus();
+}
+
+void TeacherMainWindow::openScoreAnalysisWorkbench()
+{
+    scoreAnalysisWorkbench->loadInitialData();
+    centralStack->setCurrentWidget(scoreAnalysisWorkbench);
+    scoreAnalysisWorkbench->playEnterAnimation();
+    scoreAnalysisWorkbench->setFocus();
+}
+
+void TeacherMainWindow::openScorePrintWorkbench()
+{
+    scorePrintWorkbench->loadInitialData();
+    centralStack->setCurrentWidget(scorePrintWorkbench);
+    scorePrintWorkbench->playEnterAnimation();
+    scorePrintWorkbench->setFocus();
+}
+
+void TeacherMainWindow::openTeacherPage(int page)
+{
+    if (page == 3) {
+        openMarkWorkbench();
+        return;
+    }
+    if (page == 4) {
+        openScoreAnalysisWorkbench();
+        return;
+    }
+
+    centralStack->setCurrentWidget(view);
+    if (QQuickItem *root = view->rootObject()) {
+        QMetaObject::invokeMethod(root, "switchPage", Q_ARG(QVariant, QVariant(page)));
+    }
+    view->setFocus();
 }
 
 void TeacherMainWindow::startWindowMove()

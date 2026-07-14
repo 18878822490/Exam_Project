@@ -1,0 +1,1687 @@
+{
+    "classes": [
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "BarSet"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeBarSet",
+            "lineNumber": 34,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "value",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "append",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "count",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "remove",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 7,
+                    "isCloned": true,
+                    "name": "remove",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "value",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 8,
+                    "name": "replace",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 9,
+                    "name": "at",
+                    "returnType": "qreal"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "values",
+                    "read": "values",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QVariantList",
+                    "user": false,
+                    "write": "setValues"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "borderWidth",
+                    "notify": "borderWidthChanged",
+                    "read": "borderWidth",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setBorderWidth"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "count",
+                    "notify": "countChanged",
+                    "read": "count",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "brushFilename",
+                    "notify": "brushFilenameChanged",
+                    "read": "brushFilename",
+                    "required": false,
+                    "revision": 260,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setBrushFilename"
+                }
+            ],
+            "qualifiedClassName": "DeclarativeBarSet",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "count",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "countChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "width",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "borderWidthChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "brushFilename",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "brushFilenameChanged",
+                    "returnType": "void",
+                    "revision": 260
+                }
+            ],
+            "slots": [
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "count",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "handleCountChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "index": 4,
+                    "name": "handleBrushChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QBarSet"
+                }
+            ]
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "DefaultProperty",
+                    "value": "seriesChildren"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "BarSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeBarSeries",
+            "interfaces": [
+                [
+                    {
+                        "className": "QQmlParserStatus",
+                        "id": "\"org.qt-project.Qt.QQmlParserStatus\""
+                    }
+                ]
+            ],
+            "lineNumber": 74,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "at",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "append",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "insert",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "remove",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "clear",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "axisX",
+                    "notify": "axisXChanged",
+                    "read": "axisX",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisX"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "axisY",
+                    "notify": "axisYChanged",
+                    "read": "axisY",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisY"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "axisXTop",
+                    "notify": "axisXTopChanged",
+                    "read": "axisXTop",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisXTop"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "axisYRight",
+                    "notify": "axisYRightChanged",
+                    "read": "axisYRight",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisYRight"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "seriesChildren",
+                    "read": "seriesChildren",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QQmlListProperty<QObject>",
+                    "user": false
+                }
+            ],
+            "qualifiedClassName": "DeclarativeBarSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "axisXChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "axisYChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "axisXTopChanged",
+                    "returnType": "void",
+                    "revision": 258
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "axisYRightChanged",
+                    "returnType": "void",
+                    "revision": 258
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QBarSeries"
+                },
+                {
+                    "access": "public",
+                    "name": "QQmlParserStatus"
+                }
+            ]
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "DefaultProperty",
+                    "value": "seriesChildren"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "StackedBarSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeStackedBarSeries",
+            "interfaces": [
+                [
+                    {
+                        "className": "QQmlParserStatus",
+                        "id": "\"org.qt-project.Qt.QQmlParserStatus\""
+                    }
+                ]
+            ],
+            "lineNumber": 125,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "at",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "append",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "insert",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "remove",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "clear",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "axisX",
+                    "notify": "axisXChanged",
+                    "read": "axisX",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisX"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "axisY",
+                    "notify": "axisYChanged",
+                    "read": "axisY",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisY"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "axisXTop",
+                    "notify": "axisXTopChanged",
+                    "read": "axisXTop",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisXTop"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "axisYRight",
+                    "notify": "axisYRightChanged",
+                    "read": "axisYRight",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisYRight"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "seriesChildren",
+                    "read": "seriesChildren",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QQmlListProperty<QObject>",
+                    "user": false
+                }
+            ],
+            "qualifiedClassName": "DeclarativeStackedBarSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "axisXChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "axisYChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "axisXTopChanged",
+                    "returnType": "void",
+                    "revision": 258
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "axisYRightChanged",
+                    "returnType": "void",
+                    "revision": 258
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QStackedBarSeries"
+                },
+                {
+                    "access": "public",
+                    "name": "QQmlParserStatus"
+                }
+            ]
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "DefaultProperty",
+                    "value": "seriesChildren"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "PercentBarSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativePercentBarSeries",
+            "interfaces": [
+                [
+                    {
+                        "className": "QQmlParserStatus",
+                        "id": "\"org.qt-project.Qt.QQmlParserStatus\""
+                    }
+                ]
+            ],
+            "lineNumber": 175,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "at",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "append",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "insert",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "remove",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "clear",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "axisX",
+                    "notify": "axisXChanged",
+                    "read": "axisX",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisX"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "axisY",
+                    "notify": "axisYChanged",
+                    "read": "axisY",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisY"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "axisXTop",
+                    "notify": "axisXTopChanged",
+                    "read": "axisXTop",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisXTop"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "axisYRight",
+                    "notify": "axisYRightChanged",
+                    "read": "axisYRight",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisYRight"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "seriesChildren",
+                    "read": "seriesChildren",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QQmlListProperty<QObject>",
+                    "user": false
+                }
+            ],
+            "qualifiedClassName": "DeclarativePercentBarSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "axisXChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "axisYChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "axisXTopChanged",
+                    "returnType": "void",
+                    "revision": 258
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "axisYRightChanged",
+                    "returnType": "void",
+                    "revision": 258
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QPercentBarSeries"
+                },
+                {
+                    "access": "public",
+                    "name": "QQmlParserStatus"
+                }
+            ]
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "DefaultProperty",
+                    "value": "seriesChildren"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "HorizontalBarSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeHorizontalBarSeries",
+            "interfaces": [
+                [
+                    {
+                        "className": "QQmlParserStatus",
+                        "id": "\"org.qt-project.Qt.QQmlParserStatus\""
+                    }
+                ]
+            ],
+            "lineNumber": 225,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "at",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "append",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "insert",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "remove",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "clear",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "axisX",
+                    "notify": "axisXChanged",
+                    "read": "axisX",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisX"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "axisY",
+                    "notify": "axisYChanged",
+                    "read": "axisY",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisY"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "axisXTop",
+                    "notify": "axisXTopChanged",
+                    "read": "axisXTop",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisXTop"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "axisYRight",
+                    "notify": "axisYRightChanged",
+                    "read": "axisYRight",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisYRight"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "seriesChildren",
+                    "read": "seriesChildren",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QQmlListProperty<QObject>",
+                    "user": false
+                }
+            ],
+            "qualifiedClassName": "DeclarativeHorizontalBarSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "axisXChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "axisYChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "axisXTopChanged",
+                    "returnType": "void",
+                    "revision": 258
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "axisYRightChanged",
+                    "returnType": "void",
+                    "revision": 258
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QHorizontalBarSeries"
+                },
+                {
+                    "access": "public",
+                    "name": "QQmlParserStatus"
+                }
+            ]
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "DefaultProperty",
+                    "value": "seriesChildren"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "HorizontalStackedBarSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeHorizontalStackedBarSeries",
+            "interfaces": [
+                [
+                    {
+                        "className": "QQmlParserStatus",
+                        "id": "\"org.qt-project.Qt.QQmlParserStatus\""
+                    }
+                ]
+            ],
+            "lineNumber": 275,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "at",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "append",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "insert",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "remove",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "clear",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "axisX",
+                    "notify": "axisXChanged",
+                    "read": "axisX",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisX"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "axisY",
+                    "notify": "axisYChanged",
+                    "read": "axisY",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisY"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "axisXTop",
+                    "notify": "axisXTopChanged",
+                    "read": "axisXTop",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisXTop"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "axisYRight",
+                    "notify": "axisYRightChanged",
+                    "read": "axisYRight",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisYRight"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "seriesChildren",
+                    "read": "seriesChildren",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QQmlListProperty<QObject>",
+                    "user": false
+                }
+            ],
+            "qualifiedClassName": "DeclarativeHorizontalStackedBarSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "axisXChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "axisYChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "axisXTopChanged",
+                    "returnType": "void",
+                    "revision": 258
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "axisYRightChanged",
+                    "returnType": "void",
+                    "revision": 258
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QHorizontalStackedBarSeries"
+                },
+                {
+                    "access": "public",
+                    "name": "QQmlParserStatus"
+                }
+            ]
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "DefaultProperty",
+                    "value": "seriesChildren"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "HorizontalPercentBarSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeHorizontalPercentBarSeries",
+            "interfaces": [
+                [
+                    {
+                        "className": "QQmlParserStatus",
+                        "id": "\"org.qt-project.Qt.QQmlParserStatus\""
+                    }
+                ]
+            ],
+            "lineNumber": 325,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "at",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "append",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "values",
+                            "type": "QVariantList"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "insert",
+                    "returnType": "DeclarativeBarSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "barset",
+                            "type": "QBarSet*"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "remove",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "clear",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "axisX",
+                    "notify": "axisXChanged",
+                    "read": "axisX",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisX"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "axisY",
+                    "notify": "axisYChanged",
+                    "read": "axisY",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisY"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "axisXTop",
+                    "notify": "axisXTopChanged",
+                    "read": "axisXTop",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisXTop"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "axisYRight",
+                    "notify": "axisYRightChanged",
+                    "read": "axisYRight",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisYRight"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "seriesChildren",
+                    "read": "seriesChildren",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QQmlListProperty<QObject>",
+                    "user": false
+                }
+            ],
+            "qualifiedClassName": "DeclarativeHorizontalPercentBarSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "axisXChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "axisYChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "axisXTopChanged",
+                    "returnType": "void",
+                    "revision": 258
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "axisYRightChanged",
+                    "returnType": "void",
+                    "revision": 258
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QHorizontalPercentBarSeries"
+                },
+                {
+                    "access": "public",
+                    "name": "QQmlParserStatus"
+                }
+            ]
+        }
+    ],
+    "inputFile": "declarativebarseries_p.h",
+    "outputRevision": 68
+}

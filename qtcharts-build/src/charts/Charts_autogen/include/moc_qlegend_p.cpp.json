@@ -1,0 +1,56 @@
+{
+    "classes": [
+        {
+            "className": "QLegendPrivate",
+            "lineNumber": 30,
+            "object": true,
+            "qualifiedClassName": "QLegendPrivate",
+            "slots": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "series",
+                            "type": "QAbstractSeries*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "handleSeriesAdded",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "series",
+                            "type": "QAbstractSeries*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "handleSeriesRemoved",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 2,
+                    "name": "handleSeriesVisibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 3,
+                    "name": "handleCountChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qlegend_p.h",
+    "outputRevision": 68
+}

@@ -1,0 +1,44 @@
+{
+    "classes": [
+        {
+            "className": "LogXLogYPolarDomain",
+            "lineNumber": 22,
+            "object": true,
+            "qualifiedClassName": "LogXLogYPolarDomain",
+            "slots": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "baseY",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "handleVerticalAxisBaseChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "baseX",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "handleHorizontalAxisBaseChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "PolarDomain"
+                }
+            ]
+        }
+    ],
+    "inputFile": "logxlogypolardomain_p.h",
+    "outputRevision": 68
+}

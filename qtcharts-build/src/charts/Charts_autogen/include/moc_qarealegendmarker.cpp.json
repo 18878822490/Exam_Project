@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "QAreaLegendMarker",
+            "lineNumber": 17,
+            "object": true,
+            "qualifiedClassName": "QAreaLegendMarker",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QLegendMarker"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qarealegendmarker.h",
+    "outputRevision": 68
+}

@@ -1,0 +1,44 @@
+{
+    "classes": [
+        {
+            "className": "PolarChartLogValueAxisRadial",
+            "lineNumber": 23,
+            "object": true,
+            "qualifiedClassName": "PolarChartLogValueAxisRadial",
+            "slots": [
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "base",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "handleBaseChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "format",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "handleLabelFormatChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "PolarChartAxisRadial"
+                }
+            ]
+        }
+    ],
+    "inputFile": "polarchartlogvalueaxisradial_p.h",
+    "outputRevision": 68
+}

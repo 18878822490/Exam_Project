@@ -1,0 +1,44 @@
+{
+    "classes": [
+        {
+            "className": "ChartLogValueAxisX",
+            "lineNumber": 23,
+            "object": true,
+            "qualifiedClassName": "ChartLogValueAxisX",
+            "slots": [
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "base",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "handleBaseChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "format",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "handleLabelFormatChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "HorizontalAxis"
+                }
+            ]
+        }
+    ],
+    "inputFile": "chartlogvalueaxisx_p.h",
+    "outputRevision": 68
+}

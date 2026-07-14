@@ -1,0 +1,56 @@
+{
+    "classes": [
+        {
+            "className": "PolarChartValueAxisAngular",
+            "lineNumber": 24,
+            "object": true,
+            "qualifiedClassName": "PolarChartValueAxisAngular",
+            "slots": [
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "tick",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "handleTickCountChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "tick",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "handleMinorTickCountChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "format",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "handleLabelFormatChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "PolarChartAxisAngular"
+                }
+            ]
+        }
+    ],
+    "inputFile": "polarchartvalueaxisangular_p.h",
+    "outputRevision": 68
+}

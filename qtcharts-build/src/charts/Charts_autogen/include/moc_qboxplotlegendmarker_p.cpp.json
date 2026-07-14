@@ -1,0 +1,26 @@
+{
+    "classes": [
+        {
+            "className": "QBoxPlotLegendMarkerPrivate",
+            "lineNumber": 26,
+            "object": true,
+            "qualifiedClassName": "QBoxPlotLegendMarkerPrivate",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "updated",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QLegendMarkerPrivate"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qboxplotlegendmarker_p.h",
+    "outputRevision": 68
+}

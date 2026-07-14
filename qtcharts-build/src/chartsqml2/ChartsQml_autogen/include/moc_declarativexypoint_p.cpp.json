@@ -1,0 +1,66 @@
+{
+    "classes": [
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "XYPoint"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeXYPoint",
+            "lineNumber": 24,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "x",
+                    "read": "x",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setX"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "y",
+                    "read": "y",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setY"
+                }
+            ],
+            "qualifiedClassName": "DeclarativeXYPoint",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                },
+                {
+                    "access": "public",
+                    "name": "QPointF"
+                }
+            ]
+        }
+    ],
+    "inputFile": "declarativexypoint_p.h",
+    "outputRevision": 68
+}

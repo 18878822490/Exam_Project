@@ -1,0 +1,26 @@
+{
+    "classes": [
+        {
+            "className": "ChartBarCategoryAxisX",
+            "lineNumber": 24,
+            "object": true,
+            "qualifiedClassName": "ChartBarCategoryAxisX",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "handleCategoriesChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "HorizontalAxis"
+                }
+            ]
+        }
+    ],
+    "inputFile": "chartbarcategoryaxisx_p.h",
+    "outputRevision": 68
+}

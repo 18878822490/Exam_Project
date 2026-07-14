@@ -1,0 +1,202 @@
+{
+    "classes": [
+        {
+            "className": "QLegendMarker",
+            "enums": [
+                {
+                    "isClass": false,
+                    "isFlag": false,
+                    "name": "LegendMarkerType",
+                    "values": [
+                        "LegendMarkerTypeArea",
+                        "LegendMarkerTypeBar",
+                        "LegendMarkerTypePie",
+                        "LegendMarkerTypeXY",
+                        "LegendMarkerTypeBoxPlot",
+                        "LegendMarkerTypeCandlestick"
+                    ]
+                }
+            ],
+            "lineNumber": 20,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "label",
+                    "notify": "labelChanged",
+                    "read": "label",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setLabel"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "labelBrush",
+                    "notify": "labelBrushChanged",
+                    "read": "labelBrush",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QBrush",
+                    "user": false,
+                    "write": "setLabelBrush"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "font",
+                    "notify": "fontChanged",
+                    "read": "font",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QFont",
+                    "user": false,
+                    "write": "setFont"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "pen",
+                    "notify": "penChanged",
+                    "read": "pen",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QPen",
+                    "user": false,
+                    "write": "setPen"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "brush",
+                    "notify": "brushChanged",
+                    "read": "brush",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QBrush",
+                    "user": false,
+                    "write": "setBrush"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "visible",
+                    "notify": "visibleChanged",
+                    "read": "isVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 6,
+                    "name": "shape",
+                    "notify": "shapeChanged",
+                    "read": "shape",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QLegend::MarkerShape",
+                    "user": false,
+                    "write": "setShape"
+                }
+            ],
+            "qualifiedClassName": "QLegendMarker",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "clicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "status",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "hovered",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 2,
+                    "name": "labelChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 3,
+                    "name": "labelBrushChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 4,
+                    "name": "fontChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 5,
+                    "name": "penChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 6,
+                    "name": "brushChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 7,
+                    "name": "visibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "shapeChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qlegendmarker.h",
+    "outputRevision": 68
+}

@@ -1,0 +1,6 @@
+RCC_OBJECTS = 
+QMAKE_PRL_TARGET = libQt6ChartsQml.a
+QMAKE_PRL_TARGET_PATH_FOR_CMAKE = D:/Exam_Project/qtcharts-build/lib/libQt6ChartsQml.a
+QMAKE_PRL_CONFIG = shared
+QMAKE_PRL_VERSION = 6.8.3
+

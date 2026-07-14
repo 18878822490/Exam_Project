@@ -1,0 +1,32 @@
+{
+    "classes": [
+        {
+            "className": "ChartItem",
+            "lineNumber": 23,
+            "object": true,
+            "qualifiedClassName": "ChartItem",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "handleDomainUpdated",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 1,
+                    "name": "seriesPrivate",
+                    "returnType": "QAbstractSeriesPrivate*"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "ChartElement"
+                }
+            ]
+        }
+    ],
+    "inputFile": "chartitem_p.h",
+    "outputRevision": 68
+}

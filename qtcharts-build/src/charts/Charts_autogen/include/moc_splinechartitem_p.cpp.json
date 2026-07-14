@@ -1,0 +1,34 @@
+{
+    "classes": [
+        {
+            "className": "SplineChartItem",
+            "interfaces": [
+                [
+                    {
+                        "className": "QGraphicsItem",
+                        "id": "\"org.qt-project.Qt.QGraphicsItem\""
+                    }
+                ]
+            ],
+            "lineNumber": 24,
+            "object": true,
+            "qualifiedClassName": "SplineChartItem",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "handleSeriesUpdated",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "XYChart"
+                }
+            ]
+        }
+    ],
+    "inputFile": "splinechartitem_p.h",
+    "outputRevision": 68
+}

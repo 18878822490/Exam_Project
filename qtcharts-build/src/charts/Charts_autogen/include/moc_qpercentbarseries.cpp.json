@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "QPercentBarSeries",
+            "lineNumber": 14,
+            "object": true,
+            "qualifiedClassName": "QPercentBarSeries",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractBarSeries"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qpercentbarseries.h",
+    "outputRevision": 68
+}

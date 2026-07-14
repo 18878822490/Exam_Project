@@ -1,0 +1,146 @@
+{
+    "classes": [
+        {
+            "className": "QDateTimeAxis",
+            "lineNumber": 17,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "tickCount",
+                    "notify": "tickCountChanged",
+                    "read": "tickCount",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setTickCount"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "min",
+                    "notify": "minChanged",
+                    "read": "min",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QDateTime",
+                    "user": false,
+                    "write": "setMin"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "max",
+                    "notify": "maxChanged",
+                    "read": "max",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QDateTime",
+                    "user": false,
+                    "write": "setMax"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "format",
+                    "notify": "formatChanged",
+                    "read": "format",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setFormat"
+                }
+            ],
+            "qualifiedClassName": "QDateTimeAxis",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "min",
+                            "type": "QDateTime"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "minChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "max",
+                            "type": "QDateTime"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "maxChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "min",
+                            "type": "QDateTime"
+                        },
+                        {
+                            "name": "max",
+                            "type": "QDateTime"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "rangeChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "format",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "formatChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "tick",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "tickCountChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractAxis"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qdatetimeaxis.h",
+    "outputRevision": 68
+}

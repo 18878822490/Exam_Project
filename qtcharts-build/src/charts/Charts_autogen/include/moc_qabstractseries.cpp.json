@@ -1,0 +1,141 @@
+{
+    "classes": [
+        {
+            "className": "QAbstractSeries",
+            "enums": [
+                {
+                    "isClass": false,
+                    "isFlag": false,
+                    "name": "SeriesType",
+                    "values": [
+                        "SeriesTypeLine",
+                        "SeriesTypeArea",
+                        "SeriesTypeBar",
+                        "SeriesTypeStackedBar",
+                        "SeriesTypePercentBar",
+                        "SeriesTypePie",
+                        "SeriesTypeScatter",
+                        "SeriesTypeSpline",
+                        "SeriesTypeHorizontalBar",
+                        "SeriesTypeHorizontalStackedBar",
+                        "SeriesTypeHorizontalPercentBar",
+                        "SeriesTypeBoxPlot",
+                        "SeriesTypeCandlestick"
+                    ]
+                }
+            ],
+            "lineNumber": 17,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "name",
+                    "notify": "nameChanged",
+                    "read": "name",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setName"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "visible",
+                    "notify": "visibleChanged",
+                    "read": "isVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "opacity",
+                    "notify": "opacityChanged",
+                    "read": "opacity",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setOpacity"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "type",
+                    "read": "type",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "SeriesType",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "useOpenGL",
+                    "notify": "useOpenGLChanged",
+                    "read": "useOpenGL",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setUseOpenGL"
+                }
+            ],
+            "qualifiedClassName": "QAbstractSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "nameChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 1,
+                    "name": "visibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 2,
+                    "name": "opacityChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 3,
+                    "name": "useOpenGLChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qabstractseries.h",
+    "outputRevision": 68
+}

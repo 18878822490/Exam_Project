@@ -1,0 +1,13 @@
+{
+    "name": "Charts",
+    "repository": "qtcharts",
+    "version": "6.8.3",
+    "built_with": {
+        "compiler_id": "Clang",
+        "compiler_target": "",
+        "compiler_version": "17.0.6",
+        "cross_compiled": false,
+        "target_system": "Windows",
+        "architecture": "x86_64"
+    }
+}

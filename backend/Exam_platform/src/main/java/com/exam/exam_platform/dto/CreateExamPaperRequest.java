@@ -3,6 +3,7 @@ package com.exam.exam_platform.dto;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -16,4 +17,5 @@ public class CreateExamPaperRequest {
     private String difficulty;
     private String knowledgePoint;
     private Map<String, Integer> typeCounts;
+    private List<Long> questionIds;
 }

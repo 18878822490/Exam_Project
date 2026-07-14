@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "QPieLegendMarker",
+            "lineNumber": 16,
+            "object": true,
+            "qualifiedClassName": "QPieLegendMarker",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QLegendMarker"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qpielegendmarker.h",
+    "outputRevision": 68
+}

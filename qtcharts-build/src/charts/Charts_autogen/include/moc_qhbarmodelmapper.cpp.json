@@ -1,0 +1,148 @@
+{
+    "classes": [
+        {
+            "className": "QHBarModelMapper",
+            "lineNumber": 14,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "series",
+                    "notify": "seriesReplaced",
+                    "read": "series",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractBarSeries*",
+                    "user": false,
+                    "write": "setSeries"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "model",
+                    "notify": "modelReplaced",
+                    "read": "model",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractItemModel*",
+                    "user": false,
+                    "write": "setModel"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "firstBarSetRow",
+                    "notify": "firstBarSetRowChanged",
+                    "read": "firstBarSetRow",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setFirstBarSetRow"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "lastBarSetRow",
+                    "notify": "lastBarSetRowChanged",
+                    "read": "lastBarSetRow",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setLastBarSetRow"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "firstColumn",
+                    "notify": "firstColumnChanged",
+                    "read": "firstColumn",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setFirstColumn"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "columnCount",
+                    "notify": "columnCountChanged",
+                    "read": "columnCount",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setColumnCount"
+                }
+            ],
+            "qualifiedClassName": "QHBarModelMapper",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "seriesReplaced",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 1,
+                    "name": "modelReplaced",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 2,
+                    "name": "firstBarSetRowChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 3,
+                    "name": "lastBarSetRowChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 4,
+                    "name": "firstColumnChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 5,
+                    "name": "columnCountChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QBarModelMapper"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qhbarmodelmapper.h",
+    "outputRevision": 68
+}

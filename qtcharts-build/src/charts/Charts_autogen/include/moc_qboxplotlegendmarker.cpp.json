@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "QBoxPlotLegendMarker",
+            "lineNumber": 15,
+            "object": true,
+            "qualifiedClassName": "QBoxPlotLegendMarker",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QLegendMarker"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qboxplotlegendmarker.h",
+    "outputRevision": 68
+}

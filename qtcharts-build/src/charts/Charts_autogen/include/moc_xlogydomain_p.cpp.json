@@ -1,0 +1,32 @@
+{
+    "classes": [
+        {
+            "className": "XLogYDomain",
+            "lineNumber": 22,
+            "object": true,
+            "qualifiedClassName": "XLogYDomain",
+            "slots": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "baseY",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "handleVerticalAxisBaseChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "AbstractDomain"
+                }
+            ]
+        }
+    ],
+    "inputFile": "xlogydomain_p.h",
+    "outputRevision": 68
+}

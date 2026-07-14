@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "EditableAxisLabel",
+            "lineNumber": 24,
+            "object": true,
+            "qualifiedClassName": "EditableAxisLabel",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QGraphicsTextItem"
+                }
+            ]
+        }
+    ],
+    "inputFile": "editableaxislabel_p.h",
+    "outputRevision": 68
+}

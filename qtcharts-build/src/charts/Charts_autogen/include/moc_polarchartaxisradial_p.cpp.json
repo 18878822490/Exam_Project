@@ -1,0 +1,92 @@
+{
+    "classes": [
+        {
+            "className": "PolarChartAxisRadial",
+            "lineNumber": 22,
+            "object": true,
+            "qualifiedClassName": "PolarChartAxisRadial",
+            "slots": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QPen"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "handleArrowPenChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QPen"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "handleGridPenChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QPen"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "handleMinorArrowPenChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QPen"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "handleMinorGridPenChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "handleGridLineColorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "handleMinorGridLineColorChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "PolarChartAxis"
+                }
+            ]
+        }
+    ],
+    "inputFile": "polarchartaxisradial_p.h",
+    "outputRevision": 68
+}

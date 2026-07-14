@@ -1,4 +1,4 @@
-QT       += core gui network qml quick quickwidgets quickcontrols2 sql printsupport core-private
+QT       += core gui network qml quick quickwidgets quickcontrols2 sql printsupport charts core-private
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -49,6 +49,24 @@ SOURCES += \
     AppConfig.cpp \
     LoginWindow.cpp \
     AdminMainWindow.cpp \
+    ExamInfoCard.cpp \
+    StudentListWidget.cpp \
+    AnswerPreviewWidget.cpp \
+    ScorePanelWidget.cpp \
+    TeacherMarkWindow.cpp \
+    ScoreFilterWidget.cpp \
+    StatisticCardWidget.cpp \
+    TrendChartWidget.cpp \
+    DistributionChartWidget.cpp \
+    LevelPieChartWidget.cpp \
+    StudentRankWidget.cpp \
+    QuestionAnalysisWidget.cpp \
+    TeacherScoreAnalysisWindow.cpp \
+    PrintPreviewWidget.cpp \
+    ReportGenerator.cpp \
+    PdfExporter.cpp \
+    ExcelExporter.cpp \
+    ScorePrintWindow.cpp \
     TeacherMainWindow.cpp \
     TeacherDataRepository.cpp \
     StudentMainWindow.cpp
@@ -106,6 +124,24 @@ HEADERS += \
     AppConfig.h \
     LoginWindow.h \
     AdminMainWindow.h \
+    ExamInfoCard.h \
+    StudentListWidget.h \
+    AnswerPreviewWidget.h \
+    ScorePanelWidget.h \
+    TeacherMarkWindow.h \
+    ScoreFilterWidget.h \
+    StatisticCardWidget.h \
+    TrendChartWidget.h \
+    DistributionChartWidget.h \
+    LevelPieChartWidget.h \
+    StudentRankWidget.h \
+    QuestionAnalysisWidget.h \
+    TeacherScoreAnalysisWindow.h \
+    PrintPreviewWidget.h \
+    ReportGenerator.h \
+    PdfExporter.h \
+    ExcelExporter.h \
+    ScorePrintWindow.h \
     LoginWidget.h \
     RegisterWidget.h \
     TeacherMainWindow.h \

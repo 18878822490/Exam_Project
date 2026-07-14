@@ -1,0 +1,148 @@
+{
+    "classes": [
+        {
+            "className": "QHPieModelMapper",
+            "lineNumber": 14,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "series",
+                    "notify": "seriesReplaced",
+                    "read": "series",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QPieSeries*",
+                    "user": false,
+                    "write": "setSeries"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "model",
+                    "notify": "modelReplaced",
+                    "read": "model",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractItemModel*",
+                    "user": false,
+                    "write": "setModel"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "valuesRow",
+                    "notify": "valuesRowChanged",
+                    "read": "valuesRow",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setValuesRow"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "labelsRow",
+                    "notify": "labelsRowChanged",
+                    "read": "labelsRow",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setLabelsRow"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "firstColumn",
+                    "notify": "firstColumnChanged",
+                    "read": "firstColumn",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setFirstColumn"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "columnCount",
+                    "notify": "columnCountChanged",
+                    "read": "columnCount",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setColumnCount"
+                }
+            ],
+            "qualifiedClassName": "QHPieModelMapper",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "seriesReplaced",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 1,
+                    "name": "modelReplaced",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 2,
+                    "name": "valuesRowChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 3,
+                    "name": "labelsRowChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 4,
+                    "name": "firstColumnChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 5,
+                    "name": "columnCountChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QPieModelMapper"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qhpiemodelmapper.h",
+    "outputRevision": 68
+}

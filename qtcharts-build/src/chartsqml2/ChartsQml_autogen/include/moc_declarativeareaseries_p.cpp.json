@@ -1,0 +1,327 @@
+{
+    "classes": [
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "AreaSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeAreaSeries",
+            "lineNumber": 24,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "upperSeries",
+                    "read": "upperSeries",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "DeclarativeLineSeries*",
+                    "user": false,
+                    "write": "setUpperSeries"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "lowerSeries",
+                    "read": "lowerSeries",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "DeclarativeLineSeries*",
+                    "user": false,
+                    "write": "setLowerSeries"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "axisX",
+                    "notify": "axisXChanged",
+                    "read": "axisX",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisX"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "axisY",
+                    "notify": "axisYChanged",
+                    "read": "axisY",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisY"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "axisXTop",
+                    "notify": "axisXTopChanged",
+                    "read": "axisXTop",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisXTop"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "axisYRight",
+                    "notify": "axisYRightChanged",
+                    "read": "axisYRight",
+                    "required": false,
+                    "revision": 258,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisYRight"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 6,
+                    "name": "axisAngular",
+                    "notify": "axisAngularChanged",
+                    "read": "axisAngular",
+                    "required": false,
+                    "revision": 259,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisAngular"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 7,
+                    "name": "axisRadial",
+                    "notify": "axisRadialChanged",
+                    "read": "axisRadial",
+                    "required": false,
+                    "revision": 259,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisRadial"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 8,
+                    "name": "borderWidth",
+                    "notify": "borderWidthChanged",
+                    "read": "borderWidth",
+                    "required": false,
+                    "revision": 257,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setBorderWidth"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 9,
+                    "name": "brushFilename",
+                    "notify": "brushFilenameChanged",
+                    "read": "brushFilename",
+                    "required": false,
+                    "revision": 260,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setBrushFilename"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 10,
+                    "name": "brush",
+                    "notify": "brushChanged",
+                    "read": "brush",
+                    "required": false,
+                    "revision": 260,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QBrush",
+                    "user": false,
+                    "write": "setBrush"
+                }
+            ],
+            "qualifiedClassName": "DeclarativeAreaSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "axisXChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "axisYChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "width",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "borderWidthChanged",
+                    "returnType": "void",
+                    "revision": 257
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "axisXTopChanged",
+                    "returnType": "void",
+                    "revision": 258
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "axisYRightChanged",
+                    "returnType": "void",
+                    "revision": 258
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "axisAngularChanged",
+                    "returnType": "void",
+                    "revision": 259
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "axisRadialChanged",
+                    "returnType": "void",
+                    "revision": 259
+                },
+                {
+                    "access": "public",
+                    "index": 7,
+                    "name": "brushChanged",
+                    "returnType": "void",
+                    "revision": 260
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "brushFilename",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 8,
+                    "name": "brushFilenameChanged",
+                    "returnType": "void",
+                    "revision": 260
+                }
+            ],
+            "slots": [
+                {
+                    "access": "private",
+                    "index": 9,
+                    "name": "handleBrushChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAreaSeries"
+                }
+            ]
+        }
+    ],
+    "inputFile": "declarativeareaseries_p.h",
+    "outputRevision": 68
+}

@@ -1,0 +1,215 @@
+{
+    "classes": [
+        {
+            "className": "QBoxPlotSeries",
+            "lineNumber": 15,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "boxOutlineVisible",
+                    "notify": "boxOutlineVisibilityChanged",
+                    "read": "boxOutlineVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setBoxOutlineVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "boxWidth",
+                    "notify": "boxWidthChanged",
+                    "read": "boxWidth",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setBoxWidth"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "pen",
+                    "notify": "penChanged",
+                    "read": "pen",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QPen",
+                    "user": false,
+                    "write": "setPen"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "brush",
+                    "notify": "brushChanged",
+                    "read": "brush",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QBrush",
+                    "user": false,
+                    "write": "setBrush"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "count",
+                    "notify": "countChanged",
+                    "read": "count",
+                    "required": false,
+                    "revision": 512,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false
+                }
+            ],
+            "qualifiedClassName": "QBoxPlotSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "boxset",
+                            "type": "QBoxSet*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "clicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "status",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "boxset",
+                            "type": "QBoxSet*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "hovered",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "boxset",
+                            "type": "QBoxSet*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "pressed",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "boxset",
+                            "type": "QBoxSet*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "released",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "boxset",
+                            "type": "QBoxSet*"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "doubleClicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 5,
+                    "name": "countChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 6,
+                    "name": "penChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 7,
+                    "name": "brushChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 8,
+                    "name": "boxOutlineVisibilityChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 9,
+                    "name": "boxWidthChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "sets",
+                            "type": "QList<QBoxSet*>"
+                        }
+                    ],
+                    "index": 10,
+                    "name": "boxsetsAdded",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "sets",
+                            "type": "QList<QBoxSet*>"
+                        }
+                    ],
+                    "index": 11,
+                    "name": "boxsetsRemoved",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractSeries"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qboxplotseries.h",
+    "outputRevision": 68
+}

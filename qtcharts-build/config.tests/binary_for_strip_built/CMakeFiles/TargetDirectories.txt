@@ -1,0 +1,4 @@
+D:/Exam_Project/qtcharts-build/config.tests/binary_for_strip_built/CMakeFiles/lib1.dir
+D:/Exam_Project/qtcharts-build/config.tests/binary_for_strip_built/CMakeFiles/print_lib_path.dir
+D:/Exam_Project/qtcharts-build/config.tests/binary_for_strip_built/CMakeFiles/edit_cache.dir
+D:/Exam_Project/qtcharts-build/config.tests/binary_for_strip_built/CMakeFiles/rebuild_cache.dir

@@ -12,6 +12,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QSet>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QSqlRecord>
@@ -43,7 +44,7 @@ QJsonObject requestJson(const QString &method, const QString &path, const QJsonO
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
-    request.setTransferTimeout(1200);
+    request.setTransferTimeout(6000);
 
     QNetworkAccessManager manager;
     QEventLoop loop;
@@ -68,7 +69,7 @@ QJsonObject requestJson(const QString &method, const QString &path, const QJsonO
         }
     });
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    timeout.start(1200);
+    timeout.start(6000);
     loop.exec();
     timeout.stop();
 
@@ -104,6 +105,21 @@ QString isoDateTime(const QDateTime &value)
     return value.isValid()
             ? value.toString(Qt::ISODate)
             : QDateTime::currentDateTime().toString(Qt::ISODate);
+}
+
+bool isObjectiveQuestion(const QString &type)
+{
+    return type == QStringLiteral("单选题")
+            || type == QStringLiteral("多选题")
+            || type == QStringLiteral("判断题")
+            || type == QStringLiteral("填空题");
+}
+
+QString sectionTitleForType(const QString &type)
+{
+    return isObjectiveQuestion(type)
+            ? QStringLiteral("第一部分 客观题")
+            : QStringLiteral("第二部分 主观题");
 }
 }
 
@@ -696,6 +712,15 @@ QVariantList TeacherDataRepository::searchQuestions(const QString &keyword,
                                                     const QString &type,
                                                     const QString &difficulty) const
 {
+    return searchQuestionsAdvanced(keyword, QString(), type, difficulty, QString());
+}
+
+QVariantList TeacherDataRepository::searchQuestionsAdvanced(const QString &keyword,
+                                                            const QString &subject,
+                                                            const QString &type,
+                                                            const QString &difficulty,
+                                                            const QString &knowledgePoint) const
+{
     QVariantList list;
     auto cleanFilter = [](QString value, const QString &prefix) {
         value = value.trimmed();
@@ -707,16 +732,24 @@ QVariantList TeacherDataRepository::searchQuestions(const QString &keyword,
 
     QUrlQuery params;
     const QString cleanKeyword = keyword.trimmed();
+    const QString cleanSubject = cleanFilter(subject, QStringLiteral("科目："));
     const QString cleanType = cleanFilter(type, QStringLiteral("题型："));
     const QString cleanDifficulty = cleanFilter(difficulty, QStringLiteral("难度："));
+    const QString cleanKnowledgePoint = knowledgePoint.trimmed();
     if (!cleanKeyword.isEmpty()) {
         params.addQueryItem(QStringLiteral("keyword"), cleanKeyword);
+    }
+    if (!cleanSubject.isEmpty()) {
+        params.addQueryItem(QStringLiteral("subject"), cleanSubject);
     }
     if (!cleanType.isEmpty()) {
         params.addQueryItem(QStringLiteral("type"), cleanType);
     }
     if (!cleanDifficulty.isEmpty()) {
         params.addQueryItem(QStringLiteral("difficulty"), cleanDifficulty);
+    }
+    if (!cleanKnowledgePoint.isEmpty()) {
+        params.addQueryItem(QStringLiteral("knowledgePoint"), cleanKnowledgePoint);
     }
 
     const QVariantList rows = responseList(requestJson(QStringLiteral("GET"), QStringLiteral("/questions"), {}, params));
@@ -891,6 +924,121 @@ QVariantList TeacherDataRepository::getStudentAnswersForStudent(int paperId, con
                                 {"questionScore", row.value(QStringLiteral("question_score"), row.value(QStringLiteral("questionScore")))},
                                 {"status", row.value(QStringLiteral("review_status"), row.value(QStringLiteral("reviewStatus")))},
                                 {"comment", row.value(QStringLiteral("comment"))}});
+    }
+    return list;
+}
+
+QVariantList TeacherDataRepository::getReviewExams() const
+{
+    QVariantList list;
+    QUrlQuery params;
+    if (teacherId > 0) {
+        params.addQueryItem(QStringLiteral("teacherId"), QString::number(teacherId));
+    }
+
+    const QVariantList rows = responseList(requestJson(QStringLiteral("GET"), QStringLiteral("/scores/review/exams"), {}, params));
+    for (const QVariant &rowValue : rows) {
+        const QVariantMap row = rowValue.toMap();
+        const QString title = row.value(QStringLiteral("title"), QStringLiteral("未命名考试")).toString();
+        const QString subject = row.value(QStringLiteral("subject"), QStringLiteral("综合")).toString();
+        const QString date = row.value(QStringLiteral("exam_date"), row.value(QStringLiteral("examDate"))).toString();
+        list.append(QVariantMap{
+            {"id", row.value(QStringLiteral("id"))},
+            {"title", title},
+            {"name", title},
+            {"course", subject},
+            {"subject", subject},
+            {"date", date},
+            {"startTime", row.value(QStringLiteral("start_time"), row.value(QStringLiteral("startTime")))},
+            {"endTime", row.value(QStringLiteral("end_time"), row.value(QStringLiteral("endTime")))},
+            {"totalScore", row.value(QStringLiteral("total_score"), row.value(QStringLiteral("totalScore"), 0))},
+            {"submittedCount", row.value(QStringLiteral("submitted_count"), row.value(QStringLiteral("submittedCount"), 0))},
+            {"completedCount", row.value(QStringLiteral("completed_count"), row.value(QStringLiteral("completedCount"), 0))},
+            {"pendingStudentCount", row.value(QStringLiteral("pending_student_count"), row.value(QStringLiteral("pendingStudentCount"), 0))},
+            {"pendingAnswerCount", row.value(QStringLiteral("pending_answer_count"), row.value(QStringLiteral("pendingAnswerCount"), 0))},
+            {"average", row.value(QStringLiteral("average_score"), row.value(QStringLiteral("averageScore"), 0))},
+            {"status", row.value(QStringLiteral("review_status"), row.value(QStringLiteral("reviewStatus"), row.value(QStringLiteral("status"))))}
+        });
+    }
+    return list;
+}
+
+QVariantList TeacherDataRepository::getReviewStudents(int examId) const
+{
+    QVariantList list;
+    if (examId <= 0) {
+        return list;
+    }
+
+    const QVariantList rows = responseList(requestJson(QStringLiteral("GET"), QStringLiteral("/scores/review/exams/%1/students").arg(examId)));
+    for (const QVariant &rowValue : rows) {
+        const QVariantMap row = rowValue.toMap();
+        const QString status = row.value(QStringLiteral("review_status"), row.value(QStringLiteral("reviewStatus"), QStringLiteral("待批改"))).toString();
+        const QVariant scoreValue = row.value(QStringLiteral("score"));
+        const QString scoreText = status == QStringLiteral("已批改") || status == QStringLiteral("批改中")
+                ? QString::number(scoreValue.toDouble(), 'f', 0)
+                : QStringLiteral("--");
+        list.append(QVariantMap{
+            {"paperId", row.value(QStringLiteral("exam_id"), row.value(QStringLiteral("examId"), examId))},
+            {"examTitle", row.value(QStringLiteral("exam_title"), row.value(QStringLiteral("examTitle")))},
+            {"subject", row.value(QStringLiteral("subject"))},
+            {"studentId", row.value(QStringLiteral("student_id"), row.value(QStringLiteral("studentId")))},
+            {"name", row.value(QStringLiteral("student_name"), row.value(QStringLiteral("studentName"), QStringLiteral("未命名学生")))},
+            {"studentName", row.value(QStringLiteral("student_name"), row.value(QStringLiteral("studentName"), QStringLiteral("未命名学生")))},
+            {"studentNo", row.value(QStringLiteral("student_no"), row.value(QStringLiteral("studentNo")))},
+            {"className", row.value(QStringLiteral("class_name"), row.value(QStringLiteral("className")))},
+            {"score", scoreText},
+            {"rawScore", scoreValue},
+            {"pendingCount", row.value(QStringLiteral("pending_count"), row.value(QStringLiteral("pendingCount"), 0))},
+            {"answerCount", row.value(QStringLiteral("answer_count"), row.value(QStringLiteral("answerCount"), 0))},
+            {"status", status}
+        });
+    }
+    return list;
+}
+
+QVariantList TeacherDataRepository::getReviewStudentAnswers(int examId, const QString &studentNo) const
+{
+    QVariantList list;
+    if (examId <= 0 || studentNo.trimmed().isEmpty()) {
+        return list;
+    }
+
+    const QString encodedStudentNo = QString::fromUtf8(QUrl::toPercentEncoding(studentNo.trimmed()));
+    const QVariantList rows = responseList(requestJson(
+            QStringLiteral("GET"),
+            QStringLiteral("/scores/review/exams/%1/students/%2/answers").arg(examId).arg(encodedStudentNo)));
+    int index = 1;
+    for (const QVariant &rowValue : rows) {
+        const QVariantMap row = rowValue.toMap();
+        const QString type = row.value(QStringLiteral("type")).toString();
+        const QString status = row.value(QStringLiteral("review_status"), row.value(QStringLiteral("reviewStatus"))).toString();
+        const bool autoScored = row.value(QStringLiteral("is_objective"), row.value(QStringLiteral("isObjective"))).toBool()
+                || status == QStringLiteral("自动评分")
+                || isObjectiveQuestion(type);
+        const int number = row.value(QStringLiteral("sort_no"), row.value(QStringLiteral("sortNo"), index)).toInt();
+        const double maxScore = row.value(QStringLiteral("question_score"), row.value(QStringLiteral("questionScore"), 0)).toDouble();
+        list.append(QVariantMap{
+            {"id", row.value(QStringLiteral("id"))},
+            {"answerId", row.value(QStringLiteral("id"))},
+            {"questionId", row.value(QStringLiteral("question_id"), row.value(QStringLiteral("questionId")))},
+            {"number", number <= 0 ? index : number},
+            {"sortNo", number <= 0 ? index : number},
+            {"section", sectionTitleForType(type)},
+            {"type", type},
+            {"question", row.value(QStringLiteral("content"), row.value(QStringLiteral("question")))},
+            {"studentAnswer", row.value(QStringLiteral("answer"), row.value(QStringLiteral("studentAnswer")))},
+            {"standardAnswer", row.value(QStringLiteral("standard_answer"), row.value(QStringLiteral("standardAnswer")))},
+            {"analysis", row.value(QStringLiteral("analysis"))},
+            {"knowledgePoint", row.value(QStringLiteral("knowledge_point"), row.value(QStringLiteral("knowledgePoint")))},
+            {"maxScore", maxScore},
+            {"score", row.value(QStringLiteral("score"), 0)},
+            {"autoScored", autoScored},
+            {"graded", autoScored || status == QStringLiteral("已批改")},
+            {"status", status},
+            {"comment", row.value(QStringLiteral("comment"))}
+        });
+        ++index;
     }
     return list;
 }
@@ -1104,6 +1252,51 @@ int TeacherDataRepository::createDraftPaper(const QString &name,
     return response.value(QStringLiteral("data")).toObject().value(QStringLiteral("id")).toInt();
 }
 
+int TeacherDataRepository::createDraftPaperFromQuestions(const QString &name,
+                                                         const QString &subject,
+                                                         const QDateTime &startTime,
+                                                         const QDateTime &endTime,
+                                                         const QVariantList &questions)
+{
+    QJsonArray questionIds;
+    QSet<int> seen;
+    for (const QVariant &value : questions) {
+        const QVariantMap question = value.toMap();
+        const int questionId = question.value(QStringLiteral("id"),
+                              question.value(QStringLiteral("questionId"),
+                              question.value(QStringLiteral("question_id")))).toInt();
+        if (questionId > 0 && !seen.contains(questionId)) {
+            questionIds.append(questionId);
+            seen.insert(questionId);
+        }
+    }
+    if (questionIds.isEmpty()) {
+        errorMessage = QStringLiteral("请先添加题目后再保存试卷");
+        return -1;
+    }
+
+    QJsonObject payload;
+    payload.insert(QStringLiteral("title"), name.trimmed().isEmpty() ? QStringLiteral("未命名试卷") : name.trimmed());
+    payload.insert(QStringLiteral("subject"), subject.trimmed().isEmpty() ? QStringLiteral("综合") : subject.trimmed());
+    payload.insert(QStringLiteral("startTime"), isoDateTime(startTime));
+    payload.insert(QStringLiteral("endTime"), isoDateTime(endTime));
+    const int duration = startTime.isValid() && endTime.isValid() && startTime.secsTo(endTime) > 0
+            ? qMax(1, int(startTime.secsTo(endTime) / 60))
+            : 120;
+    payload.insert(QStringLiteral("duration"), duration);
+    payload.insert(QStringLiteral("questionIds"), questionIds);
+    if (teacherId > 0) {
+        payload.insert(QStringLiteral("createdBy"), QJsonValue::fromVariant(teacherId));
+    }
+
+    const QJsonObject response = requestJson(QStringLiteral("POST"), QStringLiteral("/exams/papers"), payload);
+    if (!response.value(QStringLiteral("success")).toBool()) {
+        errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("保存试卷草稿失败"));
+        return -1;
+    }
+    return response.value(QStringLiteral("data")).toObject().value(QStringLiteral("id")).toInt();
+}
+
 int TeacherDataRepository::copyExamAsDraft(const QString &examName, const QDateTime &startTime, const QDateTime &endTime)
 {
     Q_UNUSED(startTime)
@@ -1134,6 +1327,31 @@ int TeacherDataRepository::copyExamAsDraft(const QString &examName, const QDateT
         errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("复制试卷失败"));
         return -1;
     }
+    return response.value(QStringLiteral("data")).toObject().value(QStringLiteral("id")).toInt();
+}
+
+int TeacherDataRepository::copyExamAsDraftById(int examId, const QString &copyTitle)
+{
+    if (examId <= 0) {
+        errorMessage = QStringLiteral("请选择要复制的试卷");
+        return -1;
+    }
+
+    QUrlQuery params;
+    const QString title = copyTitle.trimmed().isEmpty()
+            ? QStringLiteral("复制试卷草稿")
+            : copyTitle.trimmed();
+    params.addQueryItem(QStringLiteral("title"), title);
+    if (teacherId > 0) {
+        params.addQueryItem(QStringLiteral("createdBy"), QString::number(teacherId));
+    }
+
+    const QJsonObject response = requestJson(QStringLiteral("POST"), QStringLiteral("/exams/%1/copy").arg(examId), {}, params);
+    if (!response.value(QStringLiteral("success")).toBool()) {
+        errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("复制试卷失败"));
+        return -1;
+    }
+    errorMessage.clear();
     return response.value(QStringLiteral("data")).toObject().value(QStringLiteral("id")).toInt();
 }
 

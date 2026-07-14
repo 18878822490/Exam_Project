@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "QLineSeries",
+            "lineNumber": 16,
+            "object": true,
+            "qualifiedClassName": "QLineSeries",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QXYSeries"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qlineseries.h",
+    "outputRevision": 68
+}

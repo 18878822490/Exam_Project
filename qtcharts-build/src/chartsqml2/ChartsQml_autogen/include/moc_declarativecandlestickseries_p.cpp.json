@@ -1,0 +1,493 @@
+{
+    "classes": [
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "CandlestickSet"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "514"
+                }
+            ],
+            "className": "DeclarativeCandlestickSet",
+            "lineNumber": 28,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "brushFilename",
+                    "notify": "brushFilenameChanged",
+                    "read": "brushFilename",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setBrushFilename"
+                }
+            ],
+            "qualifiedClassName": "DeclarativeCandlestickSet",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "brushFilename",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "brushFilenameChanged",
+                    "returnType": "void"
+                }
+            ],
+            "slots": [
+                {
+                    "access": "private",
+                    "index": 1,
+                    "name": "handleBrushChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QCandlestickSet"
+                }
+            ]
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "DefaultProperty",
+                    "value": "seriesChildren"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "CandlestickSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "514"
+                }
+            ],
+            "className": "DeclarativeCandlestickSeries",
+            "interfaces": [
+                [
+                    {
+                        "className": "QQmlParserStatus",
+                        "id": "\"org.qt-project.Qt.QQmlParserStatus\""
+                    }
+                ]
+            ],
+            "lineNumber": 51,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 16,
+                    "name": "at",
+                    "returnType": "DeclarativeCandlestickSet*"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "DeclarativeCandlestickSet*"
+                        }
+                    ],
+                    "index": 17,
+                    "name": "append",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "DeclarativeCandlestickSet*"
+                        }
+                    ],
+                    "index": 18,
+                    "name": "remove",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "open",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "high",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "low",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "close",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "timestamp",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 19,
+                    "name": "append",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "timestamp",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 20,
+                    "name": "remove",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "set",
+                            "type": "DeclarativeCandlestickSet*"
+                        }
+                    ],
+                    "index": 21,
+                    "name": "insert",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "index": 22,
+                    "name": "clear",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "axisX",
+                    "notify": "axisXChanged",
+                    "read": "axisX",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisX"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "axisY",
+                    "notify": "axisYChanged",
+                    "read": "axisY",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisY"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "axisXTop",
+                    "notify": "axisXTopChanged",
+                    "read": "axisXTop",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisXTop"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "axisYRight",
+                    "notify": "axisYRightChanged",
+                    "read": "axisYRight",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QAbstractAxis*",
+                    "user": false,
+                    "write": "setAxisYRight"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "seriesChildren",
+                    "read": "seriesChildren",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QQmlListProperty<QObject>",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "brushFilename",
+                    "notify": "brushFilenameChanged",
+                    "read": "brushFilename",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setBrushFilename"
+                }
+            ],
+            "qualifiedClassName": "DeclarativeCandlestickSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "axisXChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "axisYChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "axisXTopChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "axis",
+                            "type": "QAbstractAxis*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "axisYRightChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "DeclarativeCandlestickSet*"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "clicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "status",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "set",
+                            "type": "DeclarativeCandlestickSet*"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "hovered",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "DeclarativeCandlestickSet*"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "pressed",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "DeclarativeCandlestickSet*"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "released",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "DeclarativeCandlestickSet*"
+                        }
+                    ],
+                    "index": 8,
+                    "name": "doubleClicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "brushFilename",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 9,
+                    "name": "brushFilenameChanged",
+                    "returnType": "void"
+                }
+            ],
+            "slots": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "QCandlestickSet*"
+                        }
+                    ],
+                    "index": 10,
+                    "name": "onClicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "status",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "set",
+                            "type": "QCandlestickSet*"
+                        }
+                    ],
+                    "index": 11,
+                    "name": "onHovered",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "QCandlestickSet*"
+                        }
+                    ],
+                    "index": 12,
+                    "name": "onPressed",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "QCandlestickSet*"
+                        }
+                    ],
+                    "index": 13,
+                    "name": "onReleased",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "set",
+                            "type": "QCandlestickSet*"
+                        }
+                    ],
+                    "index": 14,
+                    "name": "onDoubleClicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "index": 15,
+                    "name": "handleBrushChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QCandlestickSeries"
+                },
+                {
+                    "access": "public",
+                    "name": "QQmlParserStatus"
+                }
+            ]
+        }
+    ],
+    "inputFile": "declarativecandlestickseries_p.h",
+    "outputRevision": 68
+}

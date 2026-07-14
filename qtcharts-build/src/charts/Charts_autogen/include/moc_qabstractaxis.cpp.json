@@ -1,0 +1,792 @@
+{
+    "classes": [
+        {
+            "className": "QAbstractAxis",
+            "lineNumber": 17,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "visible",
+                    "notify": "visibleChanged",
+                    "read": "isVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "lineVisible",
+                    "notify": "lineVisibleChanged",
+                    "read": "isLineVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setLineVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "linePen",
+                    "notify": "linePenChanged",
+                    "read": "linePen",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QPen",
+                    "user": false,
+                    "write": "setLinePen"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "color",
+                    "notify": "colorChanged",
+                    "read": "linePenColor",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setLinePenColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "labelsVisible",
+                    "notify": "labelsVisibleChanged",
+                    "read": "labelsVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setLabelsVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "labelsBrush",
+                    "notify": "labelsBrushChanged",
+                    "read": "labelsBrush",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QBrush",
+                    "user": false,
+                    "write": "setLabelsBrush"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 6,
+                    "name": "labelsAngle",
+                    "notify": "labelsAngleChanged",
+                    "read": "labelsAngle",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setLabelsAngle"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 7,
+                    "name": "labelsFont",
+                    "notify": "labelsFontChanged",
+                    "read": "labelsFont",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QFont",
+                    "user": false,
+                    "write": "setLabelsFont"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 8,
+                    "name": "labelsColor",
+                    "notify": "labelsColorChanged",
+                    "read": "labelsColor",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setLabelsColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 9,
+                    "name": "labelsTruncated",
+                    "notify": "labelsTruncatedChanged",
+                    "read": "labelsTruncated",
+                    "required": false,
+                    "revision": 1538,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 10,
+                    "name": "truncateLabels",
+                    "notify": "truncateLabelsChanged",
+                    "read": "truncateLabels",
+                    "required": false,
+                    "revision": 1538,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setTruncateLabels"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 11,
+                    "name": "gridVisible",
+                    "notify": "gridVisibleChanged",
+                    "read": "isGridLineVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setGridLineVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 12,
+                    "name": "gridLinePen",
+                    "notify": "gridLinePenChanged",
+                    "read": "gridLinePen",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QPen",
+                    "user": false,
+                    "write": "setGridLinePen"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 13,
+                    "name": "minorGridVisible",
+                    "notify": "minorGridVisibleChanged",
+                    "read": "isMinorGridLineVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setMinorGridLineVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 14,
+                    "name": "minorGridLinePen",
+                    "notify": "minorGridLinePenChanged",
+                    "read": "minorGridLinePen",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QPen",
+                    "user": false,
+                    "write": "setMinorGridLinePen"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 15,
+                    "name": "gridLineColor",
+                    "notify": "gridLineColorChanged",
+                    "read": "gridLineColor",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setGridLineColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 16,
+                    "name": "minorGridLineColor",
+                    "notify": "minorGridLineColorChanged",
+                    "read": "minorGridLineColor",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setMinorGridLineColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 17,
+                    "name": "shadesVisible",
+                    "notify": "shadesVisibleChanged",
+                    "read": "shadesVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setShadesVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 18,
+                    "name": "shadesColor",
+                    "notify": "shadesColorChanged",
+                    "read": "shadesColor",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setShadesColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 19,
+                    "name": "shadesBorderColor",
+                    "notify": "shadesBorderColorChanged",
+                    "read": "shadesBorderColor",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setShadesBorderColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 20,
+                    "name": "shadesPen",
+                    "notify": "shadesPenChanged",
+                    "read": "shadesPen",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QPen",
+                    "user": false,
+                    "write": "setShadesPen"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 21,
+                    "name": "shadesBrush",
+                    "notify": "shadesBrushChanged",
+                    "read": "shadesBrush",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QBrush",
+                    "user": false,
+                    "write": "setShadesBrush"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 22,
+                    "name": "titleText",
+                    "notify": "titleTextChanged",
+                    "read": "titleText",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setTitleText"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 23,
+                    "name": "titleBrush",
+                    "notify": "titleBrushChanged",
+                    "read": "titleBrush",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QBrush",
+                    "user": false,
+                    "write": "setTitleBrush"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 24,
+                    "name": "titleVisible",
+                    "notify": "titleVisibleChanged",
+                    "read": "isTitleVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setTitleVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 25,
+                    "name": "titleFont",
+                    "notify": "titleFontChanged",
+                    "read": "titleFont",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QFont",
+                    "user": false,
+                    "write": "setTitleFont"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 26,
+                    "name": "orientation",
+                    "read": "orientation",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "Qt::Orientation",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 27,
+                    "name": "alignment",
+                    "read": "alignment",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "Qt::Alignment",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 28,
+                    "name": "reverse",
+                    "notify": "reverseChanged",
+                    "read": "isReverse",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setReverse"
+                }
+            ],
+            "qualifiedClassName": "QAbstractAxis",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "visible",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "visibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QPen"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "linePenChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "visible",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "lineVisibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "visible",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "labelsVisibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "brush",
+                            "type": "QBrush"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "labelsBrushChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QFont"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "labelsFontChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "angle",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "labelsAngleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QPen"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "gridLinePenChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "visible",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 8,
+                    "name": "gridVisibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "visible",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 9,
+                    "name": "minorGridVisibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QPen"
+                        }
+                    ],
+                    "index": 10,
+                    "name": "minorGridLinePenChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 11,
+                    "name": "gridLineColorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 12,
+                    "name": "minorGridLineColorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 13,
+                    "name": "colorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 14,
+                    "name": "labelsColorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "title",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 15,
+                    "name": "titleTextChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "brush",
+                            "type": "QBrush"
+                        }
+                    ],
+                    "index": 16,
+                    "name": "titleBrushChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "visible",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 17,
+                    "name": "titleVisibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "font",
+                            "type": "QFont"
+                        }
+                    ],
+                    "index": 18,
+                    "name": "titleFontChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "visible",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 19,
+                    "name": "shadesVisibleChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 20,
+                    "name": "shadesColorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 21,
+                    "name": "shadesBorderColorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QPen"
+                        }
+                    ],
+                    "index": 22,
+                    "name": "shadesPenChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "brush",
+                            "type": "QBrush"
+                        }
+                    ],
+                    "index": 23,
+                    "name": "shadesBrushChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "reverse",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 24,
+                    "name": "reverseChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "editable",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 25,
+                    "name": "labelsEditableChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "labelsTruncated",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 26,
+                    "name": "labelsTruncatedChanged",
+                    "returnType": "void",
+                    "revision": 1538
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "truncateLabels",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 27,
+                    "name": "truncateLabelsChanged",
+                    "returnType": "void",
+                    "revision": 1538
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qabstractaxis.h",
+    "outputRevision": 68
+}

@@ -171,6 +171,9 @@ QVariantList StudentMainWindow::getPublishedExams() const
     }
     QUrlQuery query;
     query.addQueryItem(QStringLiteral("className"), className);
+    if (!studentNo.isEmpty()) {
+        query.addQueryItem(QStringLiteral("studentNo"), studentNo);
+    }
     QVariantList list = responseList(requestJson(QStringLiteral("GET"), QStringLiteral("/exams/published"), {}, query));
     QVariantList exams;
     for (const QVariant &value : list) {

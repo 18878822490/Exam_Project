@@ -1,0 +1,134 @@
+{
+    "classes": [
+        {
+            "className": "QBoxPlotSeriesPrivate",
+            "lineNumber": 26,
+            "object": true,
+            "qualifiedClassName": "QBoxPlotSeriesPrivate",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "updated",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBoxSet*"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "clicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBoxSet*"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "pressed",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBoxSet*"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "released",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "barset",
+                            "type": "QBoxSet*"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "doubleClicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 5,
+                    "name": "updatedBoxes",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 6,
+                    "name": "updatedLayout",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 7,
+                    "name": "restructuredBoxes",
+                    "returnType": "void"
+                }
+            ],
+            "slots": [
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "series",
+                            "type": "QAbstractSeries*"
+                        }
+                    ],
+                    "index": 8,
+                    "name": "handleSeriesChange",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "series",
+                            "type": "QAbstractSeries*"
+                        }
+                    ],
+                    "index": 9,
+                    "name": "handleSeriesRemove",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractSeriesPrivate"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qboxplotseries_p.h",
+    "outputRevision": 68
+}

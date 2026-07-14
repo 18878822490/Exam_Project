@@ -1,0 +1,503 @@
+{
+    "classes": [
+        {
+            "className": "QXYSeries",
+            "enums": [
+                {
+                    "isClass": true,
+                    "isFlag": false,
+                    "name": "PointConfiguration",
+                    "values": [
+                        "Color",
+                        "Size",
+                        "Visibility",
+                        "LabelVisibility",
+                        "LabelFormat"
+                    ]
+                }
+            ],
+            "lineNumber": 22,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "pointsVisible",
+                    "read": "pointsVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setPointsVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "color",
+                    "notify": "colorChanged",
+                    "read": "color",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "selectedColor",
+                    "notify": "selectedColorChanged",
+                    "read": "color",
+                    "required": false,
+                    "revision": 1538,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setSelectedColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "pointLabelsFormat",
+                    "notify": "pointLabelsFormatChanged",
+                    "read": "pointLabelsFormat",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setPointLabelsFormat"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "pointLabelsVisible",
+                    "notify": "pointLabelsVisibilityChanged",
+                    "read": "pointLabelsVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setPointLabelsVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "pointLabelsFont",
+                    "notify": "pointLabelsFontChanged",
+                    "read": "pointLabelsFont",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QFont",
+                    "user": false,
+                    "write": "setPointLabelsFont"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 6,
+                    "name": "pointLabelsColor",
+                    "notify": "pointLabelsColorChanged",
+                    "read": "pointLabelsColor",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setPointLabelsColor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 7,
+                    "name": "pointLabelsClipping",
+                    "notify": "pointLabelsClippingChanged",
+                    "read": "pointLabelsClipping",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setPointLabelsClipping"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 8,
+                    "name": "bestFitLineVisible",
+                    "notify": "bestFitLineVisibilityChanged",
+                    "read": "bestFitLineVisible",
+                    "required": false,
+                    "revision": 1538,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setBestFitLineVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 9,
+                    "name": "bestFitLineColor",
+                    "notify": "bestFitLineColorChanged",
+                    "read": "bestFitLineColor",
+                    "required": false,
+                    "revision": 1538,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QColor",
+                    "user": false,
+                    "write": "setBestFitLineColor"
+                }
+            ],
+            "qualifiedClassName": "QXYSeries",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "point",
+                            "type": "QPointF"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "clicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "point",
+                            "type": "QPointF"
+                        },
+                        {
+                            "name": "state",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "hovered",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "point",
+                            "type": "QPointF"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "pressed",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "point",
+                            "type": "QPointF"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "released",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "point",
+                            "type": "QPointF"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "doubleClicked",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "pointReplaced",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "pointRemoved",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "pointAdded",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 8,
+                    "name": "colorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 9,
+                    "name": "selectedColorChanged",
+                    "returnType": "void",
+                    "revision": 1538
+                },
+                {
+                    "access": "public",
+                    "index": 10,
+                    "name": "pointsReplaced",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "format",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 11,
+                    "name": "pointLabelsFormatChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "visible",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 12,
+                    "name": "pointLabelsVisibilityChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "font",
+                            "type": "QFont"
+                        }
+                    ],
+                    "index": 13,
+                    "name": "pointLabelsFontChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 14,
+                    "name": "pointLabelsColorChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "clipping",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 15,
+                    "name": "pointLabelsClippingChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "count",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 16,
+                    "name": "pointsRemoved",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QPen"
+                        }
+                    ],
+                    "index": 17,
+                    "name": "penChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 18,
+                    "name": "selectedPointsChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "lightMarker",
+                            "type": "QImage"
+                        }
+                    ],
+                    "index": 19,
+                    "name": "lightMarkerChanged",
+                    "returnType": "void",
+                    "revision": 1538
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "selectedLightMarker",
+                            "type": "QImage"
+                        }
+                    ],
+                    "index": 20,
+                    "name": "selectedLightMarkerChanged",
+                    "returnType": "void",
+                    "revision": 1538
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "visible",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 21,
+                    "name": "bestFitLineVisibilityChanged",
+                    "returnType": "void",
+                    "revision": 1538
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "pen",
+                            "type": "QPen"
+                        }
+                    ],
+                    "index": 22,
+                    "name": "bestFitLinePenChanged",
+                    "returnType": "void",
+                    "revision": 1538
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "color",
+                            "type": "QColor"
+                        }
+                    ],
+                    "index": 23,
+                    "name": "bestFitLineColorChanged",
+                    "returnType": "void",
+                    "revision": 1538
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "configuration",
+                            "type": "QXYSeries::PointsConfigurationHash"
+                        }
+                    ],
+                    "index": 24,
+                    "name": "pointsConfigurationChanged",
+                    "returnType": "void",
+                    "revision": 1538
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "size",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 25,
+                    "name": "markerSizeChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractSeries"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qxyseries.h",
+    "outputRevision": 68
+}

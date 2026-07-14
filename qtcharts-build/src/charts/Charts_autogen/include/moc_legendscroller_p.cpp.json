@@ -1,0 +1,36 @@
+{
+    "classes": [
+        {
+            "className": "LegendScroller",
+            "lineNumber": 24,
+            "object": true,
+            "qualifiedClassName": "LegendScroller",
+            "slots": [
+                {
+                    "access": "private",
+                    "arguments": [
+                        {
+                            "name": "attached",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "handleDetached",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QLegend"
+                },
+                {
+                    "access": "public",
+                    "name": "Scroller"
+                }
+            ]
+        }
+    ],
+    "inputFile": "legendscroller_p.h",
+    "outputRevision": 68
+}

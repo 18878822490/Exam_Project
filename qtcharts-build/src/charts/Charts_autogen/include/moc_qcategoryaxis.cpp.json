@@ -1,0 +1,106 @@
+{
+    "classes": [
+        {
+            "className": "QCategoryAxis",
+            "enums": [
+                {
+                    "isClass": false,
+                    "isFlag": false,
+                    "name": "AxisLabelsPosition",
+                    "values": [
+                        "AxisLabelsPositionCenter",
+                        "AxisLabelsPositionOnValue"
+                    ]
+                }
+            ],
+            "lineNumber": 14,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "startValue",
+                    "read": "startValue",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setStartValue"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "count",
+                    "read": "count",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "categoriesLabels",
+                    "read": "categoriesLabels",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QStringList",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "labelsPosition",
+                    "notify": "labelsPositionChanged",
+                    "read": "labelsPosition",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "AxisLabelsPosition",
+                    "user": false,
+                    "write": "setLabelsPosition"
+                }
+            ],
+            "qualifiedClassName": "QCategoryAxis",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "categoriesChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "position",
+                            "type": "QCategoryAxis::AxisLabelsPosition"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "labelsPositionChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QValueAxis"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qcategoryaxis.h",
+    "outputRevision": 68
+}

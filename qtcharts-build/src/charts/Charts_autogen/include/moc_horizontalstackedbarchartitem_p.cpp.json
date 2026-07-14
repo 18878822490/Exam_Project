@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "HorizontalStackedBarChartItem",
+            "lineNumber": 22,
+            "object": true,
+            "qualifiedClassName": "HorizontalStackedBarChartItem",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "AbstractBarChartItem"
+                }
+            ]
+        }
+    ],
+    "inputFile": "horizontalstackedbarchartitem_p.h",
+    "outputRevision": 68
+}

@@ -1,0 +1,842 @@
+{
+    "classes": [
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QBarModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "BarModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                },
+                {
+                    "name": "QML.Creatable",
+                    "value": "false"
+                },
+                {
+                    "name": "QML.UncreatableReason",
+                    "value": "Uncreatable base type"
+                }
+            ],
+            "className": "CppQBarModelMapper",
+            "gadget": true,
+            "lineNumber": 71,
+            "qualifiedClassName": "CppQBarModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QHBarModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "HBarModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQHBarModelMapper",
+            "gadget": true,
+            "lineNumber": 81,
+            "qualifiedClassName": "CppQHBarModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QVBarModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "VBarModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQVBarModelMapper",
+            "gadget": true,
+            "lineNumber": 90,
+            "qualifiedClassName": "CppQVBarModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QBarCategoryAxis"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "auto"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "BarCategoriesAxis",
+            "gadget": true,
+            "lineNumber": 99,
+            "qualifiedClassName": "BarCategoriesAxis"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QBarCategoryAxis"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "BarCategoryAxis"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "257"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQBarCategoryAxis",
+            "gadget": true,
+            "lineNumber": 108,
+            "qualifiedClassName": "CppQBarCategoryAxis"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QAbstractBarSeries"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "AbstractBarSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                },
+                {
+                    "name": "QML.Creatable",
+                    "value": "false"
+                },
+                {
+                    "name": "QML.UncreatableReason",
+                    "value": "Uncreatable base type"
+                }
+            ],
+            "className": "CppQAbstractBarSeries",
+            "gadget": true,
+            "lineNumber": 117,
+            "qualifiedClassName": "CppQAbstractBarSeries"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "anonymous"
+                },
+                {
+                    "name": "QML.Foreign",
+                    "value": "QList<QBarSet*>"
+                },
+                {
+                    "name": "QML.Sequence",
+                    "value": "QBarSet*"
+                }
+            ],
+            "className": "CppQListBarSet",
+            "gadget": true,
+            "lineNumber": 127,
+            "qualifiedClassName": "CppQListBarSet"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QPieModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "PieModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                },
+                {
+                    "name": "QML.Creatable",
+                    "value": "false"
+                },
+                {
+                    "name": "QML.UncreatableReason",
+                    "value": "Uncreatable base type"
+                }
+            ],
+            "className": "CppQPieModelMapper",
+            "gadget": true,
+            "lineNumber": 137,
+            "qualifiedClassName": "CppQPieModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QHPieModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "HPieModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQHPieModelMapper",
+            "gadget": true,
+            "lineNumber": 147,
+            "qualifiedClassName": "CppQHPieModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QVPieModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "VPieModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQVPieModelMapper",
+            "gadget": true,
+            "lineNumber": 156,
+            "qualifiedClassName": "CppQVPieModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "anonymous"
+                },
+                {
+                    "name": "QML.Foreign",
+                    "value": "QList<QPieSlice*>"
+                },
+                {
+                    "name": "QML.Sequence",
+                    "value": "QPieSlice*"
+                }
+            ],
+            "className": "CppQListPieSlice",
+            "gadget": true,
+            "lineNumber": 165,
+            "qualifiedClassName": "CppQListPieSlice"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QBoxPlotModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "BoxPlotModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "512"
+                },
+                {
+                    "name": "QML.Creatable",
+                    "value": "false"
+                },
+                {
+                    "name": "QML.UncreatableReason",
+                    "value": "Uncreatable base type"
+                }
+            ],
+            "className": "CppQBoxPlotModelMapper",
+            "gadget": true,
+            "lineNumber": 175,
+            "qualifiedClassName": "CppQBoxPlotModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QHBoxPlotModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "HBoxPlotModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQHBoxPlotModelMapper",
+            "gadget": true,
+            "lineNumber": 184,
+            "qualifiedClassName": "CppQHBoxPlotModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QVBoxPlotModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "VBoxPlotModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQVBoxPlotModelMapper",
+            "gadget": true,
+            "lineNumber": 192,
+            "qualifiedClassName": "CppQVBoxPlotModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "anonymous"
+                },
+                {
+                    "name": "QML.Foreign",
+                    "value": "QList<QBoxSet*>"
+                },
+                {
+                    "name": "QML.Sequence",
+                    "value": "QBoxSet*"
+                }
+            ],
+            "className": "CppQListBoxSet",
+            "gadget": true,
+            "lineNumber": 200,
+            "qualifiedClassName": "CppQListBoxSet"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QCandlestickModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "CandlestickModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "514"
+                },
+                {
+                    "name": "QML.Creatable",
+                    "value": "false"
+                },
+                {
+                    "name": "QML.UncreatableReason",
+                    "value": "Uncreatable base type"
+                }
+            ],
+            "className": "CppQCandlestickModelMapper",
+            "gadget": true,
+            "lineNumber": 210,
+            "qualifiedClassName": "CppQCandlestickModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QHCandlestickModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "HCandlestickModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "514"
+                }
+            ],
+            "className": "CppQHCandlestickModelMapper",
+            "gadget": true,
+            "lineNumber": 219,
+            "qualifiedClassName": "CppQHCandlestickModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QVCandlestickModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "VCandlestickModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "514"
+                }
+            ],
+            "className": "CppQVCandlestickModelMapper",
+            "gadget": true,
+            "lineNumber": 227,
+            "qualifiedClassName": "CppQVCandlestickModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "anonymous"
+                },
+                {
+                    "name": "QML.Foreign",
+                    "value": "QList<QCandlestickSet*>"
+                },
+                {
+                    "name": "QML.Sequence",
+                    "value": "QCandlestickSet*"
+                }
+            ],
+            "className": "CppQListCandlestickSet",
+            "gadget": true,
+            "lineNumber": 235,
+            "qualifiedClassName": "CppQListCandlestickSet"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QDateTimeAxis"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "DateTimeAxis"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "257"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQDateTimeAxis",
+            "gadget": true,
+            "lineNumber": 245,
+            "qualifiedClassName": "CppQDateTimeAxis"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QXYModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "XYModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                },
+                {
+                    "name": "QML.Creatable",
+                    "value": "false"
+                },
+                {
+                    "name": "QML.UncreatableReason",
+                    "value": "Uncreatable base type"
+                }
+            ],
+            "className": "CppQXYModelMapper",
+            "gadget": true,
+            "lineNumber": 255,
+            "qualifiedClassName": "CppQXYModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QHXYModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "HXYModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQHXYModelMapper",
+            "gadget": true,
+            "lineNumber": 265,
+            "qualifiedClassName": "CppQHXYModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QVXYModelMapper"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "VXYModelMapper"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQVXYModelMapper",
+            "gadget": true,
+            "lineNumber": 274,
+            "qualifiedClassName": "CppQVXYModelMapper"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QAbstractAxis"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "AbstractAxis"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                },
+                {
+                    "name": "QML.Creatable",
+                    "value": "false"
+                },
+                {
+                    "name": "QML.UncreatableReason",
+                    "value": "Uncreatable base type"
+                }
+            ],
+            "className": "CppQAbstractAxis",
+            "gadget": true,
+            "lineNumber": 283,
+            "qualifiedClassName": "CppQAbstractAxis"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QValueAxis"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "auto"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "ValuesAxis",
+            "gadget": true,
+            "lineNumber": 293,
+            "qualifiedClassName": "ValuesAxis"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QValueAxis"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "auto"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "257"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "ValueAxis",
+            "gadget": true,
+            "lineNumber": 302,
+            "qualifiedClassName": "ValueAxis"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QLogValueAxis"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "LogValueAxis"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "259"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "CppQLogValueAxis",
+            "gadget": true,
+            "lineNumber": 311,
+            "qualifiedClassName": "CppQLogValueAxis"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QAbstractSeries"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "AbstractSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                },
+                {
+                    "name": "QML.Creatable",
+                    "value": "false"
+                },
+                {
+                    "name": "QML.UncreatableReason",
+                    "value": "Uncreatable base type"
+                }
+            ],
+            "className": "CppQAbstractSeries",
+            "gadget": true,
+            "lineNumber": 320,
+            "qualifiedClassName": "CppQAbstractSeries"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QXYSeries"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "XYSeries"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                },
+                {
+                    "name": "QML.Creatable",
+                    "value": "false"
+                },
+                {
+                    "name": "QML.UncreatableReason",
+                    "value": "Uncreatable base type"
+                }
+            ],
+            "className": "CppQXYSeries",
+            "gadget": true,
+            "lineNumber": 330,
+            "qualifiedClassName": "CppQXYSeries"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "anonymous"
+                },
+                {
+                    "name": "QML.Foreign",
+                    "value": "QXYSeries::PointsConfigurationHash"
+                },
+                {
+                    "name": "QML.Extended",
+                    "value": "CppQHashPointConfiguration"
+                }
+            ],
+            "className": "CppQHashPointConfiguration",
+            "gadget": true,
+            "lineNumber": 340,
+            "qualifiedClassName": "CppQHashPointConfiguration"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QLegend"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "Legend"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "256"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                },
+                {
+                    "name": "QML.Creatable",
+                    "value": "false"
+                },
+                {
+                    "name": "QML.UncreatableReason",
+                    "value": "Uncreatable base type"
+                }
+            ],
+            "className": "CppQLegend",
+            "gadget": true,
+            "lineNumber": 348,
+            "qualifiedClassName": "CppQLegend"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QGraphicsLayout"
+                },
+                {
+                    "name": "QML.Using",
+                    "value": "void"
+                }
+            ],
+            "className": "CppQGraphicsLayout",
+            "gadget": true,
+            "lineNumber": 360,
+            "qualifiedClassName": "CppQGraphicsLayout"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QPen"
+                },
+                {
+                    "name": "QML.Extended",
+                    "value": "CppQPen"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "anonymous"
+                }
+            ],
+            "className": "CppQPen",
+            "gadget": true,
+            "lineNumber": 367,
+            "qualifiedClassName": "CppQPen"
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Foreign",
+                    "value": "QBrush"
+                },
+                {
+                    "name": "QML.Extended",
+                    "value": "CppQBrush"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "anonymous"
+                }
+            ],
+            "className": "CppQBrush",
+            "gadget": true,
+            "lineNumber": 375,
+            "qualifiedClassName": "CppQBrush"
+        }
+    ],
+    "inputFile": "declarativeforeigntypes_p.h",
+    "outputRevision": 68
+}

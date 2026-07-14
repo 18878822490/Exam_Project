@@ -12,8 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.time.LocalDateTime;
 
 @Service
 public class ExamService {
@@ -56,7 +59,8 @@ public class ExamService {
         String title = requireText(request.getTitle(), "考试名称不能为空");
         String subject = defaultText(request.getSubject(), "综合");
         Map<String, Integer> typeCounts = normalizeTypeCounts(request.getTypeCounts());
-        if (typeCounts.isEmpty()) {
+        List<Long> selectedQuestionIds = normalizeQuestionIds(request.getQuestionIds());
+        if (typeCounts.isEmpty() && selectedQuestionIds.isEmpty()) {
             throw new IllegalArgumentException("至少选择一种题型数量");
         }
 
@@ -73,17 +77,32 @@ public class ExamService {
 
         int totalScore = 0;
         int sortNo = 1;
-        for (Map.Entry<String, Integer> entry : typeCounts.entrySet()) {
-            List<Question> questions = questionMapper.randomQuestions(
-                    subject,
-                    entry.getKey(),
-                    request.getDifficulty(),
-                    request.getKnowledgePoint(),
-                    entry.getValue()
-            );
-            for (Question question : questions) {
+        if (!selectedQuestionIds.isEmpty()) {
+            for (Long questionId : selectedQuestionIds) {
+                Question question = questionMapper.findById(questionId);
+                if (question == null) {
+                    throw new IllegalArgumentException("题目不存在：" + questionId);
+                }
                 examMapper.insertExamQuestion(exam.getId(), question, sortNo++);
-                totalScore += question.getScore();
+                totalScore += question.getScore() == null ? 0 : question.getScore();
+            }
+        } else {
+            for (Map.Entry<String, Integer> entry : typeCounts.entrySet()) {
+                List<Question> questions = questionMapper.randomQuestions(
+                        subject,
+                        entry.getKey(),
+                        request.getDifficulty(),
+                        request.getKnowledgePoint(),
+                        entry.getValue()
+                );
+                if (questions.size() < entry.getValue()) {
+                    throw new IllegalArgumentException(entry.getKey() + "可用题目不足，需要"
+                            + entry.getValue() + "题，实际" + questions.size() + "题");
+                }
+                for (Question question : questions) {
+                    examMapper.insertExamQuestion(exam.getId(), question, sortNo++);
+                    totalScore += question.getScore() == null ? 0 : question.getScore();
+                }
             }
         }
 
@@ -108,7 +127,12 @@ public class ExamService {
 
     @Transactional
     public Exam copyExam(Long examId, String title, Long createdBy) {
-        Long copiedId = examMapper.copyExam(examId, title, createdBy);
+        return copyExam(examId, title, createdBy, null, null);
+    }
+
+    @Transactional
+    public Exam copyExam(Long examId, String title, Long createdBy, LocalDateTime startTime, LocalDateTime endTime) {
+        Long copiedId = examMapper.copyExam(examId, title, createdBy, startTime, endTime);
         if (copiedId == null) {
             throw new IllegalArgumentException("原考试不存在");
         }
@@ -119,6 +143,9 @@ public class ExamService {
     @Transactional
     public void publish(PublishExamRequest request) {
         Exam exam = findById(request.getExamId());
+        if (examMapper.countExamQuestions(exam.getId()) == 0) {
+            throw new IllegalArgumentException("试卷中还没有题目，不能发布");
+        }
         String status = request.getStatus() == null || request.getStatus().isBlank() ? "已发布" : request.getStatus();
 
         int publishedCount = 0;
@@ -144,8 +171,8 @@ public class ExamService {
         operationLogService.record(request.getCreatedBy(), "EXAM_PUBLISH", "发布考试：" + exam.getTitle());
     }
 
-    public List<Map<String, Object>> listPublished(String className) {
-        return examMapper.listPublished(className);
+    public List<Map<String, Object>> listPublished(String className, String studentNo) {
+        return examMapper.listPublished(className, studentNo);
     }
 
     public Map<String, Object> dashboardStats(Long teacherId) {
@@ -163,6 +190,19 @@ public class ExamService {
             }
         }
         return result;
+    }
+
+    private List<Long> normalizeQuestionIds(List<Long> source) {
+        if (source == null || source.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> deduped = new LinkedHashSet<>();
+        for (Long id : source) {
+            if (id != null && id > 0) {
+                deduped.add(id);
+            }
+        }
+        return List.copyOf(deduped);
     }
 
     private String requireText(String value, String message) {

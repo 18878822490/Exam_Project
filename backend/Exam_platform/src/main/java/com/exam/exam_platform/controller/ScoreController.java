@@ -7,6 +7,7 @@ import com.exam.exam_platform.dto.WrongQuestionCorrectionRequest;
 import com.exam.exam_platform.service.ScoreService;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,6 +59,32 @@ public class ScoreController {
                                                                  @RequestParam(required = false) String status) {
         try {
             return ApiResponse.success("查询成功", scoreService.listStudentAnswers(examId, studentNo, status));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
+    @GetMapping("/review/exams")
+    public ApiResponse<List<Map<String, Object>>> reviewExams(@RequestParam(required = false) Long teacherId) {
+        return ApiResponse.success("查询成功", scoreService.listReviewExams(teacherId));
+    }
+
+    @GetMapping("/review/exams/{examId}/students")
+    public ApiResponse<List<Map<String, Object>>> reviewStudents(@PathVariable Long examId,
+                                                                 @RequestParam(required = false) String status) {
+        try {
+            return ApiResponse.success("查询成功", scoreService.listReviewStudents(examId, status));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
+    @GetMapping("/review/exams/{examId}/students/{studentNo}/answers")
+    public ApiResponse<List<Map<String, Object>>> reviewStudentAnswers(@PathVariable Long examId,
+                                                                       @PathVariable String studentNo,
+                                                                       @RequestParam(required = false) String status) {
+        try {
+            return ApiResponse.success("查询成功", scoreService.listReviewStudentAnswers(examId, studentNo, status));
         } catch (IllegalArgumentException exception) {
             return ApiResponse.fail(exception.getMessage());
         }

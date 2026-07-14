@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "XYDomain",
+            "lineNumber": 22,
+            "object": true,
+            "qualifiedClassName": "XYDomain",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "AbstractDomain"
+                }
+            ]
+        }
+    ],
+    "inputFile": "xydomain_p.h",
+    "outputRevision": 68
+}

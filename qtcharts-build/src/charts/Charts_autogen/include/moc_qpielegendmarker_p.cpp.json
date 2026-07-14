@@ -1,0 +1,26 @@
+{
+    "classes": [
+        {
+            "className": "QPieLegendMarkerPrivate",
+            "lineNumber": 27,
+            "object": true,
+            "qualifiedClassName": "QPieLegendMarkerPrivate",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "updated",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QLegendMarkerPrivate"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qpielegendmarker_p.h",
+    "outputRevision": 68
+}

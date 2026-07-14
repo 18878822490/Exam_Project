@@ -120,7 +120,11 @@ public class QuestionController {
     public ApiResponse<QuestionImportResult> importOcr(@RequestParam(required = false) MultipartFile file,
                                                        @RequestParam(required = false) String imageName,
                                                        @RequestParam(required = false) Long userId) {
-        return ApiResponse.success("OCR识别导入完成", questionService.importOcr(file, imageName, userId));
+        QuestionImportResult result = questionService.importOcr(file, imageName, userId);
+        boolean success = !"失败".equals(result.getStatus());
+        return new ApiResponse<>(success,
+                success ? "OCR识别导入完成" : result.getMessage(),
+                result);
     }
 
     @GetMapping("/import/logs")
@@ -132,5 +136,23 @@ public class QuestionController {
     @PostMapping("/import/logs")
     public ApiResponse<QuestionImportResult> recordImportLog(@RequestBody QuestionImportLogRequest request) {
         return ApiResponse.success("导入日志已记录", questionService.recordImportLog(request));
+    }
+
+    @GetMapping("/import/logs/{id}/rollback-preview")
+    public ApiResponse<Map<String, Object>> rollbackPreview(@PathVariable Long id) {
+        try {
+            return ApiResponse.success("查询成功", questionService.previewImportRollback(id));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
+    @DeleteMapping("/import/logs/{id}/questions")
+    public ApiResponse<Map<String, Object>> rollbackImport(@PathVariable Long id) {
+        try {
+            return ApiResponse.success("撤回成功", questionService.rollbackImport(id));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
     }
 }

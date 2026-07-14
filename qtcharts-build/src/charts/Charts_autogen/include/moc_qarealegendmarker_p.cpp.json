@@ -1,0 +1,26 @@
+{
+    "classes": [
+        {
+            "className": "QAreaLegendMarkerPrivate",
+            "lineNumber": 26,
+            "object": true,
+            "qualifiedClassName": "QAreaLegendMarkerPrivate",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "updated",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QLegendMarkerPrivate"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qarealegendmarker_p.h",
+    "outputRevision": 68
+}

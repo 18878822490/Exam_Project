@@ -1,0 +1,268 @@
+{
+    "classes": [
+        {
+            "className": "QChart",
+            "enums": [
+                {
+                    "isClass": false,
+                    "isFlag": false,
+                    "name": "ChartType",
+                    "values": [
+                        "ChartTypeUndefined",
+                        "ChartTypeCartesian",
+                        "ChartTypePolar"
+                    ]
+                },
+                {
+                    "isClass": false,
+                    "isFlag": false,
+                    "name": "ChartTheme",
+                    "values": [
+                        "ChartThemeLight",
+                        "ChartThemeBlueCerulean",
+                        "ChartThemeDark",
+                        "ChartThemeBrownSand",
+                        "ChartThemeBlueNcs",
+                        "ChartThemeHighContrast",
+                        "ChartThemeBlueIcy",
+                        "ChartThemeQt"
+                    ]
+                },
+                {
+                    "isClass": false,
+                    "isFlag": false,
+                    "name": "AnimationOption",
+                    "values": [
+                        "NoAnimation",
+                        "GridAxisAnimations",
+                        "SeriesAnimations",
+                        "AllAnimations"
+                    ]
+                }
+            ],
+            "lineNumber": 24,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "theme",
+                    "read": "theme",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QChart::ChartTheme",
+                    "user": false,
+                    "write": "setTheme"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "title",
+                    "read": "title",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setTitle"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "backgroundVisible",
+                    "read": "isBackgroundVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setBackgroundVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "dropShadowEnabled",
+                    "read": "isDropShadowEnabled",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setDropShadowEnabled"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "backgroundRoundness",
+                    "read": "backgroundRoundness",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setBackgroundRoundness"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "animationOptions",
+                    "read": "animationOptions",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QChart::AnimationOptions",
+                    "user": false,
+                    "write": "setAnimationOptions"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 6,
+                    "name": "animationDuration",
+                    "read": "animationDuration",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setAnimationDuration"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 7,
+                    "name": "animationEasingCurve",
+                    "read": "animationEasingCurve",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QEasingCurve",
+                    "user": false,
+                    "write": "setAnimationEasingCurve"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 8,
+                    "name": "margins",
+                    "read": "margins",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QMargins",
+                    "user": false,
+                    "write": "setMargins"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 9,
+                    "name": "chartType",
+                    "read": "chartType",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QChart::ChartType",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 10,
+                    "name": "plotAreaBackgroundVisible",
+                    "read": "isPlotAreaBackgroundVisible",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setPlotAreaBackgroundVisible"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 11,
+                    "name": "localizeNumbers",
+                    "read": "localizeNumbers",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "write": "setLocalizeNumbers"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 12,
+                    "name": "locale",
+                    "read": "locale",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QLocale",
+                    "user": false,
+                    "write": "setLocale"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 13,
+                    "name": "plotArea",
+                    "notify": "plotAreaChanged",
+                    "read": "plotArea",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QRectF",
+                    "user": false,
+                    "write": "setPlotArea"
+                }
+            ],
+            "qualifiedClassName": "QChart",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "plotArea",
+                            "type": "QRectF"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "plotAreaChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QGraphicsWidget"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qchart.h",
+    "outputRevision": 68
+}

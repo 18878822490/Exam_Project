@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "CandlestickAnimation",
+            "lineNumber": 27,
+            "object": true,
+            "qualifiedClassName": "CandlestickAnimation",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "candlestickanimation_p.h",
+    "outputRevision": 68
+}

@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "CandlestickBodyWicksAnimation",
+            "lineNumber": 25,
+            "object": true,
+            "qualifiedClassName": "CandlestickBodyWicksAnimation",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "ChartAnimation"
+                }
+            ]
+        }
+    ],
+    "inputFile": "candlestickbodywicksanimation_p.h",
+    "outputRevision": 68
+}

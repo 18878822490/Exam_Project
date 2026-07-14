@@ -28,6 +28,11 @@ public:
     QVariantList getExamList() const;
     QVariantList getQuestions() const;
     QVariantList searchQuestions(const QString &keyword, const QString &type, const QString &difficulty) const;
+    QVariantList searchQuestionsAdvanced(const QString &keyword,
+                                         const QString &subject,
+                                         const QString &type,
+                                         const QString &difficulty,
+                                         const QString &knowledgePoint) const;
     QVariantList getQuestionAnalysis() const;
     QVariantMap getScoreStatistics() const;
     QVariantList getClassScoreTrend(const QString &className, const QString &subject) const;
@@ -35,6 +40,9 @@ public:
     QVariantList getStudentAnswers() const;
     QVariantList getStudentAnswersForPaper(int paperId) const;
     QVariantList getStudentAnswersForStudent(int paperId, const QString &studentNo) const;
+    QVariantList getReviewExams() const;
+    QVariantList getReviewStudents(int examId) const;
+    QVariantList getReviewStudentAnswers(int examId, const QString &studentNo) const;
     QVariantList getPaperQuestions(int paperId) const;
     QVariantList getTodoItems() const;
     QVariantList getImportLogs() const;
@@ -51,7 +59,13 @@ public:
                          const QDateTime &startTime,
                          const QDateTime &endTime,
                          const QVariantMap &counts);
+    int createDraftPaperFromQuestions(const QString &name,
+                                      const QString &subject,
+                                      const QDateTime &startTime,
+                                      const QDateTime &endTime,
+                                      const QVariantList &questions);
     int copyExamAsDraft(const QString &examName, const QDateTime &startTime, const QDateTime &endTime);
+    int copyExamAsDraftById(int examId, const QString &copyTitle);
     bool publishExam(int paperId, const QStringList &classNames, const QDateTime &startTime, const QDateTime &endTime);
     bool saveReviewScore(int answerId, double score, const QString &comment);
     bool updateTeacherProfile(const QVariantMap &profileData);

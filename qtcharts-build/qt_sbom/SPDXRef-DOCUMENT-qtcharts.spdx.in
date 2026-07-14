@@ -1,0 +1,43 @@
+SPDXVersion: SPDX-2.3
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: qtcharts-6.8.3
+DocumentNamespace: https://qt.io/spdxdocs/qtcharts-6.8.3
+Creator: Organization: TheQtCompany
+Creator: Tool: Qt Build System
+CreatorComment: <text>This SPDX document was created from CMake 3.30.5, using the qt
+build system from https://code.qt.io/cgit/qt/qtbase.git/tree/cmake/QtPublicSbomHelpers.cmake</text>
+Created: 2026-07-14T11:48:41Z${QT_SBOM_EXTERNAL_DOC_REFS}
+
+PackageName: Clang
+SPDXID: SPDXRef-compiler
+PackageVersion: 17.0.6
+PackageDownloadLocation: NOASSERTION
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+PackageSupplier: Organization: Anonymous
+FilesAnalyzed: false
+PackageSummary: <text>The compiler as identified by CMake, running on Windows (AMD64)</text>
+PrimaryPackagePurpose: APPLICATION
+Relationship: SPDXRef-compiler BUILD_DEPENDENCY_OF SPDXRef-Package-qtcharts
+RelationshipComment: <text>SPDXRef-Package-qtcharts is built by compiler Clang version 17.0.6</text>
+
+PackageName: qtcharts
+SPDXID: SPDXRef-Package-qtcharts
+ExternalRef: SECURITY cpe23Type cpe:2.3:a:qt:qt:6.8.3:*:*:*:*:*:*:*
+ExternalRef: PACKAGE-MANAGER purl pkg:generic/TheQtCompany/qtcharts@6.8.3
+PackageVersion: 6.8.3
+PackageSupplier: Organization: TheQtCompany
+PackageDownloadLocation: git://code.qt.io/qt/qtcharts.git
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: Copyright (C) The Qt Company Ltd. and other contributors.
+PackageHomePage: https://qt.io
+PackageComment: <text>Built by CMake 3.30.5 with RelWithDebInfo configuration for Windows (AMD64)
+qtcharts was configured with:
+    qt-configure-module <sources>/qtcharts
+</text>
+PackageVerificationCode: ${QT_SBOM_VERIFICATION_CODE}
+BuiltDate: 2026-07-14T11:48:41Z
+Relationship: SPDXRef-DOCUMENT DESCRIBES SPDXRef-Package-qtcharts

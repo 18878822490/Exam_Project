@@ -1,0 +1,26 @@
+{
+    "classes": [
+        {
+            "className": "QBarLegendMarkerPrivate",
+            "lineNumber": 27,
+            "object": true,
+            "qualifiedClassName": "QBarLegendMarkerPrivate",
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "updated",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QLegendMarkerPrivate"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qbarlegendmarker_p.h",
+    "outputRevision": 68
+}

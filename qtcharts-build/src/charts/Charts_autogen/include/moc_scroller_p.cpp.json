@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "ScrollTicker",
+            "lineNumber": 32,
+            "object": true,
+            "qualifiedClassName": "ScrollTicker",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "scroller_p.h",
+    "outputRevision": 68
+}

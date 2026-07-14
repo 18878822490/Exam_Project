@@ -1,0 +1,279 @@
+{
+    "classes": [
+        {
+            "className": "QValueAxis",
+            "enums": [
+                {
+                    "isClass": false,
+                    "isFlag": false,
+                    "name": "TickType",
+                    "values": [
+                        "TicksDynamic",
+                        "TicksFixed"
+                    ]
+                }
+            ],
+            "lineNumber": 13,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "tickCount",
+                    "notify": "tickCountChanged",
+                    "read": "tickCount",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setTickCount"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "min",
+                    "notify": "minChanged",
+                    "read": "min",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setMin"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "max",
+                    "notify": "maxChanged",
+                    "read": "max",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setMax"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "labelFormat",
+                    "notify": "labelFormatChanged",
+                    "read": "labelFormat",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setLabelFormat"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 4,
+                    "name": "minorTickCount",
+                    "notify": "minorTickCountChanged",
+                    "read": "minorTickCount",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setMinorTickCount"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 5,
+                    "name": "tickAnchor",
+                    "notify": "tickAnchorChanged",
+                    "read": "tickAnchor",
+                    "required": false,
+                    "revision": 515,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setTickAnchor"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 6,
+                    "name": "tickInterval",
+                    "notify": "tickIntervalChanged",
+                    "read": "tickInterval",
+                    "required": false,
+                    "revision": 515,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setTickInterval"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 7,
+                    "name": "tickType",
+                    "notify": "tickTypeChanged",
+                    "read": "tickType",
+                    "required": false,
+                    "revision": 515,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "TickType",
+                    "user": false,
+                    "write": "setTickType"
+                }
+            ],
+            "qualifiedClassName": "QValueAxis",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "min",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "minChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "max",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "maxChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "min",
+                            "type": "qreal"
+                        },
+                        {
+                            "name": "max",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "rangeChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "tickCount",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "tickCountChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "tickCount",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "minorTickCountChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "format",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 5,
+                    "name": "labelFormatChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "interval",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 6,
+                    "name": "tickIntervalChanged",
+                    "returnType": "void",
+                    "revision": 515
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "anchor",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 7,
+                    "name": "tickAnchorChanged",
+                    "returnType": "void",
+                    "revision": 515
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "type",
+                            "type": "QValueAxis::TickType"
+                        }
+                    ],
+                    "index": 8,
+                    "name": "tickTypeChanged",
+                    "returnType": "void",
+                    "revision": 515
+                }
+            ],
+            "slots": [
+                {
+                    "access": "public",
+                    "index": 9,
+                    "name": "applyNiceNumbers",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractAxis"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qvalueaxis.h",
+    "outputRevision": 68
+}

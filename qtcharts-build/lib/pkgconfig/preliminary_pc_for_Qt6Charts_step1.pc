@@ -1,0 +1,14 @@
+prefix=/0/Qt/6.8.3/llvm-mingw_64
+exec_prefix=${prefix}
+bindir=${prefix}/bin
+libexecdir=${prefix}/bin
+libdir=${prefix}/lib
+includedir=${prefix}/include
+$<$<BOOL:>:mkspecsdir=${prefix}/mkspecs>
+$<1: >
+Name: Qt6 Charts
+Description: Qt Charts module
+Version: 6.8.3
+Libs: $<$<NOT:$<STREQUAL:$<TARGET_PROPERTY:Qt6::Charts,TYPE>,INTERFACE_LIBRARY>>:-L${libdir} -lQt6Charts> $<$<BOOL:loose_link_options-NOTFOUND>:$<JOIN:$<REMOVE_DUPLICATES:loose_link_options-NOTFOUND>, >> $<JOIN:$<REMOVE_DUPLICATES:>, >
+Cflags: $<$<BOOL:${includedir}/QtCharts;${includedir}>:-I$<JOIN:$<REMOVE_DUPLICATES:${includedir}/QtCharts;${includedir}>, -I>> $<$<BOOL:QT_CHARTS_LIB>:-D$<JOIN:$<REMOVE_DUPLICATES:QT_CHARTS_LIB>, -D>>
+Requires: $<JOIN:$<REMOVE_DUPLICATES:Qt6Core;Qt6Gui;Qt6Widgets;Qt6OpenGL;Qt6OpenGLWidgets>, >

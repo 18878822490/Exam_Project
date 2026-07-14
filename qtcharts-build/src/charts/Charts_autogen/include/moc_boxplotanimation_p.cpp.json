@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "BoxPlotAnimation",
+            "lineNumber": 27,
+            "object": true,
+            "qualifiedClassName": "BoxPlotAnimation",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "boxplotanimation_p.h",
+    "outputRevision": 68
+}

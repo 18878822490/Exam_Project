@@ -1,0 +1,39 @@
+{
+    "classes": [
+        {
+            "className": "QPolarChart",
+            "enums": [
+                {
+                    "isClass": false,
+                    "isFlag": false,
+                    "name": "PolarOrientation",
+                    "values": [
+                        "PolarOrientationRadial",
+                        "PolarOrientationAngular"
+                    ]
+                },
+                {
+                    "alias": "PolarOrientation",
+                    "isClass": false,
+                    "isFlag": true,
+                    "name": "PolarOrientations",
+                    "values": [
+                        "PolarOrientationRadial",
+                        "PolarOrientationAngular"
+                    ]
+                }
+            ],
+            "lineNumber": 14,
+            "object": true,
+            "qualifiedClassName": "QPolarChart",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QChart"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qpolarchart.h",
+    "outputRevision": 68
+}

@@ -10,7 +10,11 @@
 
 class QPainter;
 class TeacherDataRepository;
+class TeacherMarkWindow;
+class ScorePrintWindow;
+class TeacherScoreAnalysisWindow;
 class QQuickWidget;
+class QStackedWidget;
 
 class TeacherMainWindow : public QMainWindow
 {
@@ -28,6 +32,11 @@ public:
     Q_INVOKABLE QVariantList getExamList() const;
     Q_INVOKABLE QVariantList getQuestions() const;
     Q_INVOKABLE QVariantList searchQuestions(const QString &keyword, const QString &type, const QString &difficulty) const;
+    Q_INVOKABLE QVariantList searchQuestionsAdvanced(const QString &keyword,
+                                                     const QString &subject,
+                                                     const QString &type,
+                                                     const QString &difficulty,
+                                                     const QString &knowledgePoint) const;
     Q_INVOKABLE QVariantList getImportLogs() const;
     Q_INVOKABLE QVariantList getPendingReviews() const;
     Q_INVOKABLE QVariantList getStudentAnswers() const;
@@ -52,9 +61,15 @@ public:
                                      const QString &startTime,
                                      const QString &endTime,
                                      const QVariantMap &counts);
+    Q_INVOKABLE int createDraftPaperFromQuestions(const QString &name,
+                                                  const QString &subject,
+                                                  const QString &startTime,
+                                                  const QString &endTime,
+                                                  const QVariantList &questions);
     Q_INVOKABLE int copyExamAsDraft(const QString &examName,
                                     const QString &startTime,
                                     const QString &endTime);
+    Q_INVOKABLE int copyExamAsDraftById(int examId, const QString &copyTitle);
     Q_INVOKABLE bool publishExam(int paperId,
                                  const QVariantList &classNames,
                                  const QString &startTime,
@@ -67,15 +82,23 @@ public:
     Q_INVOKABLE void toggleMaximizeWindow();
     Q_INVOKABLE void closeWindow();
     Q_INVOKABLE void logout();
+    Q_INVOKABLE void openMarkWorkbench();
+    Q_INVOKABLE void openScoreAnalysisWorkbench();
+    Q_INVOKABLE void openScorePrintWorkbench();
     Q_INVOKABLE void startWindowMove();
 
 private:
+    void openTeacherPage(int page);
     QDateTime parseDateTime(const QString &value) const;
     QString localFilePath(const QString &fileUrl) const;
     void appendImportLog(const QString &type, const QString &fileName, int count, const QString &status, const QString &message);
     void paintScoreReport(QPainter *painter, const QRect &pageRect) const;
 
     QQuickWidget *view;
+    QStackedWidget *centralStack;
+    TeacherMarkWindow *markWorkbench;
+    ScorePrintWindow *scorePrintWorkbench;
+    TeacherScoreAnalysisWindow *scoreAnalysisWorkbench;
     TeacherDataRepository *repository;
     QVariantList importLogs;
     qint64 teacherId;

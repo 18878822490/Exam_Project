@@ -1,0 +1,207 @@
+{
+    "classes": [
+        {
+            "classInfos": [
+                {
+                    "name": "QML.Element",
+                    "value": "CategoryRange"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "257"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeCategoryRange",
+            "lineNumber": 25,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "endValue",
+                    "read": "endValue",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "qreal",
+                    "user": false,
+                    "write": "setEndValue"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "label",
+                    "read": "label",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "write": "setLabel"
+                }
+            ],
+            "qualifiedClassName": "DeclarativeCategoryRange",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        },
+        {
+            "classInfos": [
+                {
+                    "name": "DefaultProperty",
+                    "value": "axisChildren"
+                },
+                {
+                    "name": "QML.Element",
+                    "value": "CategoryAxis"
+                },
+                {
+                    "name": "QML.AddedInVersion",
+                    "value": "257"
+                },
+                {
+                    "name": "QML.ExtraVersion",
+                    "value": "512"
+                }
+            ],
+            "className": "DeclarativeCategoryAxis",
+            "enums": [
+                {
+                    "isClass": false,
+                    "isFlag": false,
+                    "name": "AxisLabelsPosition",
+                    "values": [
+                        "AxisLabelsPositionCenter",
+                        "AxisLabelsPositionOnValue"
+                    ]
+                }
+            ],
+            "interfaces": [
+                [
+                    {
+                        "className": "QQmlParserStatus",
+                        "id": "\"org.qt-project.Qt.QQmlParserStatus\""
+                    }
+                ]
+            ],
+            "lineNumber": 46,
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "axisChildren",
+                    "read": "axisChildren",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QQmlListProperty<QObject>",
+                    "user": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "labelsPosition",
+                    "notify": "labelsPositionChanged",
+                    "read": "labelsPosition",
+                    "required": false,
+                    "revision": 513,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "AxisLabelsPosition",
+                    "user": false,
+                    "write": "setLabelsPosition"
+                }
+            ],
+            "qualifiedClassName": "DeclarativeCategoryAxis",
+            "signals": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "position",
+                            "type": "AxisLabelsPosition"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "labelsPositionChanged",
+                    "returnType": "void",
+                    "revision": 513
+                }
+            ],
+            "slots": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "categoryEndValue",
+                            "type": "qreal"
+                        }
+                    ],
+                    "index": 1,
+                    "name": "append",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "label",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "remove",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "oldLabel",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "newLabel",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "replace",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QCategoryAxis"
+                },
+                {
+                    "access": "public",
+                    "name": "QQmlParserStatus"
+                }
+            ]
+        }
+    ],
+    "inputFile": "declarativecategoryaxis_p.h",
+    "outputRevision": 68
+}

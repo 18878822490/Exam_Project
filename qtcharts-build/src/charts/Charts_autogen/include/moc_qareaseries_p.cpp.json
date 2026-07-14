@@ -1,0 +1,26 @@
+{
+    "classes": [
+        {
+            "className": "QAreaSeriesPrivate",
+            "lineNumber": 24,
+            "object": true,
+            "qualifiedClassName": "QAreaSeriesPrivate",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "updated",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractSeriesPrivate"
+                }
+            ]
+        }
+    ],
+    "inputFile": "qareaseries_p.h",
+    "outputRevision": 68
+}

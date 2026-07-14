@@ -1,0 +1,18 @@
+{
+    "classes": [
+        {
+            "className": "ChartColorAxisX",
+            "lineNumber": 23,
+            "object": true,
+            "qualifiedClassName": "ChartColorAxisX",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "HorizontalAxis"
+                }
+            ]
+        }
+    ],
+    "inputFile": "chartcoloraxisx_p.h",
+    "outputRevision": 68
+}

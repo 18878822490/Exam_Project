@@ -1,0 +1,385 @@
+{
+	"AUTOGEN_COMMAND_LINE_LENGTH_MAX" : 32000,
+	"BUILD_DIR" : "D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen",
+	"CMAKE_BINARY_DIR" : "D:/Exam_Project/qtcharts-build",
+	"CMAKE_CURRENT_BINARY_DIR" : "D:/Exam_Project/qtcharts-build/src/chartsqml2",
+	"CMAKE_CURRENT_SOURCE_DIR" : "D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2",
+	"CMAKE_EXECUTABLE" : "D:/0/Qt/Tools/CMake_64/bin/cmake.exe",
+	"CMAKE_LIST_FILES" : 
+	[
+		"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/CMakeLists.txt",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/modulecppexports.h.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/QtModuleConfig.cmake.in",
+		"D:/0/Qt/Tools/CMake_64/share/cmake-3.30/Modules/BasicConfigVersion-AnyNewerVersion.cmake.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/QtCMakePackageVersionFile.cmake.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/QtVersionlessTargets.cmake.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/QtVersionlessAliasTargets.cmake.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/ModuleDescription.json.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/QtPluginConfig.cmake.in",
+		"D:/0/Qt/Tools/CMake_64/share/cmake-3.30/Modules/BasicConfigVersion-AnyNewerVersion.cmake.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/QtCMakePackageVersionFile.cmake.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6Core/Qt6CoreConfigureFileTemplate.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6Qml/Qt6QmlPluginTemplate.cpp.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6Qml/Qt6QmlModuleDirMappingTemplate.qrc.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/QtFileConfigure.txt.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/QtFileConfigure.txt.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/QtFileConfigure.txt.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/QtFileConfigure.txt.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6/PkgConfigLibrary.pc.in",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/lib/cmake/Qt6Qml/Qt6qmldirTemplate.cmake.in",
+		"D:/Exam_Project/qtcharts-build/src/chartsqml2/qtchartsqml2_QtChartsQml2Plugin_in.cpp",
+		"D:/Exam_Project/qtcharts-build/lib/pkgconfig/preliminary_pc_for_Qt6ChartsQml_step1.pc"
+	],
+	"CMAKE_SOURCE_DIR" : "D:/0/Qt/6.8.3/Src/qtcharts",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "ChartsQml_autogen/timestamp",
+	"HEADERS" : 
+	[
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativeabstractrendernode_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativeabstractrendernode_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativeareaseries_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativeareaseries_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativeaxes_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativeaxes_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativebarseries_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativebarseries_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativeboxplotseries_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativeboxplotseries_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativecandlestickseries_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativecandlestickseries_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativecategoryaxis_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativecategoryaxis_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativechart_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativechart_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativechartglobal_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativechartglobal_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativechartnode_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativechartnode_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativeforeigntypes_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativeforeigntypes_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativelineseries_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativelineseries_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativemargins_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativemargins_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativeopenglrendernode_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativeopenglrendernode_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativepieseries_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativepieseries_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativepolarchart_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativepolarchart_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativescatterseries_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativescatterseries_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativesplineseries_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativesplineseries_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativexypoint_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativexypoint_p.cpp",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativexyseries_p.h",
+			"Mu",
+			"EWIEGA46WW/moc_declarativexyseries_p.cpp",
+			null
+		],
+		[
+			"D:/Exam_Project/qtcharts-build/include/QtChartsQml/qtchartsqmlexports.h",
+			"Mu",
+			"O77NH4P4GB/moc_qtchartsqmlexports.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/include",
+	"MOC_COMPILATION_FILE" : "D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"ChartsQml_EXPORTS",
+		"NOMINMAX",
+		"QT_ASCII_CAST_WARNINGS",
+		"QT_BUILDING_QT",
+		"QT_BUILD_CHARTSQML_LIB",
+		"QT_BUILD_QMLCHARTS_LIB",
+		"QT_CHARTS_LIB",
+		"QT_CORE_LIB",
+		"QT_DEPRECATED_WARNINGS",
+		"QT_EXPLICIT_QFILE_CONSTRUCTION_FROM_PATH",
+		"QT_GUI_LIB",
+		"QT_MOC_COMPAT",
+		"QT_NETWORK_LIB",
+		"QT_NO_AS_CONST=1",
+		"QT_NO_CAST_TO_ASCII",
+		"QT_NO_CONTEXTLESS_CONNECT=1",
+		"QT_NO_DEBUG",
+		"QT_NO_EXCEPTIONS",
+		"QT_NO_FOREACH",
+		"QT_NO_FOREACH=1",
+		"QT_NO_JAVA_STYLE_ITERATORS",
+		"QT_NO_NARROWING_CONVERSIONS_IN_CONNECT",
+		"QT_NO_QASCONST",
+		"QT_NO_QEXCHANGE",
+		"QT_NO_QSNPRINTF",
+		"QT_OPENGLWIDGETS_LIB",
+		"QT_OPENGL_LIB",
+		"QT_QMLINTEGRATION_LIB",
+		"QT_QMLMETA_LIB",
+		"QT_QMLMODELS_LIB",
+		"QT_QMLWORKERSCRIPT_LIB",
+		"QT_QML_LIB",
+		"QT_QUICK_LIB",
+		"QT_USE_QSTRINGBUILDER",
+		"QT_WIDGETS_LIB",
+		"UNICODE",
+		"WIN32",
+		"WIN64",
+		"WINVER=0x0A00",
+		"_ENABLE_EXTENDED_ALIGNED_STORAGE",
+		"_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+		"_UNICODE",
+		"_USE_MATH_DEFINES",
+		"_WIN32_WINNT=0x0A00",
+		"_WIN64"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"D:/Exam_Project/qtcharts-build/include",
+		"D:/Exam_Project/qtcharts-build/include/QtChartsQml",
+		"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2",
+		"D:/Exam_Project/qtcharts-build/src/chartsqml2",
+		"D:/Exam_Project/qtcharts-build/include/QtChartsQml/6.8.3",
+		"D:/Exam_Project/qtcharts-build/include/QtChartsQml/6.8.3/QtChartsQml",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtQml/6.8.3",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtQml/6.8.3/QtQml",
+		"D:/Exam_Project/qtcharts-build/include/QtCharts",
+		"D:/Exam_Project/qtcharts-build/src/charts",
+		"D:/Exam_Project/qtcharts-build/include/QtCharts/6.8.3",
+		"D:/Exam_Project/qtcharts-build/include/QtCharts/6.8.3/QtCharts",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtCore/6.8.3",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtCore/6.8.3/QtCore",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtCore",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/mkspecs/win32-clang-g++",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtQml",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtQmlIntegration",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtNetwork",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtGui",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtWidgets",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtOpenGL",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtOpenGLWidgets",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtQuick",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtQmlMeta",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtQmlModels",
+		"D:/0/Qt/6.8.3/llvm-mingw_64/include/QtQmlWorkerScript",
+		"D:/0/Qt/Tools/llvm-mingw1706_64/include/c++/v1",
+		"D:/0/Qt/Tools/llvm-mingw1706_64/lib/clang/17/include",
+		"D:/0/Qt/Tools/llvm-mingw1706_64/include"
+	],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
+	"MOC_OPTIONS" : [ "--output-json" ],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"D:/0/Qt/Tools/llvm-mingw1706_64/bin/c++.exe",
+		"-std=gnu++17",
+		"-dM",
+		"-E",
+		"-c",
+		"D:/0/Qt/Tools/CMake_64/share/cmake-3.30/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "D:/Exam_Project/qtcharts-build/src/chartsqml2/ChartsQml_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : 
+	[
+		"D:/Exam_Project/qtcharts-build/src/chartsqml2/.qt/rcc/qrc_qmake_QtCharts.cpp",
+		"D:/Exam_Project/qtcharts-build/src/chartsqml2/chartsqml_qmltyperegistrations.cpp",
+		"D:/Exam_Project/qtcharts-build/src/chartsqml2/qtchartsqml-config.h",
+		"D:/Exam_Project/qtcharts-build/src/chartsqml2/qtchartsqml-config_p.h"
+	],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 16,
+	"PARSE_CACHE_FILE" : "D:/Exam_Project/qtcharts-build/src/chartsqml2/CMakeFiles/ChartsQml_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "D:/0/Qt/6.8.3/llvm-mingw_64/bin/moc.exe",
+	"QT_UIC_EXECUTABLE" : "",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 8,
+	"SETTINGS_FILE" : "D:/Exam_Project/qtcharts-build/src/chartsqml2/CMakeFiles/ChartsQml_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativeareaseries.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativeaxes.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativebarseries.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativeboxplotseries.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativecandlestickseries.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativecategoryaxis.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativechart.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativechartnode.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativelineseries.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativemargins.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativeopenglrendernode.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativepieseries.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativepolarchart.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativescatterseries.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativesplineseries.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativexypoint.cpp",
+			"Mu",
+			null
+		],
+		[
+			"D:/0/Qt/6.8.3/Src/qtcharts/src/chartsqml2/declarativexyseries.cpp",
+			"Mu",
+			null
+		]
+	],
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}
