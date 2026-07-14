@@ -1,0 +1,60 @@
+Day 1 上午开发记录
+
+1. 完成项目目录规划：
+backend、qt-client、database、docs、ppt。
+
+2. 完成 Spring Boot 后端项目创建：
+技术栈包括 Spring Web、MySQL Driver、MyBatis、Lombok、Validation。
+
+3. 完成 MySQL 数据库连接配置：
+数据库名 exam_ai_platform，服务端口 8081。
+
+4. 完成后端测试接口：
+GET /api/test，可返回后端启动成功提示。
+
+5. 完成 Qt 前端空项目创建：
+使用 Qt Widgets Application，选择 Desktop Qt 6.8.3 MinGW 64-bit Debug Kit。
+
+6. 遇到的问题：
+Maven 命令行未配置，但 IDEA 可正常下载依赖。
+Spring Boot 初次启动失败，原因是未配置 datasource.url。
+通过 application.yml 配置 MySQL 后解决。
+
+7. 下一步计划：
+下午完成数据库核心表设计和演示账号初始化。
+
+Day 1 下午开发记录
+
+1. 完成 MySQL 核心表初始化：
+users、questions、exams、exam_questions、exam_records、student_answers、wrong_questions、operation_logs。
+
+2. 完成演示账号：
+admin / 123456
+teacher / 123456
+student / 123456
+
+3. 完成后端登录接口：
+POST /api/auth/login
+支持账号密码登录，返回 success、message、data 统一格式。
+
+4. 完成登录日志：
+登录成功记录 LOGIN_SUCCESS，登录失败记录 LOGIN_FAIL。
+
+5. 完成日志查询接口：
+GET /api/logs/latest
+管理员后期可查看最近 50 条操作日志。
+
+6. 完成 Qt 登录页：
+使用美化后的左右分栏登录界面，包含登录和注册入口。
+
+7. 完成 Qt 调用后端：
+Qt 使用 QNetworkAccessManager 调用 Spring Boot 登录接口。
+
+8. 完成三角色跳转：
+teacher 进入教师工作台；
+student 进入学生学习中心；
+admin 进入管理员控制台。
+
+9. 遇到的问题与解决：
+Qt 项目使用 CMake，没有 .pro 文件，因此在 CMakeLists.txt 中加入 Network 组件。
+浏览器不能直接测试 POST，因此使用 IDEA HTTP Client 测试接口。

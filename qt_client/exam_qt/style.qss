@@ -1,0 +1,224 @@
+QWidget {
+    font-family: "Microsoft YaHei", "Segoe UI", Arial;
+    font-size: 14px;
+    color: #172033;
+}
+
+#AppBackground {
+    background: #f5f9ff;
+}
+
+#LoginCard {
+    background: #ffffff;
+    border-radius: 26px;
+    border: 1px solid rgba(214, 227, 245, 190);
+}
+
+#LogoPanel {
+    background: #ffffff;
+    border: 1px solid #e7eef8;
+    border-radius: 20px;
+}
+
+#BrandTitle {
+    color: #1953a8;
+    font-size: 25px;
+    font-weight: 700;
+}
+
+#BrandSubtitle {
+    color: #718199;
+    font-size: 13px;
+}
+
+#BrandPanel #BrandTitle {
+    color: #ffffff;
+}
+
+#BrandPanel #BrandSubtitle {
+    color: rgba(255, 255, 255, 190);
+}
+
+#SideHeadline {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+#SideIntro {
+    color: rgba(255, 255, 255, 205);
+    font-size: 14px;
+    line-height: 22px;
+}
+
+QFrame#FeaturePill {
+    background: rgba(255, 255, 255, 34);
+    border: 1px solid rgba(255, 255, 255, 44);
+    border-radius: 15px;
+}
+
+QFrame#FeaturePill:hover {
+    background: rgba(255, 255, 255, 58);
+    border: 1px solid rgba(255, 255, 255, 82);
+}
+
+QFrame#FeaturePill[active="true"] {
+    background: rgba(255, 255, 255, 82);
+    border: 1px solid rgba(255, 255, 255, 110);
+}
+
+#FeatureTitle {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+#FeatureText {
+    color: rgba(255, 255, 255, 196);
+    font-size: 12px;
+}
+
+#FieldLabel {
+    color: #5e6d82;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+QLineEdit#Input,
+QComboBox#Input {
+    min-height: 44px;
+    padding: 0 16px;
+    color: #172033;
+    background: #f5f7fb;
+    border: 1px solid #edf1f7;
+    border-radius: 10px;
+    selection-background-color: #0a84ff;
+}
+
+QLineEdit#Input:hover,
+QComboBox#Input:hover {
+    border: 1px solid #d8e5f5;
+    background: #ffffff;
+}
+
+QLineEdit#Input:focus,
+QComboBox#Input:focus {
+    border: 2px solid #2b63ba;
+    background: #ffffff;
+}
+
+QComboBox#Input::drop-down {
+    width: 34px;
+    border: 0;
+}
+
+QComboBox#Input::down-arrow {
+    image: none;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #66758a;
+    margin-right: 12px;
+}
+
+QListWidget#ClassList {
+    padding: 8px;
+    color: #172033;
+    background: #f5f7fb;
+    border: 1px solid #edf1f7;
+    border-radius: 10px;
+    outline: 0;
+}
+
+QListWidget#ClassList::item {
+    min-height: 24px;
+    padding: 4px 8px;
+    border-radius: 7px;
+}
+
+QListWidget#ClassList::item:hover {
+    background: #eaf2ff;
+    color: #1d56aa;
+}
+
+QListWidget#ClassList::item:selected {
+    background: #2b63ba;
+    color: #ffffff;
+}
+
+QPushButton#PrimaryButton {
+    min-height: 48px;
+    color: #ffffff;
+    background: #2b63ba;
+    border: 0;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+QPushButton#PrimaryButton:hover {
+    background: #1d56aa;
+}
+
+QPushButton#PrimaryButton:pressed {
+    background: #174b98;
+}
+
+QPushButton#PrimaryButton:disabled {
+    background: #9eb9de;
+}
+
+QPushButton#TextLink {
+    color: #2b63ba;
+    background: transparent;
+    border: 0;
+    min-height: 28px;
+    font-weight: 600;
+}
+
+QPushButton#TextLink:hover {
+    color: #174b98;
+}
+
+#MessageLabel {
+    color: #d13438;
+    font-size: 13px;
+    min-height: 22px;
+}
+
+#RoleHintLabel {
+    color: #2563eb;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+QPushButton#StatusLink {
+    color: #107c41;
+    background: #effcf4;
+    border: 1px solid #c9f2d8;
+    border-radius: 10px;
+    min-height: 34px;
+    font-weight: 700;
+}
+
+QPushButton#StatusLink:hover {
+    background: #defbe9;
+}
+
+#MainRolePage {
+    background: #f7fbff;
+}
+
+#RoleHeading {
+    color: #172033;
+    font-size: 30px;
+    font-weight: 700;
+}
+
+#RoleBody {
+    color: #526173;
+    font-size: 16px;
+}

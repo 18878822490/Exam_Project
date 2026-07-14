@@ -1,0 +1,13 @@
+<RCC>
+    <!-- QML resources -->
+    <qresource prefix="/">
+        <file>style.qss</file>
+        <file>assets/brand-logo.png</file>
+        <file>assets/brand-logo-full.png</file>
+        <file>assets/brand-logo-mark.png</file>
+        <file>qml/LoginView.qml</file>
+        <file>qml/TeacherMain.qml</file>
+        <file>qml/StudentMain.qml</file>
+        <file>qml/AdminMain.qml</file>
+    </qresource>
+</RCC>

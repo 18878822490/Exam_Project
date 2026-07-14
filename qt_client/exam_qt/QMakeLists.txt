@@ -1,0 +1,42 @@
+QT += core gui widgets network qml quick quickwidgets quickcontrols2 sql printsupport
+
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
+CONFIG += c++17
+TEMPLATE = app
+TARGET = exam_qt
+
+SOURCES += \
+    main.cpp \
+    mainwindow.cpp \
+    LoginWindow.cpp \
+    TeacherMainWindow.cpp \
+    TeacherDataRepository.cpp \
+    StudentMainWindow.cpp
+
+HEADERS += \
+    mainwindow.h \
+    LoginWindow.h \
+    LoginWidget.h \
+    RegisterWidget.h \
+    TeacherMainWindow.h \
+    TeacherDataRepository.h \
+    StudentMainWindow.h
+
+FORMS += \
+    mainwindow.ui
+
+RESOURCES += \
+    resources.qrc
+
+DISTFILES += \
+    style.qss \
+    qml/LoginView.qml \
+    qml/RoleHome.qml \
+    qml/TeacherMain.qml \
+    qml/StudentMain.qml
+
+TRANSLATIONS += \
+    exam_qt_zh_CN.ts
+CONFIG += lrelease
+CONFIG += embed_translations
