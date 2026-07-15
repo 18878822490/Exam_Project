@@ -1,6 +1,0 @@
-# ninja log v6
-5	102	8057329201112296	CMakeFiles/lib1.dir/lib1.cpp.obj	d97f171e89a5c153
-105	391	8057329204657228	liblib1.dll	81728e0cb7416e8f
-105	391	8057329204657228	liblib1.dll.a	81728e0cb7416e8f
-392	550	8057329204975417	CMakeFiles/print_lib_path	d6a08972b187d76
-392	550	8057329204975417	D:/Exam_Project/qtcharts-build/config.tests/binary_for_strip_built/CMakeFiles/print_lib_path	d6a08972b187d76
