@@ -30,9 +30,11 @@ public class UserService {
     }
 
     private final UserMapper userMapper;
+    private final OperationLogService operationLogService;
 
-    public UserService(UserMapper userMapper) {
+    public UserService(UserMapper userMapper, OperationLogService operationLogService) {
         this.userMapper = userMapper;
+        this.operationLogService = operationLogService;
     }
 
     @PostConstruct
@@ -50,6 +52,18 @@ public class UserService {
             throw new IllegalArgumentException("用户名或密码错误");
         }
         return toResponse(account);
+    }
+
+    public void logout(Map<String, Object> payload) {
+        Long userId = longValue(payload, "userId", payload == null ? null : payload.get("user_id"));
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("用户ID不能为空");
+        }
+        String role = normalizeRole(stringValue(payload, "role", payload == null ? null : payload.get("userRole")));
+        String username = stringValue(payload, "username", null);
+        operationLogService.record(userId,
+                "USER_LOGOUT_" + role,
+                username.isBlank() ? "退出登录" : "退出登录：" + username);
     }
 
     @Transactional
@@ -108,6 +122,16 @@ public class UserService {
         return findStudentById(response.getUserId());
     }
 
+    @Transactional
+    public Map<String, Object> createTeacherForAdmin(RegisterRequest request) {
+        request.setRole("TEACHER");
+        if (!nonBlank(request.getPassword())) {
+            request.setPassword("123456");
+        }
+        LoginResponse response = register(request);
+        return findTeacherById(response.getUserId());
+    }
+
     public Map<String, Object> findTeacherById(Long teacherId) {
         if (teacherId == null) {
             throw new IllegalArgumentException("教师ID不能为空");
@@ -144,6 +168,7 @@ public class UserService {
         if (!userMapper.updateStudentProfile(studentId, name, studentNo, major, classId, className)) {
             throw new IllegalArgumentException("学生不存在");
         }
+        operationLogService.record(studentId, "USER_UPDATE_STUDENT", "修改学生信息：" + name + " / " + studentNo);
         return findStudentById(studentId);
     }
 
@@ -157,6 +182,7 @@ public class UserService {
         if (!userMapper.updateTeacherProfile(teacherId, name, subject, phone, email)) {
             throw new IllegalArgumentException("教师不存在");
         }
+        operationLogService.record(teacherId, "USER_UPDATE_TEACHER", "修改教师信息：" + name + " / " + subject);
         return findTeacherById(teacherId);
     }
 
@@ -179,6 +205,7 @@ public class UserService {
         if (!userMapper.updatePassword(tableName, userId, oldPassword, newPassword)) {
             throw new IllegalArgumentException("原密码错误或用户不存在");
         }
+        operationLogService.record(userId, "PASSWORD_CHANGE_" + normalizeRole(role), "修改登录密码");
     }
 
     private LoginResponse registerStudent(RegisterRequest request, String username) {
@@ -199,6 +226,8 @@ public class UserService {
         student.setClassId(classId);
         student.setClassName(className);
         userMapper.insertStudent(student);
+        operationLogService.record(student.getId(), "USER_REGISTER_STUDENT",
+                "学生注册：" + student.getName() + " / " + student.getStudentNo());
 
         return toResponse(new UserMapper.AccountRecord(
                 student.getId(),
@@ -231,6 +260,8 @@ public class UserService {
             Long classId = ensureClass(className, majorForClassName(className));
             userMapper.bindTeacherClass(teacher.getId(), classId);
         }
+        operationLogService.record(teacher.getId(), "USER_REGISTER_TEACHER",
+                "教师注册：" + teacher.getName() + " / " + teacher.getSubject());
 
         LoginResponse response = toResponse(new UserMapper.AccountRecord(
                 teacher.getId(),
@@ -254,6 +285,7 @@ public class UserService {
         admin.setName(nonBlank(request.getName()) ? request.getName().trim() : username);
         admin.setPhone(requireText(request.getPhone(), "管理员必须填写手机号"));
         userMapper.insertAdmin(admin);
+        operationLogService.record(admin.getId(), "USER_REGISTER_ADMIN", "管理员注册：" + admin.getName());
 
         return toResponse(new UserMapper.AccountRecord(
                 admin.getId(),
@@ -389,5 +421,17 @@ public class UserService {
             return String.valueOf(payload.get(key)).trim();
         }
         return fallback == null ? "" : String.valueOf(fallback).trim();
+    }
+
+    private Long longValue(Map<String, Object> payload, String key, Object fallback) {
+        Object value = payload != null && payload.containsKey(key) ? payload.get(key) : fallback;
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() ? null : Long.parseLong(text);
     }
 }

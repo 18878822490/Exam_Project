@@ -339,7 +339,8 @@ public class UserMapper {
                        (SELECT COUNT(DISTINCT ep.exam_id)
                         FROM exam_publish ep
                         INNER JOIN exams e ON e.id = ep.exam_id
-                        WHERE ep.class_name = s.class_name
+                        LEFT JOIN exam_classes c ON c.id = ep.class_id
+                        WHERE (ep.class_name = s.class_name OR c.name = s.class_name)
                           AND COALESCE(ep.end_time, e.end_time) < NOW()
                           AND NOT EXISTS (
                               SELECT 1 FROM scores sc
@@ -386,13 +387,17 @@ public class UserMapper {
                 "SELECT COUNT(DISTINCT student_no) FROM scores",
                 Integer.class
         );
+        Integer pendingStudents = jdbcTemplate.queryForObject(
+                "SELECT COUNT(DISTINCT student_no) FROM student_answers WHERE review_status = '待批改'",
+                Integer.class
+        );
         Number total = (Number) studentCounts.getOrDefault("total_count", 0);
         int totalCount = total == null ? 0 : total.intValue();
         int referenced = scoredStudents == null ? 0 : scoredStudents;
         int referenceRate = totalCount == 0 ? 0 : Math.round(referenced * 100f / totalCount);
         stats.put("total_count", totalCount);
         stats.put("today_new", ((Number) studentCounts.getOrDefault("today_new", 0)).intValue());
-        stats.put("pending_review", 0);
+        stats.put("pending_review", pendingStudents == null ? 0 : pendingStudents);
         stats.put("reference_rate", referenceRate + "%");
         return stats;
     }
@@ -446,12 +451,16 @@ public class UserMapper {
                 "SELECT COUNT(DISTINCT created_by) FROM exams WHERE created_by IS NOT NULL",
                 Integer.class
         );
+        Integer pendingAnswers = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM student_answers WHERE review_status = '待批改'",
+                Integer.class
+        );
         int totalCount = ((Number) teacherCounts.getOrDefault("total_count", 0)).intValue();
         int activeCount = teachersWithExam == null ? 0 : teachersWithExam;
         int activeRate = totalCount == 0 ? 0 : Math.round(activeCount * 100f / totalCount);
         stats.put("total_count", totalCount);
         stats.put("today_new", ((Number) teacherCounts.getOrDefault("today_new", 0)).intValue());
-        stats.put("pending_review", 0);
+        stats.put("pending_review", pendingAnswers == null ? 0 : pendingAnswers);
         stats.put("active_rate", activeRate + "%");
         return stats;
     }

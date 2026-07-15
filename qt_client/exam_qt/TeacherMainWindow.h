@@ -42,8 +42,12 @@ public:
     Q_INVOKABLE QVariantList getStudentAnswers() const;
     Q_INVOKABLE QVariantList getStudentAnswersForPaper(int paperId) const;
     Q_INVOKABLE QVariantList getStudentAnswersForStudent(int paperId, const QString &studentNo) const;
+    Q_INVOKABLE QVariantList getReviewExams() const;
+    Q_INVOKABLE QVariantList getReviewStudents(int examId) const;
+    Q_INVOKABLE QVariantList getReviewStudentAnswers(int examId, const QString &studentNo) const;
     Q_INVOKABLE QVariantList getPaperQuestions(int paperId) const;
     Q_INVOKABLE QVariantList getTodoItems() const;
+    Q_INVOKABLE QVariantMap getTeacherSettings() const;
     Q_INVOKABLE QVariantMap getDashboardStats() const;
     Q_INVOKABLE QVariantMap getScoreStatistics() const;
     Q_INVOKABLE QVariantList getClassScoreTrend(const QString &className, const QString &subject) const;
@@ -52,6 +56,8 @@ public:
     Q_INVOKABLE bool updateQuestion(int id, const QVariantMap &question);
     Q_INVOKABLE bool removeQuestion(int id);
     Q_INVOKABLE bool addTodoItem(const QString &title, const QString &type, const QString &remindTime);
+    Q_INVOKABLE bool updateTodoStatus(int id, const QString &status);
+    Q_INVOKABLE QVariantMap saveTeacherSettings(const QVariantMap &settings);
     Q_INVOKABLE int importQuestionsFromFile(const QString &fileUrl);
     Q_INVOKABLE QVariantMap reserveOcrImport(const QString &fileUrl);
     Q_INVOKABLE QString exportScoreReportPdf();
@@ -66,6 +72,16 @@ public:
                                                   const QString &startTime,
                                                   const QString &endTime,
                                                   const QVariantList &questions);
+    Q_INVOKABLE int createDraftPaperFromQuestionsWithLimit(const QString &name,
+                                                           const QString &subject,
+                                                           const QString &startTime,
+                                                           const QString &endTime,
+                                                           const QVariantList &questions,
+                                                           int maxTotalScore);
+    Q_INVOKABLE bool addQuestionToPaper(int paperId, const QVariantMap &question, int maxTotalScore);
+    Q_INVOKABLE bool removeQuestionFromPaper(int paperId, int questionId);
+    Q_INVOKABLE bool reorderPaperQuestions(int paperId, const QVariantList &questions, int maxTotalScore);
+    Q_INVOKABLE bool replacePaperQuestions(int paperId, const QVariantList &questions, int maxTotalScore);
     Q_INVOKABLE int copyExamAsDraft(const QString &examName,
                                     const QString &startTime,
                                     const QString &endTime);

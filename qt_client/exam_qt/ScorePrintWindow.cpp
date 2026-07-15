@@ -9,6 +9,7 @@
 
 #include <QDesktopServices>
 #include <QAbstractItemView>
+#include <QDate>
 #include <QDir>
 #include <QFileInfo>
 #include <QGraphicsDropShadowEffect>
@@ -101,12 +102,6 @@ void ScorePrintWindow::loadInitialData()
 {
     QStringList classes = repositoryClassNames();
     QStringList exams = repositoryExamNames();
-    if (classes.isEmpty()) {
-        classes = {QStringLiteral("软件工程2501班"), QStringLiteral("计算机科学2502班"), QStringLiteral("人工智能2501班")};
-    }
-    if (exams.isEmpty()) {
-        exams = {QStringLiteral("Java期末考试"), QStringLiteral("Java阶段测试"), QStringLiteral("数据结构单元测验")};
-    }
 
     filterWidget->setClasses(classes);
     filterWidget->setExams(exams);
@@ -121,12 +116,46 @@ void ScorePrintWindow::loadInitialData()
 
 QVariantList ScorePrintWindow::loadScoreData(const QString &className, const QString &examName)
 {
-    return reportGenerator->loadScoreData(className, examName);
+    if (repository == nullptr) {
+        return {};
+    }
+    const int examId = repository->examIdForName(examName);
+    return repository->getScoreAnalysis(examId, className).value(QStringLiteral("scores")).toList();
 }
 
 QVariantMap ScorePrintWindow::generateReport(const QString &className, const QString &examName, const QString &reportType)
 {
-    return reportGenerator->generateReport(className, examName, reportType);
+    if (repository == nullptr) {
+        return {};
+    }
+
+    const int examId = repository->examIdForName(examName);
+    QVariantMap report = repository->getScoreReport(examId, className);
+    if (report.isEmpty()) {
+        report = QVariantMap{
+            {QStringLiteral("title"), QStringLiteral("智考星成绩报告")},
+            {QStringLiteral("examId"), examId},
+            {QStringLiteral("examName"), examName},
+            {QStringLiteral("className"), className},
+            {QStringLiteral("reportType"), reportType},
+            {QStringLiteral("date"), QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"))},
+            {QStringLiteral("scores"), QVariantList{}},
+            {QStringLiteral("summary"), QVariantMap{}}
+        };
+    }
+
+    QVariantMap summary = report.value(QStringLiteral("summary")).toMap();
+    report.insert(QStringLiteral("title"), QStringLiteral("智考星成绩报告"));
+    report.insert(QStringLiteral("examName"), examName);
+    report.insert(QStringLiteral("className"), className);
+    report.insert(QStringLiteral("reportType"), reportType);
+    report.insert(QStringLiteral("date"), QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd")));
+    report.insert(QStringLiteral("stats"), QVariantMap{
+                      {QStringLiteral("average"), summary.value(QStringLiteral("average"), summary.value(QStringLiteral("average_score"), 0))},
+                      {QStringLiteral("highest"), summary.value(QStringLiteral("highest"), summary.value(QStringLiteral("highest_score"), 0))},
+                      {QStringLiteral("lowest"), summary.value(QStringLiteral("lowest"), summary.value(QStringLiteral("lowest_score"), 0))}
+                  });
+    return report;
 }
 
 bool ScorePrintWindow::exportPDF(const QString &filePath)

@@ -82,8 +82,10 @@ bool headerLooksValid(const QMap<QString, int> &headers)
             || headers.contains(QStringLiteral("题型"))
             || headers.contains(QStringLiteral("content"))
             || headers.contains(QStringLiteral("题目"))
+            || headers.contains(QStringLiteral("题目内容"))
             || headers.contains(QStringLiteral("answer"))
-            || headers.contains(QStringLiteral("答案"));
+            || headers.contains(QStringLiteral("答案"))
+            || headers.contains(QStringLiteral("标准答案"));
 }
 
 QByteArray formDisposition(const QString &name, const QString &fileName = QString())
@@ -342,6 +344,21 @@ QVariantList TeacherMainWindow::getStudentAnswersForStudent(int paperId, const Q
     return repository->getStudentAnswersForStudent(paperId, studentNo);
 }
 
+QVariantList TeacherMainWindow::getReviewExams() const
+{
+    return repository->getReviewExams();
+}
+
+QVariantList TeacherMainWindow::getReviewStudents(int examId) const
+{
+    return repository->getReviewStudents(examId);
+}
+
+QVariantList TeacherMainWindow::getReviewStudentAnswers(int examId, const QString &studentNo) const
+{
+    return repository->getReviewStudentAnswers(examId, studentNo);
+}
+
 QVariantList TeacherMainWindow::getPaperQuestions(int paperId) const
 {
     return repository->getPaperQuestions(paperId);
@@ -350,6 +367,11 @@ QVariantList TeacherMainWindow::getPaperQuestions(int paperId) const
 QVariantList TeacherMainWindow::getTodoItems() const
 {
     return repository->getTodoItems();
+}
+
+QVariantMap TeacherMainWindow::getTeacherSettings() const
+{
+    return repository->getTeacherSettings();
 }
 
 QVariantMap TeacherMainWindow::getDashboardStats() const
@@ -392,6 +414,16 @@ bool TeacherMainWindow::addTodoItem(const QString &title, const QString &type, c
     return repository->addTodoItem(title, type, remindTime);
 }
 
+bool TeacherMainWindow::updateTodoStatus(int id, const QString &status)
+{
+    return repository->updateTodoStatus(id, status);
+}
+
+QVariantMap TeacherMainWindow::saveTeacherSettings(const QVariantMap &settings)
+{
+    return repository->saveTeacherSettings(settings);
+}
+
 int TeacherMainWindow::importQuestionsFromFile(const QString &fileUrl)
 {
     const QString path = localFilePath(fileUrl);
@@ -402,23 +434,70 @@ int TeacherMainWindow::importQuestionsFromFile(const QString &fileUrl)
 #ifdef EXAM_HAS_QXLSX
         QXlsx::Document document(path);
         const QXlsx::CellRange range = document.dimension();
-        if (range.rowCount() <= 0 || range.columnCount() <= 0) {
+        int firstRow = qMax(1, range.firstRow());
+        int firstColumn = qMax(1, range.firstColumn());
+        int lastRow = qMax(firstRow, range.lastRow());
+        int lastColumn = qMax(firstColumn, range.lastColumn());
+
+        // Some Excel files keep stale dimension metadata like A1 even though
+        // the worksheet has real cells. Probe a practical import area so
+        // fill-in-the-blank sheets saved by WPS/Excel variants still import.
+        const int probeLastRow = qMax(lastRow, firstRow + 999);
+        const int probeLastColumn = qMax(lastColumn, firstColumn + 63);
+        int detectedFirstRow = 0;
+        int detectedFirstColumn = 0;
+        int detectedLastRow = 0;
+        int detectedLastColumn = 0;
+        for (int row = 1; row <= probeLastRow; ++row) {
+            for (int column = 1; column <= probeLastColumn; ++column) {
+                if (!valueText(document.read(row, column)).isEmpty()) {
+                    detectedFirstRow = detectedFirstRow == 0 ? row : qMin(detectedFirstRow, row);
+                    detectedFirstColumn = detectedFirstColumn == 0 ? column : qMin(detectedFirstColumn, column);
+                    detectedLastRow = qMax(detectedLastRow, row);
+                    detectedLastColumn = qMax(detectedLastColumn, column);
+                }
+            }
+            if (detectedLastRow > 0 && row > detectedLastRow + 80) {
+                break;
+            }
+        }
+        if (detectedLastRow > 0) {
+            firstRow = detectedFirstRow;
+            firstColumn = detectedFirstColumn;
+            lastRow = detectedLastRow;
+            lastColumn = detectedLastColumn;
+        }
+
+        if (lastRow < firstRow || lastColumn < firstColumn) {
             appendImportLog(QStringLiteral("Excel"), info.fileName(), 0, QStringLiteral("失败"), QStringLiteral("Excel内容为空"));
             return 0;
         }
 
         QMap<QString, int> headers;
-        for (int column = range.firstColumn(); column <= range.lastColumn(); ++column) {
-            headers.insert(compactHeader(document.read(range.firstRow(), column).toString()), column - range.firstColumn());
+        int headerRow = firstRow;
+        const int headerScanLastRow = qMin(lastRow, firstRow + 9);
+        for (int candidateRow = firstRow; candidateRow <= headerScanLastRow; ++candidateRow) {
+            QMap<QString, int> candidateHeaders;
+            for (int column = firstColumn; column <= lastColumn; ++column) {
+                const QString header = compactHeader(document.read(candidateRow, column).toString());
+                if (!header.isEmpty()) {
+                    candidateHeaders.insert(header, column - firstColumn);
+                }
+            }
+            if (headerLooksValid(candidateHeaders)) {
+                headers = candidateHeaders;
+                headerRow = candidateRow;
+                break;
+            }
         }
         const bool hasHeader = headerLooksValid(headers);
 
         QJsonArray questions;
-        const int startRow = hasHeader ? range.firstRow() + 1 : range.firstRow();
-        for (int rowIndex = startRow; rowIndex <= range.lastRow(); ++rowIndex) {
+        const int startRow = hasHeader ? headerRow + 1 : firstRow;
+        for (int rowIndex = startRow; rowIndex <= lastRow; ++rowIndex) {
             QList<QVariant> rowValues;
             bool emptyRow = true;
-            for (int column = range.firstColumn(); column <= range.lastColumn(); ++column) {
+            for (int column = firstColumn; column <= lastColumn; ++column) {
                 const QVariant cellValue = document.read(rowIndex, column);
                 if (!valueText(cellValue).isEmpty()) {
                     emptyRow = false;
@@ -431,8 +510,14 @@ int TeacherMainWindow::importQuestionsFromFile(const QString &fileUrl)
 
             QJsonObject question;
             if (hasHeader) {
+                question.insert(QStringLiteral("subject"), headerValue(headers, rowValues, {
+                                    QStringLiteral("subject"), QStringLiteral("科目"), QStringLiteral("课程")
+                                }));
                 question.insert(QStringLiteral("type"), headerValue(headers, rowValues, {QStringLiteral("type"), QStringLiteral("题型")}));
-                question.insert(QStringLiteral("content"), headerValue(headers, rowValues, {QStringLiteral("content"), QStringLiteral("题目"), QStringLiteral("题干")}));
+                question.insert(QStringLiteral("content"), headerValue(headers, rowValues, {
+                                    QStringLiteral("content"), QStringLiteral("题目"), QStringLiteral("题干"),
+                                    QStringLiteral("题目内容"), QStringLiteral("题干内容")
+                                }));
                 question.insert(QStringLiteral("optionA"), headerValue(headers, rowValues, {QStringLiteral("optionA"), QStringLiteral("option_a"), QStringLiteral("A"), QStringLiteral("选项A")}));
                 question.insert(QStringLiteral("optionB"), headerValue(headers, rowValues, {QStringLiteral("optionB"), QStringLiteral("option_b"), QStringLiteral("B"), QStringLiteral("选项B")}));
                 question.insert(QStringLiteral("optionC"), headerValue(headers, rowValues, {QStringLiteral("optionC"), QStringLiteral("option_c"), QStringLiteral("C"), QStringLiteral("选项C")}));
@@ -446,11 +531,20 @@ int TeacherMainWindow::importQuestionsFromFile(const QString &fileUrl)
                     question.insert(QStringLiteral("score"), score.toInt());
                 }
             } else {
-                question.insert(QStringLiteral("type"), valueText(rowValues.value(0)));
-                question.insert(QStringLiteral("content"), valueText(rowValues.value(1)));
-                question.insert(QStringLiteral("answer"), valueText(rowValues.value(2)));
-                question.insert(QStringLiteral("difficulty"), valueText(rowValues.value(3)));
-                question.insert(QStringLiteral("knowledgePoint"), valueText(rowValues.value(4)));
+                const bool firstColumnIsSubject = rowValues.size() >= 8;
+                const int offset = firstColumnIsSubject ? 1 : 0;
+                if (firstColumnIsSubject) {
+                    question.insert(QStringLiteral("subject"), valueText(rowValues.value(0)));
+                }
+                question.insert(QStringLiteral("type"), valueText(rowValues.value(offset)));
+                question.insert(QStringLiteral("content"), valueText(rowValues.value(offset + 1)));
+                question.insert(QStringLiteral("optionA"), valueText(rowValues.value(offset + 2)));
+                question.insert(QStringLiteral("optionB"), valueText(rowValues.value(offset + 3)));
+                question.insert(QStringLiteral("optionC"), valueText(rowValues.value(offset + 4)));
+                question.insert(QStringLiteral("optionD"), valueText(rowValues.value(offset + 5)));
+                question.insert(QStringLiteral("answer"), valueText(rowValues.value(offset + 6)));
+                question.insert(QStringLiteral("difficulty"), valueText(rowValues.value(offset + 7)));
+                question.insert(QStringLiteral("knowledgePoint"), valueText(rowValues.value(offset + 8)));
             }
 
             if (!question.value(QStringLiteral("type")).toString().isEmpty()
@@ -467,7 +561,13 @@ int TeacherMainWindow::importQuestionsFromFile(const QString &fileUrl)
         }
         payload.insert(QStringLiteral("questions"), questions);
 
-    QNetworkRequest request(AppConfig::apiUrl(QStringLiteral("/questions/import/excel/parsed")));
+        if (questions.isEmpty()) {
+            appendImportLog(QStringLiteral("Excel"), info.fileName(), 0, QStringLiteral("失败"),
+                            QStringLiteral("Excel未识别到题目。请确认文件已保存，并且表头包含：科目、题型、题目内容、标准答案。"));
+            return 0;
+        }
+
+        QNetworkRequest request(AppConfig::apiUrl(QStringLiteral("/questions/import/excel/parsed")));
         request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
 
         QNetworkAccessManager manager;
@@ -487,6 +587,9 @@ int TeacherMainWindow::importQuestionsFromFile(const QString &fileUrl)
         reply->deleteLater();
         const QJsonObject root = response.object();
         const int imported = importedCount(root);
+        if (!root.value(QStringLiteral("success")).toBool()) {
+            appendImportLog(QStringLiteral("Excel"), info.fileName(), 0, QStringLiteral("失败"), importMessage(root));
+        }
         return imported;
 #else
         appendImportLog(QStringLiteral("Excel"), info.fileName(), 0, QStringLiteral("失败"),
@@ -590,6 +693,41 @@ int TeacherMainWindow::createDraftPaperFromQuestions(const QString &name,
                                                      questions);
 }
 
+int TeacherMainWindow::createDraftPaperFromQuestionsWithLimit(const QString &name,
+                                                              const QString &subject,
+                                                              const QString &startTime,
+                                                              const QString &endTime,
+                                                              const QVariantList &questions,
+                                                              int maxTotalScore)
+{
+    return repository->createDraftPaperFromQuestions(name,
+                                                     subject,
+                                                     parseDateTime(startTime),
+                                                     parseDateTime(endTime),
+                                                     questions,
+                                                     maxTotalScore);
+}
+
+bool TeacherMainWindow::addQuestionToPaper(int paperId, const QVariantMap &question, int maxTotalScore)
+{
+    return repository->addQuestionToPaper(paperId, question, maxTotalScore);
+}
+
+bool TeacherMainWindow::removeQuestionFromPaper(int paperId, int questionId)
+{
+    return repository->removeQuestionFromPaper(paperId, questionId);
+}
+
+bool TeacherMainWindow::reorderPaperQuestions(int paperId, const QVariantList &questions, int maxTotalScore)
+{
+    return repository->reorderPaperQuestions(paperId, questions, maxTotalScore);
+}
+
+bool TeacherMainWindow::replacePaperQuestions(int paperId, const QVariantList &questions, int maxTotalScore)
+{
+    return repository->replacePaperQuestions(paperId, questions, maxTotalScore);
+}
+
 int TeacherMainWindow::copyExamAsDraft(const QString &examName,
                                        const QString &startTime,
                                        const QString &endTime)
@@ -651,6 +789,7 @@ void TeacherMainWindow::closeWindow()
 
 void TeacherMainWindow::logout()
 {
+    repository->logout();
     auto *login = new LoginWindow;
     login->setAttribute(Qt::WA_DeleteOnClose);
     login->show();
@@ -661,19 +800,12 @@ void TeacherMainWindow::logout()
 
 void TeacherMainWindow::openMarkWorkbench()
 {
-    markWorkbench->loadExam();
-    markWorkbench->loadStudents();
-    centralStack->setCurrentWidget(markWorkbench);
-    markWorkbench->playEnterAnimation();
-    markWorkbench->setFocus();
+    openTeacherPage(3);
 }
 
 void TeacherMainWindow::openScoreAnalysisWorkbench()
 {
-    scoreAnalysisWorkbench->loadInitialData();
-    centralStack->setCurrentWidget(scoreAnalysisWorkbench);
-    scoreAnalysisWorkbench->playEnterAnimation();
-    scoreAnalysisWorkbench->setFocus();
+    openTeacherPage(4);
 }
 
 void TeacherMainWindow::openScorePrintWorkbench()
@@ -686,15 +818,6 @@ void TeacherMainWindow::openScorePrintWorkbench()
 
 void TeacherMainWindow::openTeacherPage(int page)
 {
-    if (page == 3) {
-        openMarkWorkbench();
-        return;
-    }
-    if (page == 4) {
-        openScoreAnalysisWorkbench();
-        return;
-    }
-
     centralStack->setCurrentWidget(view);
     if (QQuickItem *root = view->rootObject()) {
         QMetaObject::invokeMethod(root, "switchPage", Q_ARG(QVariant, QVariant(page)));

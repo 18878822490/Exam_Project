@@ -99,7 +99,17 @@ public class ScoreMapper {
     public List<Map<String, Object>> listAnswers(Long examId, String status) {
         if (status == null || status.isBlank()) {
             return jdbcTemplate.queryForList("""
-                    SELECT sa.*, q.subject, q.type, q.content, q.answer AS standard_answer,
+                    SELECT sa.*, q.subject,
+                           CASE
+                               WHEN q.type IN ('单选题', '单选', '选择题') OR LOWER(q.type) IN ('single', 'singlechoice') THEN '单选题'
+                               WHEN q.type IN ('多选题', '多选') OR LOWER(q.type) IN ('multiple', 'multiplechoice', 'multi') THEN '多选题'
+                               WHEN q.type IN ('判断题', '判断') OR LOWER(q.type) IN ('judge', 'truefalse', 'true/false') THEN '判断题'
+                               WHEN q.type IN ('填空题', '填空') OR LOWER(q.type) IN ('blank', 'fill') THEN '填空题'
+                               WHEN q.type IN ('编程题', '代码题') OR LOWER(q.type) IN ('program', 'coding', 'code') THEN '编程题'
+                               WHEN q.type IN ('高数大题', '高数题', '数学大题') OR LOWER(q.type) = 'math' THEN '编程题'
+                               ELSE q.type
+                           END AS type,
+                           q.content, q.answer AS standard_answer,
                            q.analysis, q.knowledge_point, eq.sort_no, eq.score AS question_score
                     FROM student_answers sa
                     INNER JOIN questions q ON q.id = sa.question_id
@@ -109,7 +119,17 @@ public class ScoreMapper {
                     """, examId);
         }
         return jdbcTemplate.queryForList("""
-                SELECT sa.*, q.subject, q.type, q.content, q.answer AS standard_answer,
+                SELECT sa.*, q.subject,
+                       CASE
+                           WHEN q.type IN ('单选题', '单选', '选择题') OR LOWER(q.type) IN ('single', 'singlechoice') THEN '单选题'
+                           WHEN q.type IN ('多选题', '多选') OR LOWER(q.type) IN ('multiple', 'multiplechoice', 'multi') THEN '多选题'
+                           WHEN q.type IN ('判断题', '判断') OR LOWER(q.type) IN ('judge', 'truefalse', 'true/false') THEN '判断题'
+                           WHEN q.type IN ('填空题', '填空') OR LOWER(q.type) IN ('blank', 'fill') THEN '填空题'
+                           WHEN q.type IN ('编程题', '代码题') OR LOWER(q.type) IN ('program', 'coding', 'code') THEN '编程题'
+                           WHEN q.type IN ('高数大题', '高数题', '数学大题') OR LOWER(q.type) = 'math' THEN '编程题'
+                           ELSE q.type
+                       END AS type,
+                       q.content, q.answer AS standard_answer,
                        q.analysis, q.knowledge_point, eq.sort_no, eq.score AS question_score
                 FROM student_answers sa
                 INNER JOIN questions q ON q.id = sa.question_id
@@ -193,7 +213,14 @@ public class ScoreMapper {
                                  WHERE sa.exam_id = e.id AND sa.review_status = '待批改'), 0) AS pending_answer_count,
                        ROUND(COALESCE((SELECT AVG(sc.total_score)
                                        FROM scores sc
-                                       WHERE sc.exam_id = e.id), 0), 1) AS average_score,
+                                       WHERE sc.exam_id = e.id
+                                         AND NOT EXISTS (
+                                             SELECT 1
+                                             FROM student_answers pending
+                                             WHERE pending.exam_id = sc.exam_id
+                                               AND pending.student_no = sc.student_no
+                                               AND pending.review_status = '待批改'
+                                         )), 0), 1) AS average_score,
                        CASE
                            WHEN COALESCE((SELECT COUNT(DISTINCT sa.student_no)
                                           FROM student_answers sa
@@ -209,7 +236,7 @@ public class ScoreMapper {
                 """);
         List<Object> args = new java.util.ArrayList<>();
         if (teacherId != null) {
-            sql.append(" AND e.created_by = ?");
+            sql.append(" AND e.created_by = ? ");
             args.add(teacherId);
         }
         sql.append("""
@@ -264,9 +291,23 @@ public class ScoreMapper {
 
     public List<Map<String, Object>> listStudentAnswers(Long examId, String studentNo, String status) {
         StringBuilder sql = new StringBuilder("""
-                SELECT sa.*, q.subject, q.type, q.content, q.answer AS standard_answer,
+                SELECT sa.*, q.subject,
+                       CASE
+                           WHEN q.type IN ('单选题', '单选', '选择题') OR LOWER(q.type) IN ('single', 'singlechoice') THEN '单选题'
+                           WHEN q.type IN ('多选题', '多选') OR LOWER(q.type) IN ('multiple', 'multiplechoice', 'multi') THEN '多选题'
+                           WHEN q.type IN ('判断题', '判断') OR LOWER(q.type) IN ('judge', 'truefalse', 'true/false') THEN '判断题'
+                           WHEN q.type IN ('填空题', '填空') OR LOWER(q.type) IN ('blank', 'fill') THEN '填空题'
+                           WHEN q.type IN ('编程题', '代码题') OR LOWER(q.type) IN ('program', 'coding', 'code') THEN '编程题'
+                           WHEN q.type IN ('高数大题', '高数题', '数学大题') OR LOWER(q.type) = 'math' THEN '编程题'
+                           ELSE q.type
+                       END AS type,
+                       q.content, q.answer AS standard_answer,
                        q.analysis, q.knowledge_point, eq.sort_no, eq.score AS question_score,
-                       CASE WHEN q.type IN ('单选题', '多选题', '判断题', '填空题') THEN 1 ELSE 0 END AS is_objective
+                       CASE
+                           WHEN q.type IN ('单选题', '多选题', '判断题', '填空题', '单选', '多选', '判断', '填空', '选择题')
+                             OR LOWER(q.type) IN ('single', 'singlechoice', 'multiple', 'multiplechoice', 'multi', 'judge', 'truefalse', 'true/false', 'blank', 'fill')
+                           THEN 1 ELSE 0
+                       END AS is_objective
                 FROM student_answers sa
                 INNER JOIN questions q ON q.id = sa.question_id
                 LEFT JOIN exam_questions eq ON eq.exam_id = sa.exam_id AND eq.question_id = sa.question_id
@@ -339,10 +380,35 @@ public class ScoreMapper {
 
     public List<Map<String, Object>> listScores(Long examId, String className) {
         if (className == null || className.isBlank()) {
-            return jdbcTemplate.queryForList("SELECT * FROM scores WHERE exam_id = ? ORDER BY total_score DESC", examId);
+            return jdbcTemplate.queryForList("""
+                    SELECT *
+                    FROM scores
+                    WHERE exam_id = ?
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM student_answers pending
+                          WHERE pending.exam_id = scores.exam_id
+                            AND pending.student_no = scores.student_no
+                            AND pending.review_status = '待批改'
+                      )
+                    ORDER BY total_score DESC
+                    """, examId);
         }
         return jdbcTemplate.queryForList(
-                "SELECT * FROM scores WHERE exam_id = ? AND class_name = ? ORDER BY total_score DESC",
+                """
+                SELECT *
+                FROM scores
+                WHERE exam_id = ?
+                  AND class_name = ?
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM student_answers pending
+                      WHERE pending.exam_id = scores.exam_id
+                        AND pending.student_no = scores.student_no
+                        AND pending.review_status = '待批改'
+                  )
+                ORDER BY total_score DESC
+                """,
                 examId,
                 className
         );
@@ -365,6 +431,13 @@ public class ScoreMapper {
                            FROM scores peer
                            WHERE peer.exam_id = sc.exam_id
                              AND (COALESCE(sc.class_name, '') = '' OR peer.class_name = sc.class_name)
+                             AND NOT EXISTS (
+                                 SELECT 1
+                                 FROM student_answers pending
+                                 WHERE pending.exam_id = peer.exam_id
+                                   AND pending.student_no = peer.student_no
+                                   AND pending.review_status = '待批改'
+                             )
                        ), 1) AS class_average,
                        (
                            SELECT COUNT(*) + 1
@@ -372,16 +445,37 @@ public class ScoreMapper {
                            WHERE peer.exam_id = sc.exam_id
                              AND (COALESCE(sc.class_name, '') = '' OR peer.class_name = sc.class_name)
                              AND peer.total_score > sc.total_score
+                             AND NOT EXISTS (
+                                 SELECT 1
+                                 FROM student_answers pending
+                                 WHERE pending.exam_id = peer.exam_id
+                                   AND pending.student_no = peer.student_no
+                                   AND pending.review_status = '待批改'
+                             )
                        ) AS class_rank,
                        (
                            SELECT COUNT(*)
                            FROM scores peer
                            WHERE peer.exam_id = sc.exam_id
                              AND (COALESCE(sc.class_name, '') = '' OR peer.class_name = sc.class_name)
+                             AND NOT EXISTS (
+                                 SELECT 1
+                                 FROM student_answers pending
+                                 WHERE pending.exam_id = peer.exam_id
+                                   AND pending.student_no = peer.student_no
+                                   AND pending.review_status = '待批改'
+                             )
                        ) AS class_student_count
                 FROM scores sc
                 INNER JOIN exams e ON e.id = sc.exam_id
                 WHERE sc.student_no = ?
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM student_answers pending
+                      WHERE pending.exam_id = sc.exam_id
+                        AND pending.student_no = sc.student_no
+                        AND pending.review_status = '待批改'
+                  )
                 """);
         List<Object> args = new java.util.ArrayList<>();
         args.add(studentNo);
@@ -414,6 +508,13 @@ public class ScoreMapper {
                     FROM scores sc
                     INNER JOIN exams e ON e.id = sc.exam_id
                     WHERE 1=1
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM student_answers pending
+                          WHERE pending.exam_id = sc.exam_id
+                            AND pending.student_no = sc.student_no
+                            AND pending.review_status = '待批改'
+                      )
                 """);
         List<Object> args = new java.util.ArrayList<>();
         if (className != null && !className.isBlank()) {
@@ -435,6 +536,81 @@ public class ScoreMapper {
         return jdbcTemplate.queryForList(sql.toString(), args.toArray());
     }
 
+    public List<Map<String, Object>> listScoreExams(Long teacherId, String className, String subject, Integer limit) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT e.id,
+                       e.title,
+                       e.subject,
+                       e.total_score,
+                       COALESCE(MIN(COALESCE(ep.start_time, e.start_time)), e.start_time) AS start_time,
+                       COALESCE(MAX(COALESCE(ep.end_time, e.end_time)), e.end_time) AS end_time,
+                       DATE_FORMAT(COALESCE(MIN(COALESCE(ep.start_time, e.start_time)), e.start_time, e.created_time), '%Y-%m-%d') AS exam_date,
+                       COALESCE((SELECT GROUP_CONCAT(DISTINCT COALESCE(ep2.class_name, c2.name) ORDER BY COALESCE(ep2.class_name, c2.name) SEPARATOR '、')
+                                 FROM exam_publish ep2
+                                 LEFT JOIN exam_classes c2 ON c2.id = ep2.class_id
+                                 WHERE ep2.exam_id = e.id), '') AS class_names,
+                       COUNT(DISTINCT sc.student_no) AS student_count,
+                       ROUND(COALESCE(AVG(sc.total_score), 0), 1) AS average_score,
+                       COALESCE(MAX(sc.updated_time), e.created_time) AS score_time
+                FROM exams e
+                LEFT JOIN exam_publish ep ON ep.exam_id = e.id
+                LEFT JOIN scores sc ON sc.exam_id = e.id
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM student_answers pending
+                        WHERE pending.exam_id = sc.exam_id
+                          AND pending.student_no = sc.student_no
+                          AND pending.review_status = '待批改'
+                    )
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM scores sx
+                    WHERE sx.exam_id = e.id
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM student_answers pending
+                          WHERE pending.exam_id = sx.exam_id
+                            AND pending.student_no = sx.student_no
+                            AND pending.review_status = '待批改'
+                      )
+                )
+                """);
+        List<Object> args = new java.util.ArrayList<>();
+        if (teacherId != null) {
+            sql.append(" AND e.created_by = ?");
+            args.add(teacherId);
+        }
+        if (className != null && !className.isBlank()) {
+            sql.append("""
+                    AND EXISTS (
+                        SELECT 1
+                        FROM scores class_score
+                        WHERE class_score.exam_id = e.id
+                          AND class_score.class_name = ?
+                          AND NOT EXISTS (
+                              SELECT 1
+                              FROM student_answers pending
+                              WHERE pending.exam_id = class_score.exam_id
+                                AND pending.student_no = class_score.student_no
+                                AND pending.review_status = '待批改'
+                          )
+                    )
+                    """);
+            args.add(className.trim());
+        }
+        if (subject != null && !subject.isBlank() && !"全部科目".equals(subject.trim())) {
+            sql.append(" AND e.subject = ?");
+            args.add(subject.trim());
+        }
+        sql.append("""
+                GROUP BY e.id, e.title, e.subject, e.total_score, e.start_time, e.end_time, e.created_time
+                ORDER BY COALESCE(e.start_time, score_time, e.created_time) DESC, e.id DESC
+                LIMIT ?
+                """);
+        args.add(Math.max(1, Math.min(limit == null ? 50 : limit, 200)));
+        return jdbcTemplate.queryForList(sql.toString(), args.toArray());
+    }
+
     public Map<String, Object> scoreSummary(Long examId, String className) {
         if (className == null || className.isBlank()) {
             return jdbcTemplate.queryForMap("""
@@ -443,9 +619,17 @@ public class ScoreMapper {
                         COALESCE(MAX(total_score), 0) AS highest_score,
                         COALESCE(MIN(total_score), 0) AS lowest_score,
                         COUNT(*) AS student_count,
-                        COALESCE(SUM(CASE WHEN total_score >= 60 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) * 100, 0) AS pass_rate
+                        COALESCE(SUM(CASE WHEN total_score >= 60 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) * 100, 0) AS pass_rate,
+                        COALESCE(SUM(CASE WHEN total_score >= 90 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) * 100, 0) AS excellent_rate
                     FROM scores
                     WHERE exam_id = ?
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM student_answers pending
+                          WHERE pending.exam_id = scores.exam_id
+                            AND pending.student_no = scores.student_no
+                            AND pending.review_status = '待批改'
+                      )
                     """, examId);
         }
         return jdbcTemplate.queryForMap("""
@@ -454,43 +638,86 @@ public class ScoreMapper {
                     COALESCE(MAX(total_score), 0) AS highest_score,
                     COALESCE(MIN(total_score), 0) AS lowest_score,
                     COUNT(*) AS student_count,
-                    COALESCE(SUM(CASE WHEN total_score >= 60 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) * 100, 0) AS pass_rate
+                    COALESCE(SUM(CASE WHEN total_score >= 60 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) * 100, 0) AS pass_rate,
+                    COALESCE(SUM(CASE WHEN total_score >= 90 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) * 100, 0) AS excellent_rate
                 FROM scores
                 WHERE exam_id = ? AND class_name = ?
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM student_answers pending
+                      WHERE pending.exam_id = scores.exam_id
+                        AND pending.student_no = scores.student_no
+                        AND pending.review_status = '待批改'
+                  )
                 """, examId, className);
     }
 
     public List<Map<String, Object>> scoreDistribution(Long examId, String className) {
         String classFilter = className == null || className.isBlank() ? "" : " AND class_name = ?";
         Object[] args = classFilter.isEmpty() ? new Object[]{examId} : new Object[]{examId, className};
+        String completedFilter = """
+                 AND NOT EXISTS (
+                     SELECT 1
+                     FROM student_answers pending
+                     WHERE pending.exam_id = scores.exam_id
+                       AND pending.student_no = scores.student_no
+                       AND pending.review_status = '待批改'
+                 )
+                """;
         return jdbcTemplate.queryForList("""
-                SELECT '90-100' AS label, COUNT(*) AS value FROM scores WHERE exam_id = ? %s AND total_score >= 90
+                SELECT '90-100' AS label, COUNT(*) AS value FROM scores WHERE exam_id = ? %s %s AND total_score >= 90
                 UNION ALL
-                SELECT '80-90' AS label, COUNT(*) AS value FROM scores WHERE exam_id = ? %s AND total_score >= 80 AND total_score < 90
+                SELECT '80-90' AS label, COUNT(*) AS value FROM scores WHERE exam_id = ? %s %s AND total_score >= 80 AND total_score < 90
                 UNION ALL
-                SELECT '70-80' AS label, COUNT(*) AS value FROM scores WHERE exam_id = ? %s AND total_score >= 70 AND total_score < 80
+                SELECT '70-80' AS label, COUNT(*) AS value FROM scores WHERE exam_id = ? %s %s AND total_score >= 70 AND total_score < 80
                 UNION ALL
-                SELECT '60-70' AS label, COUNT(*) AS value FROM scores WHERE exam_id = ? %s AND total_score >= 60 AND total_score < 70
+                SELECT '60-70' AS label, COUNT(*) AS value FROM scores WHERE exam_id = ? %s %s AND total_score >= 60 AND total_score < 70
                 UNION ALL
-                SELECT '60以下' AS label, COUNT(*) AS value FROM scores WHERE exam_id = ? %s AND total_score < 60
-                """.formatted(classFilter, classFilter, classFilter, classFilter, classFilter),
+                SELECT '60以下' AS label, COUNT(*) AS value FROM scores WHERE exam_id = ? %s %s AND total_score < 60
+                """.formatted(classFilter, completedFilter, classFilter, completedFilter, classFilter, completedFilter,
+                        classFilter, completedFilter, classFilter, completedFilter),
                 expandDistributionArgs(args));
     }
 
-    public List<Map<String, Object>> questionAnalysis(Long examId) {
-        return jdbcTemplate.queryForList("""
+    public List<Map<String, Object>> questionAnalysis(Long examId, String className) {
+        StringBuilder sql = new StringBuilder("""
                 SELECT q.id AS question_id,
-                       q.type,
+                       eq.sort_no AS number,
+                       CASE
+                           WHEN q.type IN ('单选题', '单选', '选择题') OR LOWER(q.type) IN ('single', 'singlechoice') THEN '单选题'
+                           WHEN q.type IN ('多选题', '多选') OR LOWER(q.type) IN ('multiple', 'multiplechoice', 'multi') THEN '多选题'
+                           WHEN q.type IN ('判断题', '判断') OR LOWER(q.type) IN ('judge', 'truefalse', 'true/false') THEN '判断题'
+                           WHEN q.type IN ('填空题', '填空') OR LOWER(q.type) IN ('blank', 'fill') THEN '填空题'
+                           WHEN q.type IN ('编程题', '代码题') OR LOWER(q.type) IN ('program', 'coding', 'code') THEN '编程题'
+                           WHEN q.type IN ('高数大题', '高数题', '数学大题') OR LOWER(q.type) = 'math' THEN '编程题'
+                           ELSE q.type
+                       END AS type,
                        eq.score AS full_score,
                        COALESCE(AVG(sa.score), 0) AS average_score,
                        CASE WHEN COALESCE(AVG(sa.score), 0) < eq.score * 0.6 THEN 1 ELSE 0 END AS low_score
                 FROM exam_questions eq
                 INNER JOIN questions q ON q.id = eq.question_id
                 LEFT JOIN student_answers sa ON sa.exam_id = eq.exam_id AND sa.question_id = eq.question_id
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM student_answers pending
+                        WHERE pending.exam_id = sa.exam_id
+                          AND pending.student_no = sa.student_no
+                          AND pending.review_status = '待批改'
+                    )
+                """);
+        List<Object> args = new java.util.ArrayList<>();
+        if (className != null && !className.isBlank()) {
+            sql.append(" AND sa.class_name = ?");
+            args.add(className.trim());
+        }
+        sql.append("""
                 WHERE eq.exam_id = ?
-                GROUP BY q.id, q.type, eq.score
-                ORDER BY average_score ASC
-                """, examId);
+                GROUP BY q.id, eq.sort_no, q.type, eq.score
+                ORDER BY average_score ASC, eq.sort_no ASC
+                """);
+        args.add(examId);
+        return jdbcTemplate.queryForList(sql.toString(), args.toArray());
     }
 
     public Map<String, Object> personalScore(Long examId, String studentNo) {
@@ -518,9 +745,33 @@ public class ScoreMapper {
         return rows.isEmpty() ? Map.of() : rows.get(0);
     }
 
+    public Map<String, Object> studentReviewSummary(Long examId, String studentNo) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
+                SELECT COUNT(*) AS answer_count,
+                       COALESCE(SUM(CASE WHEN review_status = '待批改' THEN 1 ELSE 0 END), 0) AS pending_count,
+                       CASE
+                           WHEN COUNT(*) = 0 THEN '暂无提交'
+                           WHEN COALESCE(SUM(CASE WHEN review_status = '待批改' THEN 1 ELSE 0 END), 0) = 0 THEN '已批改'
+                           WHEN COALESCE(SUM(CASE WHEN review_status = '待批改' THEN 1 ELSE 0 END), 0) = COUNT(*) THEN '待批改'
+                           ELSE '批改中'
+                       END AS review_status
+                FROM student_answers
+                WHERE exam_id = ? AND student_no = ?
+                """, examId, studentNo);
+        return rows.isEmpty() ? Map.of("answer_count", 0, "pending_count", 0, "review_status", "暂无提交") : rows.get(0);
+    }
+
     public List<Map<String, Object>> typeBreakdown(Long examId, String studentNo) {
         return jdbcTemplate.queryForList("""
-                SELECT q.type,
+                SELECT CASE
+                           WHEN q.type IN ('单选题', '单选', '选择题') OR LOWER(q.type) IN ('single', 'singlechoice') THEN '单选题'
+                           WHEN q.type IN ('多选题', '多选') OR LOWER(q.type) IN ('multiple', 'multiplechoice', 'multi') THEN '多选题'
+                           WHEN q.type IN ('判断题', '判断') OR LOWER(q.type) IN ('judge', 'truefalse', 'true/false') THEN '判断题'
+                           WHEN q.type IN ('填空题', '填空') OR LOWER(q.type) IN ('blank', 'fill') THEN '填空题'
+                           WHEN q.type IN ('编程题', '代码题') OR LOWER(q.type) IN ('program', 'coding', 'code') THEN '编程题'
+                           WHEN q.type IN ('高数大题', '高数题', '数学大题') OR LOWER(q.type) = 'math' THEN '编程题'
+                           ELSE q.type
+                       END AS type,
                        COALESCE(SUM(eq.score), 0) AS full_score,
                        COALESCE(SUM(COALESCE(sa.score, 0)), 0) AS score,
                        GREATEST(COALESCE(SUM(eq.score), 0) - COALESCE(SUM(COALESCE(sa.score, 0)), 0), 0) AS deduction
@@ -531,7 +782,15 @@ public class ScoreMapper {
                       AND sa.question_id = eq.question_id
                       AND sa.student_no = ?
                 WHERE eq.exam_id = ?
-                GROUP BY q.type
+                GROUP BY CASE
+                             WHEN q.type IN ('单选题', '单选', '选择题') OR LOWER(q.type) IN ('single', 'singlechoice') THEN '单选题'
+                             WHEN q.type IN ('多选题', '多选') OR LOWER(q.type) IN ('multiple', 'multiplechoice', 'multi') THEN '多选题'
+                             WHEN q.type IN ('判断题', '判断') OR LOWER(q.type) IN ('judge', 'truefalse', 'true/false') THEN '判断题'
+                             WHEN q.type IN ('填空题', '填空') OR LOWER(q.type) IN ('blank', 'fill') THEN '填空题'
+                             WHEN q.type IN ('编程题', '代码题') OR LOWER(q.type) IN ('program', 'coding', 'code') THEN '编程题'
+                             WHEN q.type IN ('高数大题', '高数题', '数学大题') OR LOWER(q.type) = 'math' THEN '编程题'
+                             ELSE q.type
+                         END
                 ORDER BY MIN(eq.sort_no)
                 """, studentNo, examId);
     }
@@ -562,7 +821,15 @@ public class ScoreMapper {
                 SELECT eq.sort_no AS question_index,
                        q.id AS question_id,
                        q.subject,
-                       q.type,
+                       CASE
+                           WHEN q.type IN ('单选题', '单选', '选择题') OR LOWER(q.type) IN ('single', 'singlechoice') THEN '单选题'
+                           WHEN q.type IN ('多选题', '多选') OR LOWER(q.type) IN ('multiple', 'multiplechoice', 'multi') THEN '多选题'
+                           WHEN q.type IN ('判断题', '判断') OR LOWER(q.type) IN ('judge', 'truefalse', 'true/false') THEN '判断题'
+                           WHEN q.type IN ('填空题', '填空') OR LOWER(q.type) IN ('blank', 'fill') THEN '填空题'
+                           WHEN q.type IN ('编程题', '代码题') OR LOWER(q.type) IN ('program', 'coding', 'code') THEN '编程题'
+                           WHEN q.type IN ('高数大题', '高数题', '数学大题') OR LOWER(q.type) = 'math' THEN '编程题'
+                           ELSE q.type
+                       END AS type,
                        q.content,
                        q.answer AS standard_answer,
                        q.analysis,
@@ -593,7 +860,15 @@ public class ScoreMapper {
                        'exam' AS source_type,
                        q.id AS question_id,
                        q.subject,
-                       q.type,
+                       CASE
+                           WHEN q.type IN ('单选题', '单选', '选择题') OR LOWER(q.type) IN ('single', 'singlechoice') THEN '单选题'
+                           WHEN q.type IN ('多选题', '多选') OR LOWER(q.type) IN ('multiple', 'multiplechoice', 'multi') THEN '多选题'
+                           WHEN q.type IN ('判断题', '判断') OR LOWER(q.type) IN ('judge', 'truefalse', 'true/false') THEN '判断题'
+                           WHEN q.type IN ('填空题', '填空') OR LOWER(q.type) IN ('blank', 'fill') THEN '填空题'
+                           WHEN q.type IN ('编程题', '代码题') OR LOWER(q.type) IN ('program', 'coding', 'code') THEN '编程题'
+                           WHEN q.type IN ('高数大题', '高数题', '数学大题') OR LOWER(q.type) = 'math' THEN '编程题'
+                           ELSE q.type
+                       END AS type,
                        q.content,
                        q.option_a,
                        q.option_b,

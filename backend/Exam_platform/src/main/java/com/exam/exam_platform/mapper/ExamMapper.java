@@ -108,6 +108,72 @@ public class ExamMapper {
                 """, examId, question.getId(), sortNo, question.getScore());
     }
 
+    public void upsertExamQuestion(Long examId, Long questionId, int sortNo, int score) {
+        jdbcTemplate.update("""
+                INSERT INTO exam_questions (exam_id, question_id, sort_no, score)
+                VALUES (?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE sort_no = VALUES(sort_no), score = VALUES(score)
+                """, examId, questionId, sortNo, score);
+    }
+
+    public boolean updateExamQuestion(Long examId, Long questionId, int sortNo, int score) {
+        return jdbcTemplate.update("""
+                UPDATE exam_questions
+                SET sort_no = ?, score = ?
+                WHERE exam_id = ? AND question_id = ?
+                """, sortNo, score, examId, questionId) > 0;
+    }
+
+    public boolean deleteExamQuestion(Long examId, Long questionId) {
+        return jdbcTemplate.update(
+                "DELETE FROM exam_questions WHERE exam_id = ? AND question_id = ?",
+                examId,
+                questionId
+        ) > 0;
+    }
+
+    public void deleteExamQuestions(Long examId) {
+        jdbcTemplate.update("DELETE FROM exam_questions WHERE exam_id = ?", examId);
+    }
+
+    public int nextQuestionSortNo(Long examId) {
+        Integer value = jdbcTemplate.queryForObject(
+                "SELECT COALESCE(MAX(sort_no), 0) + 1 FROM exam_questions WHERE exam_id = ?",
+                Integer.class,
+                examId
+        );
+        return value == null ? 1 : value;
+    }
+
+    public int totalScoreForExam(Long examId) {
+        Integer value = jdbcTemplate.queryForObject(
+                "SELECT COALESCE(SUM(score), 0) FROM exam_questions WHERE exam_id = ?",
+                Integer.class,
+                examId
+        );
+        return value == null ? 0 : value;
+    }
+
+    public Integer scoreForExamQuestion(Long examId, Long questionId) {
+        List<Integer> rows = jdbcTemplate.queryForList(
+                "SELECT score FROM exam_questions WHERE exam_id = ? AND question_id = ? LIMIT 1",
+                Integer.class,
+                examId,
+                questionId
+        );
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    public Integer sortNoForExamQuestion(Long examId, Long questionId) {
+        List<Integer> rows = jdbcTemplate.queryForList(
+                "SELECT sort_no FROM exam_questions WHERE exam_id = ? AND question_id = ? LIMIT 1",
+                Integer.class,
+                examId,
+                questionId
+        );
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
     public int countExamQuestions(Long examId) {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM exam_questions WHERE exam_id = ?",
@@ -119,6 +185,15 @@ public class ExamMapper {
 
     public void updateTotalScore(Long examId, int totalScore) {
         jdbcTemplate.update("UPDATE exams SET total_score = ? WHERE id = ?", totalScore, examId);
+    }
+
+    public boolean hasSubmittedAnswers(Long examId) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM student_answers WHERE exam_id = ?",
+                Integer.class,
+                examId
+        );
+        return count != null && count > 0;
     }
 
     public boolean updateStatus(Long examId, String status) {
@@ -234,6 +309,14 @@ public class ExamMapper {
                         String status,
                         Long createdBy) {
         jdbcTemplate.update("""
+                DELETE FROM exam_publish
+                WHERE exam_id = ?
+                  AND (
+                      (? IS NOT NULL AND class_id = ?)
+                      OR (? IS NOT NULL AND ? <> '' AND class_name = ?)
+                  )
+                """, examId, classId, classId, className, className, className);
+        jdbcTemplate.update("""
                 INSERT INTO exam_publish (
                     exam_id, class_id, class_name, start_time, end_time, status, created_by, created_time
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
@@ -251,10 +334,17 @@ public class ExamMapper {
         String normalizedStudentNo = studentNo == null || studentNo.isBlank() ? null : studentNo.trim();
         if (className == null || className.isBlank()) {
             return jdbcTemplate.queryForList("""
-                    SELECT ep.id AS publish_id, ep.exam_id, ep.class_id, ep.class_name,
+                    SELECT ep.id AS publish_id, ep.exam_id, ep.class_id, COALESCE(ep.class_name, c.name) AS class_name,
                            COALESCE(ep.start_time, e.start_time) AS start_time,
                            COALESCE(ep.end_time, e.end_time) AS end_time,
                            CASE
+                               WHEN ? IS NOT NULL AND EXISTS (
+                                   SELECT 1
+                                   FROM student_answers pending
+                                   WHERE pending.exam_id = e.id
+                                     AND pending.student_no = ?
+                                     AND pending.review_status = '待批改'
+                               ) THEN '待批改'
                                WHEN ? IS NOT NULL AND EXISTS (
                                    SELECT 1 FROM scores sc WHERE sc.exam_id = e.id AND sc.student_no = ?
                                ) THEN '已完成'
@@ -262,20 +352,66 @@ public class ExamMapper {
                                     AND NOW() < COALESCE(ep.start_time, e.start_time) THEN '未开始'
                                ELSE '已发布'
                            END AS status,
+                           COALESCE((SELECT COUNT(*)
+                                     FROM student_answers sa
+                                     WHERE sa.exam_id = e.id AND sa.student_no = ?), 0) AS answer_count,
+                           COALESCE((SELECT COUNT(*)
+                                     FROM student_answers sa
+                                     WHERE sa.exam_id = e.id
+                                       AND sa.student_no = ?
+                                       AND sa.review_status = '待批改'), 0) AS pending_review_count,
+                           COALESCE((SELECT COUNT(*)
+                                     FROM students s
+                                     WHERE (ep.class_id IS NOT NULL AND s.class_id = ep.class_id)
+                                        OR (ep.class_name IS NOT NULL AND ep.class_name <> '' AND s.class_name = ep.class_name)), 0)
+                                     AS target_student_count,
+                           COALESCE((SELECT COUNT(DISTINCT sa.student_no)
+                                     FROM student_answers sa
+                                     WHERE sa.exam_id = e.id
+                                       AND (COALESCE(ep.class_name, c.name) IS NULL
+                                            OR COALESCE(ep.class_name, c.name) = ''
+                                            OR sa.class_name = COALESCE(ep.class_name, c.name))), 0)
+                                     AS submitted_count,
+                           COALESCE((SELECT COUNT(DISTINCT sa.student_no)
+                                     FROM student_answers sa
+                                     WHERE sa.exam_id = e.id
+                                       AND (COALESCE(ep.class_name, c.name) IS NULL
+                                            OR COALESCE(ep.class_name, c.name) = ''
+                                            OR sa.class_name = COALESCE(ep.class_name, c.name))
+                                       AND NOT EXISTS (
+                                           SELECT 1
+                                           FROM student_answers pending
+                                           WHERE pending.exam_id = sa.exam_id
+                                             AND pending.student_no = sa.student_no
+                                             AND pending.review_status = '待批改'
+                                       )), 0) AS reviewed_student_count,
+                           (SELECT sc.total_score
+                            FROM scores sc
+                            WHERE sc.exam_id = e.id AND sc.student_no = ?
+                            LIMIT 1) AS student_score,
                            ep.status AS publish_status,
                            ep.created_by AS publish_created_by, ep.created_time AS publish_created_time,
                            e.id, e.title, e.subject, e.duration, e.total_score, e.status AS exam_status,
                            e.created_by, e.created_time
                     FROM exam_publish ep
                     INNER JOIN exams e ON e.id = ep.exam_id
+                    LEFT JOIN exam_classes c ON c.id = ep.class_id
                     ORDER BY ep.id DESC
-                    """, normalizedStudentNo, normalizedStudentNo);
+                    """, normalizedStudentNo, normalizedStudentNo, normalizedStudentNo, normalizedStudentNo,
+                    normalizedStudentNo, normalizedStudentNo, normalizedStudentNo);
         }
         return jdbcTemplate.queryForList("""
-                SELECT ep.id AS publish_id, ep.exam_id, ep.class_id, ep.class_name,
+                SELECT ep.id AS publish_id, ep.exam_id, ep.class_id, COALESCE(ep.class_name, c.name) AS class_name,
                        COALESCE(ep.start_time, e.start_time) AS start_time,
                        COALESCE(ep.end_time, e.end_time) AS end_time,
                        CASE
+                           WHEN ? IS NOT NULL AND EXISTS (
+                               SELECT 1
+                               FROM student_answers pending
+                               WHERE pending.exam_id = e.id
+                                 AND pending.student_no = ?
+                                 AND pending.review_status = '待批改'
+                           ) THEN '待批改'
                            WHEN ? IS NOT NULL AND EXISTS (
                                SELECT 1 FROM scores sc WHERE sc.exam_id = e.id AND sc.student_no = ?
                            ) THEN '已完成'
@@ -283,15 +419,54 @@ public class ExamMapper {
                                 AND NOW() < COALESCE(ep.start_time, e.start_time) THEN '未开始'
                            ELSE '已发布'
                        END AS status,
+                       COALESCE((SELECT COUNT(*)
+                                 FROM student_answers sa
+                                 WHERE sa.exam_id = e.id AND sa.student_no = ?), 0) AS answer_count,
+                       COALESCE((SELECT COUNT(*)
+                                 FROM student_answers sa
+                                 WHERE sa.exam_id = e.id
+                                   AND sa.student_no = ?
+                                   AND sa.review_status = '待批改'), 0) AS pending_review_count,
+                       COALESCE((SELECT COUNT(*)
+                                 FROM students s
+                                 WHERE (ep.class_id IS NOT NULL AND s.class_id = ep.class_id)
+                                    OR (ep.class_name IS NOT NULL AND ep.class_name <> '' AND s.class_name = ep.class_name)), 0)
+                                 AS target_student_count,
+                       COALESCE((SELECT COUNT(DISTINCT sa.student_no)
+                                 FROM student_answers sa
+                                 WHERE sa.exam_id = e.id
+                                   AND (COALESCE(ep.class_name, c.name) IS NULL
+                                        OR COALESCE(ep.class_name, c.name) = ''
+                                        OR sa.class_name = COALESCE(ep.class_name, c.name))), 0)
+                                 AS submitted_count,
+                       COALESCE((SELECT COUNT(DISTINCT sa.student_no)
+                                 FROM student_answers sa
+                                 WHERE sa.exam_id = e.id
+                                   AND (COALESCE(ep.class_name, c.name) IS NULL
+                                        OR COALESCE(ep.class_name, c.name) = ''
+                                        OR sa.class_name = COALESCE(ep.class_name, c.name))
+                                   AND NOT EXISTS (
+                                       SELECT 1
+                                       FROM student_answers pending
+                                       WHERE pending.exam_id = sa.exam_id
+                                         AND pending.student_no = sa.student_no
+                                         AND pending.review_status = '待批改'
+                                   )), 0) AS reviewed_student_count,
+                       (SELECT sc.total_score
+                        FROM scores sc
+                        WHERE sc.exam_id = e.id AND sc.student_no = ?
+                        LIMIT 1) AS student_score,
                        ep.status AS publish_status,
                        ep.created_by AS publish_created_by, ep.created_time AS publish_created_time,
                        e.id, e.title, e.subject, e.duration, e.total_score, e.status AS exam_status,
                        e.created_by, e.created_time
                 FROM exam_publish ep
                 INNER JOIN exams e ON e.id = ep.exam_id
-                WHERE ep.class_name = ?
+                LEFT JOIN exam_classes c ON c.id = ep.class_id
+                WHERE ep.class_name = ? OR c.name = ?
                 ORDER BY ep.id DESC
-                """, normalizedStudentNo, normalizedStudentNo, className);
+                """, normalizedStudentNo, normalizedStudentNo, normalizedStudentNo, normalizedStudentNo,
+                normalizedStudentNo, normalizedStudentNo, normalizedStudentNo, className, className);
     }
 
     public Map<String, Object> dashboardStats(Long teacherId) {

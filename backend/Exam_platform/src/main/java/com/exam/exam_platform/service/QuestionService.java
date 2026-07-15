@@ -9,6 +9,7 @@ import com.exam.exam_platform.mapper.QuestionMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +38,18 @@ public class QuestionService {
     private final OperationLogService operationLogService;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+
+    @Value("${openai.api-key:}")
+    private String configuredOpenAiApiKey;
+
+    @Value("${openai.responses-url:https://api.openai.com/v1/responses}")
+    private String configuredResponsesUrl;
+
+    @Value("${openai.vision-model:gpt-4o-mini}")
+    private String configuredVisionModel;
+
+    @Value("${openai.timeout-seconds:60}")
+    private long configuredTimeoutSeconds;
 
     public QuestionService(QuestionMapper questionMapper, OperationLogService operationLogService) {
         this.questionMapper = questionMapper;
@@ -67,6 +80,16 @@ public class QuestionService {
 
     public List<Map<String, Object>> subjectPracticeStats(String studentNo) {
         return questionMapper.subjectPracticeStats(studentNo);
+    }
+
+    public List<Question> randomQuestions(String subject,
+                                          String type,
+                                          String difficulty,
+                                          String knowledgePoint,
+                                          Integer count) {
+        int safeCount = count == null ? 10 : count;
+        safeCount = Math.max(1, Math.min(safeCount, 100));
+        return questionMapper.randomQuestions(subject, type, difficulty, knowledgePoint, safeCount);
     }
 
     @Transactional
@@ -139,6 +162,7 @@ public class QuestionService {
         int total = 0;
         int success = 0;
         int failed = 0;
+        int skipped = 0;
         List<String> errors = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
@@ -157,8 +181,11 @@ public class QuestionService {
                 try {
                     Question question = header == null ? questionFromDefaultColumns(fields, userId) : questionFromHeader(fields, header, userId);
                     normalizeQuestion(question);
-                    questionMapper.insert(question);
-                    success++;
+                    if (insertImportedQuestionIfNew(question)) {
+                        success++;
+                    } else {
+                        skipped++;
+                    }
                 } catch (RuntimeException exception) {
                     failed++;
                     if (errors.size() < 5) {
@@ -170,9 +197,10 @@ public class QuestionService {
             return logImport(userId, "CSV", file.getOriginalFilename(), total, success, failed + 1, "失败", exception.getMessage());
         }
 
-        String status = failed == 0 ? "成功" : (success > 0 ? "部分成功" : "失败");
-        String message = errors.isEmpty() ? "导入完成" : String.join("；", errors);
-        operationLogService.record(userId, "QUESTION_IMPORT_CSV", "CSV导入题库：" + file.getOriginalFilename());
+        String status = failed == 0 ? "成功" : (success > 0 || skipped > 0 ? "部分成功" : "失败");
+        String message = importResultMessage("导入完成", errors, skipped);
+        operationLogService.record(userId, "QUESTION_IMPORT_CSV",
+                "CSV导入题库：" + file.getOriginalFilename() + "，成功" + success + "题，跳过重复" + skipped + "题");
         return logImport(userId, "CSV", file.getOriginalFilename(), total, success, failed, status, message);
     }
 
@@ -195,6 +223,7 @@ public class QuestionService {
         int total = request.getQuestions().size();
         int success = 0;
         int failed = 0;
+        int skipped = 0;
         List<String> errors = new ArrayList<>();
 
         for (int i = 0; i < request.getQuestions().size(); i++) {
@@ -204,8 +233,11 @@ public class QuestionService {
                     question.setCreatedBy(userId);
                 }
                 normalizeQuestion(question);
-                questionMapper.insert(question);
-                success++;
+                if (insertImportedQuestionIfNew(question)) {
+                    success++;
+                } else {
+                    skipped++;
+                }
             } catch (RuntimeException exception) {
                 failed++;
                 if (errors.size() < 8) {
@@ -214,10 +246,10 @@ public class QuestionService {
             }
         }
 
-        String status = failed == 0 ? "成功" : (success > 0 ? "部分成功" : "失败");
-        String message = errors.isEmpty() ? "批量导入完成" : String.join("；", errors);
+        String status = failed == 0 ? "成功" : (success > 0 || skipped > 0 ? "部分成功" : "失败");
+        String message = importResultMessage("批量导入完成", errors, skipped);
         operationLogService.record(userId, "QUESTION_IMPORT_" + importType.toUpperCase(Locale.ROOT),
-                importType + "批量导入题库：" + fileName + "，成功" + success + "题");
+                importType + "批量导入题库：" + fileName + "，成功" + success + "题，跳过重复" + skipped + "题");
         return logImport(userId, importType, fileName, total, success, failed, status, message);
     }
 
@@ -230,7 +262,7 @@ public class QuestionService {
             return logImport(userId, "OCR", fileName, 0, 0, 0, "失败", "上传图片为空");
         }
 
-        String apiKey = System.getenv("OPENAI_API_KEY");
+        String apiKey = defaultIfBlank(System.getenv("OPENAI_API_KEY"), configuredOpenAiApiKey);
         if (apiKey == null || apiKey.isBlank()) {
             operationLogService.record(userId, "QUESTION_IMPORT_OCR_FAILED", "OCR导入失败：" + fileName);
             return logImport(userId, "OCR", fileName, 1, 0, 1, "失败",
@@ -246,14 +278,18 @@ public class QuestionService {
 
             int success = 0;
             int failed = 0;
+            int skipped = 0;
             List<String> errors = new ArrayList<>();
             for (int i = 0; i < questions.size(); i++) {
                 Question question = questions.get(i);
                 try {
                     question.setCreatedBy(userId);
                     normalizeQuestion(question);
-                    questionMapper.insert(question);
-                    success++;
+                    if (insertImportedQuestionIfNew(question)) {
+                        success++;
+                    } else {
+                        skipped++;
+                    }
                 } catch (RuntimeException exception) {
                     failed++;
                     if (errors.size() < 8) {
@@ -262,10 +298,10 @@ public class QuestionService {
                 }
             }
 
-            String status = failed == 0 ? "成功" : (success > 0 ? "部分成功" : "失败");
-            String message = errors.isEmpty() ? "OCR识别导入完成" : String.join("；", errors);
+            String status = failed == 0 ? "成功" : (success > 0 || skipped > 0 ? "部分成功" : "失败");
+            String message = importResultMessage("OCR识别导入完成", errors, skipped);
             operationLogService.record(userId, "QUESTION_IMPORT_OCR",
-                    "OCR识别导入题库：" + fileName + "，成功" + success + "题");
+                    "OCR识别导入题库：" + fileName + "，成功" + success + "题，跳过重复" + skipped + "题");
             return logImport(userId, "OCR", fileName, questions.size(), success, failed, status, message);
         } catch (RuntimeException exception) {
             operationLogService.record(userId, "QUESTION_IMPORT_OCR_FAILED", "OCR导入失败：" + fileName);
@@ -342,9 +378,29 @@ public class QuestionService {
         if ("多选题".equals(type)) return 5;
         if ("判断题".equals(type)) return 3;
         if ("填空题".equals(type)) return 2;
-        if ("高数大题".equals(type)) return 10;
-        if ("编程题".equals(type) || "代码题".equals(type)) return 15;
+        if ("编程题".equals(normalizeQuestionType(type))) return 15;
         return 3;
+    }
+
+    private boolean insertImportedQuestionIfNew(Question question) {
+        if (questionMapper.existsDuplicate(question)) {
+            return false;
+        }
+        questionMapper.insert(question);
+        return true;
+    }
+
+    private String importResultMessage(String successMessage, List<String> errors, int skipped) {
+        List<String> parts = new ArrayList<>();
+        if (errors == null || errors.isEmpty()) {
+            parts.add(successMessage);
+        } else {
+            parts.add(String.join("；", errors));
+        }
+        if (skipped > 0) {
+            parts.add("跳过重复题目 " + skipped + " 题");
+        }
+        return String.join("；", parts);
     }
 
     private QuestionImportResult logImport(Long userId,
@@ -407,7 +463,8 @@ public class QuestionService {
         try {
             String mimeType = defaultIfBlank(file.getContentType(), "image/png");
             String encoded = Base64.getEncoder().encodeToString(file.getBytes());
-            String model = defaultIfBlank(System.getenv("OPENAI_VISION_MODEL"), "gpt-5.6");
+            String model = defaultIfBlank(System.getenv("OPENAI_VISION_MODEL"),
+                    defaultIfBlank(configuredVisionModel, "gpt-4o-mini"));
             URI endpoint = URI.create(openAiResponsesEndpoint());
 
             Map<String, Object> payload = Map.of(
@@ -421,7 +478,7 @@ public class QuestionService {
                                                     你是在线考试平台的题目录入助手。请从图片中识别所有题目，并输出严格 JSON。
                                                     字段要求：subject,type,content,optionA,optionB,optionC,optionD,answer,analysis,difficulty,knowledgePoint,score。
                                                     如果图片没有选项，则 optionA 到 optionD 输出空字符串。
-                                                    type 只能使用：单选题、多选题、填空题、高数大题、编程题。
+                                                    type 只能使用：单选题、多选题、填空题、编程题。
                                                     difficulty 只能使用：基础、中等、困难。
                                                     不确定答案或解析时输出空字符串，不要编造。
                                                     """
@@ -468,7 +525,8 @@ public class QuestionService {
     }
 
     private String openAiResponsesEndpoint() {
-        String endpoint = defaultIfBlank(System.getenv("OPENAI_RESPONSES_URL"), null);
+        String endpoint = defaultIfBlank(System.getenv("OPENAI_RESPONSES_URL"),
+                defaultIfBlank(configuredResponsesUrl, null));
         if (endpoint != null) {
             return endpoint;
         }
@@ -499,7 +557,7 @@ public class QuestionService {
     }
 
     private long openAiTimeoutSeconds() {
-        String raw = defaultIfBlank(System.getenv("OPENAI_TIMEOUT_SECONDS"), "60");
+        String raw = defaultIfBlank(System.getenv("OPENAI_TIMEOUT_SECONDS"), String.valueOf(configuredTimeoutSeconds));
         try {
             return Math.max(10L, Long.parseLong(raw));
         } catch (NumberFormatException exception) {
@@ -637,11 +695,19 @@ public class QuestionService {
         if ("blank".equals(lower) || "fill".equals(lower) || "填空".equals(text)) {
             return "填空题";
         }
-        if ("program".equals(lower) || "coding".equals(lower) || "code".equals(lower) || "代码题".equals(text)) {
+        if ("program".equals(lower)
+                || "coding".equals(lower)
+                || "code".equals(lower)
+                || "hard_math".equals(lower)
+                || "math".equals(lower)
+                || "代码题".equals(text)
+                || "程序题".equals(text)
+                || "编程大题".equals(text)
+                || "大题".equals(text)
+                || "高数题".equals(text)
+                || "高数大题".equals(text)
+                || "数学大题".equals(text)) {
             return "编程题";
-        }
-        if ("math".equals(lower) || "高数题".equals(text)) {
-            return "高数大题";
         }
         return text;
     }
@@ -781,8 +847,13 @@ public class QuestionService {
         return "单选题".equals(text)
                 || "多选题".equals(text)
                 || "填空题".equals(text)
+                || "大题".equals(text)
+                || "高数题".equals(text)
                 || "高数大题".equals(text)
+                || "数学大题".equals(text)
                 || "编程题".equals(text)
-                || "代码题".equals(text);
+                || "代码题".equals(text)
+                || "程序题".equals(text)
+                || "编程大题".equals(text);
     }
 }

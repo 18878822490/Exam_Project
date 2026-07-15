@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtCharts
 
 Rectangle {
     id: root
@@ -19,7 +20,7 @@ Rectangle {
     property int shellHMargin: narrowShell ? 14 : (compactShell ? 22 : 38)
     property int shellVMargin: narrowShell ? 16 : (compactShell ? 22 : 30)
     property int pageGap: narrowShell ? 14 : 22
-    property int normalNavHeight: narrowShell ? 96 : (compactShell ? 120 : 136)
+    property int normalNavHeight: narrowShell ? 110 : (compactShell ? 136 : 154)
     property int profileMode: 0
     property bool examMode: false
     property bool practiceExamMode: false
@@ -40,11 +41,15 @@ Rectangle {
     property var markedQuestions: ({})
     property var practiceAnswers: ({})
     property var practiceExamAnswers: ({})
+    property var practiceExamMarkedQuestions: ({})
     property var practiceChecked: ({})
     property var scoreReport: ({})
     property var scoreHistory: []
     property string activeReportSubject: "高等数学"
     property string activePracticeSubject: "全部科目"
+    property string lastRandomSubject: ""
+    property string lastRandomType: ""
+    property string lastRandomDifficulty: ""
     property var menuItems: [
         {"title": "首页", "icon": "⌂", "page": 0},
         {"title": "我的考试", "icon": "▣", "page": 1},
@@ -70,7 +75,10 @@ Rectangle {
         "查看本场考试得分、扣分题型与薄弱知识点",
     ]
 
-    Component.onCompleted: refreshAll()
+    Component.onCompleted: {
+        refreshAll()
+        animationKey += 1
+    }
 
     Timer {
         id: notificationRefreshTimer
@@ -92,7 +100,7 @@ Rectangle {
         profile = studentApi.getStudentProfile()
         exams = studentApi.getPublishedExams()
         scoreHistory = studentApi.getScoreHistory("")
-        subjectCards = studentApi.getPracticeSubjectStats()
+        subjectCards = normalizePracticeSubjectCards(studentApi.getPracticeSubjectStats())
         wrongQuestionRows = studentApi.getWrongQuestions()
         syncActiveReportSubject()
         if (activeExamId <= 0) {
@@ -209,6 +217,9 @@ Rectangle {
                 "date": item.date,
                 "startTime": item.date,
                 "status": "已完成",
+                "classRank": item.classRank || 0,
+                "classStudentCount": item.classStudentCount || 0,
+                "rank": item.rank || "--",
                 "className": item.className || profile.className
             })
             if (historyId > 0) seen[String(historyId)] = true
@@ -229,8 +240,8 @@ Rectangle {
         if (name.indexOf("高等") >= 0 || name.indexOf("数学") >= 0) return "#3b82f6"
         if (name.indexOf("线性") >= 0) return "#22c55e"
         if (name.indexOf("概率") >= 0) return "#a855f7"
-        if (name.indexOf("数据") >= 0) return "#06b6d4"
         if (name.indexOf("数据库") >= 0) return "#ef4444"
+        if (name.indexOf("数据") >= 0) return "#06b6d4"
         return "#22c55e"
     }
 
@@ -274,6 +285,123 @@ Rectangle {
                 + " · " + (exam.duration || 90) + " 分钟"
     }
 
+    function prettyCode(value) {
+        var raw = String(value || "")
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .replace(/\\n/g, "\n")
+            .replace(/\t/g, "    ")
+            .replace(/\{\s*(?=\S)/g, "{\n")
+            .replace(/\}\s*(?=(public|private|protected|class|static|if|for|while|switch|return|else|catch|finally)\b)/g, "}\n")
+            .replace(/;\s*(?=(public|private|protected|class|static|if|for|while|switch|return|[A-Za-z_][A-Za-z0-9_<>\[\]]*\s+[A-Za-z_]))/g, ";\n")
+            .replace(/<\s+>/g, "<>")
+            .replace(/<\s+/g, "<")
+            .replace(/\s+>/g, ">")
+            .replace(/\s*,\s*/g, ", ")
+            .trim()
+        if (raw.length === 0) return ""
+
+        function spaces(count) {
+            var s = ""
+            for (var i = 0; i < count; ++i) s += "    "
+            return s
+        }
+        function trimRight(text) {
+            return text.replace(/[ \t]+$/g, "")
+        }
+        function currentLine(text) {
+            var index = text.lastIndexOf("\n")
+            return index < 0 ? text : text.slice(index + 1)
+        }
+        function nextWord(text, start) {
+            var rest = text.slice(start).replace(/^\s+/g, "")
+            var match = rest.match(/^[A-Za-z_]+/)
+            return match ? match[0] : ""
+        }
+        var out = ""
+        var indent = 0
+        var parenDepth = 0
+        var inString = false
+        var quote = ""
+        var escape = false
+        function newLine() {
+            out = trimRight(out)
+            if (out.length > 0 && out.charAt(out.length - 1) !== "\n") out += "\n"
+            out += spaces(indent)
+        }
+        for (var i = 0; i < raw.length; ++i) {
+            var ch = raw.charAt(i)
+            if (inString) {
+                out += ch
+                if (escape) {
+                    escape = false
+                } else if (ch === "\\") {
+                    escape = true
+                } else if (ch === quote) {
+                    inString = false
+                }
+                continue
+            }
+            if (ch === "\"" || ch === "'") {
+                inString = true
+                quote = ch
+                out += ch
+                continue
+            }
+            if (ch === "(" || ch === "[") {
+                parenDepth += 1
+                out += ch
+                continue
+            }
+            if (ch === ")" || ch === "]") {
+                parenDepth = Math.max(0, parenDepth - 1)
+                out += ch
+                continue
+            }
+            if (ch === "{") {
+                out = trimRight(out)
+                if (out.length > 0 && out.charAt(out.length - 1) !== " ") out += " "
+                out += "{"
+                indent += 1
+                newLine()
+                continue
+            }
+            if (ch === "}") {
+                if (currentLine(out).trim().length > 0) newLine()
+                indent = Math.max(0, indent - 1)
+                out = trimRight(out)
+                if (out.length > 0 && out.charAt(out.length - 1) !== "\n") out += "\n"
+                out += spaces(indent) + "}"
+                var word = nextWord(raw, i + 1)
+                if (word === "else" || word === "catch" || word === "finally" || word === "while") {
+                    out += " "
+                } else {
+                    newLine()
+                }
+                continue
+            }
+            if (ch === ";" && parenDepth === 0) {
+                out += ";"
+                newLine()
+                continue
+            }
+            if (/\s/.test(ch)) {
+                if (out.length > 0 && out.charAt(out.length - 1) !== " " && out.charAt(out.length - 1) !== "\n") out += " "
+                continue
+            }
+            if (currentLine(out).length === 0) out += spaces(indent)
+            out += ch
+        }
+        return out.split("\n").map(function(line) { return trimRight(line) }).filter(function(line, index, arr) {
+            return line.trim().length > 0 || (index > 0 && index < arr.length - 1 && arr[index - 1].trim().length > 0)
+        }).join("\n").trim()
+    }
+
+    function codeLineCount(text, minimumLines) {
+        var lines = String(text || "").split("\n").length
+        return Math.max(minimumLines || 12, lines + 2)
+    }
+
     function countdownParts(exam) {
         var date = examStartDate(exam)
         if (!date) return {"days": "00", "hours": "00", "minutes": "00", "past": true}
@@ -304,8 +432,7 @@ Rectangle {
         if (value === "multiple" || value === "multi" || value === "多选") return "多选题"
         if (value === "blank" || value === "fill" || value === "fill_blank" || value === "填空") return "填空题"
         if (value === "judge" || value === "truefalse" || value === "判断") return "判断题"
-        if (value === "program" || value === "coding" || value === "code") return "编程题"
-        if (value === "hard_math") return "高数大题"
+        if (value === "program" || value === "coding" || value === "code" || value === "hard_math" || value === "math" || value === "高数大题") return "编程题"
         return String(type || "题目")
     }
 
@@ -323,7 +450,61 @@ Rectangle {
 
     function isManualQuestion(type) {
         var label = displayQuestionType(type)
-        return label === "编程题" || label === "高数大题" || label === "简答题"
+        return label === "编程题" || label === "简答题"
+    }
+
+    function isCodeQuestion(type) {
+        return displayQuestionType(type) === "编程题"
+    }
+
+    function normalizePracticeSubjectName(name) {
+        var text = String(name || "").trim()
+        if (text === "高等数学" || text === "高数") return "高数"
+        if (text === "线代" || text === "线性代数") return "线性代数"
+        if (text.toLowerCase() === "java") return "Java"
+        if (text === "数据库原理") return "数据库"
+        return text.length > 0 ? text : "综合"
+    }
+
+    function defaultPracticeSubjectCards() {
+        return [
+            {"name": "高数", "icon": "高", "totalCount": 0, "accuracy": 0, "progress": 0, "easy": 35, "middle": 45, "hard": 20, "color": "#2563eb"},
+            {"name": "线性代数", "icon": "线", "totalCount": 0, "accuracy": 0, "progress": 0, "easy": 40, "middle": 42, "hard": 18, "color": "#8b5cf6"},
+            {"name": "数据库", "icon": "库", "totalCount": 0, "accuracy": 0, "progress": 0, "easy": 38, "middle": 44, "hard": 18, "color": "#0ea5e9"},
+            {"name": "Java", "icon": "J", "totalCount": 0, "accuracy": 0, "progress": 0, "easy": 32, "middle": 46, "hard": 22, "color": "#16a34a"},
+            {"name": "数据结构", "icon": "结", "totalCount": 0, "accuracy": 0, "progress": 0, "easy": 30, "middle": 48, "hard": 22, "color": "#f59e0b"}
+        ]
+    }
+
+    function normalizePracticeSubjectCards(rows) {
+        var source = rows || []
+        var map = ({})
+        var result = []
+        var palette = ["#2563eb", "#8b5cf6", "#0ea5e9", "#16a34a", "#f59e0b", "#ef4444"]
+        for (var i = 0; i < source.length; ++i) {
+            var row = source[i] || {}
+            var name = normalizePracticeSubjectName(row.name || row.subject)
+            if (map[name]) continue
+            map[name] = true
+            result.push({
+                "name": name,
+                "icon": row.icon || name.charAt(0),
+                "totalCount": row.totalCount || row.count || row.questionCount || 0,
+                "accuracy": row.accuracy || 0,
+                "progress": row.progress || 0,
+                "easy": row.easy || row.basic || 0,
+                "middle": row.middle || row.medium || 0,
+                "hard": row.hard || row.difficult || 0,
+                "color": row.color || row.accent || palette[result.length % palette.length]
+            })
+        }
+        var defaults = defaultPracticeSubjectCards()
+        for (var j = 0; j < defaults.length; ++j) {
+            if (!map[defaults[j].name]) {
+                result.push(defaults[j])
+            }
+        }
+        return result
     }
 
     function examStatus(exam, index) {
@@ -332,6 +513,7 @@ Rectangle {
         var explicitStatus = String(exam.status || "")
         if (explicitStatus === "已发布") return "待参加"
         if (explicitStatus === "未开始") return "未开放"
+        if (explicitStatus === "待批改" || explicitStatus === "批改中") return explicitStatus
         if (explicitStatus.length > 0) return explicitStatus
         return "待参加"
     }
@@ -342,6 +524,7 @@ Rectangle {
             var scored = scoreForExam(exam.id || exam.examId)
             return displayNumber(scored.score !== undefined ? scored.score : exam.score) + " 分"
         }
+        if (status === "待批改" || status === "批改中") return "待批改"
         if (status === "未开放") return "未开放"
         return countdownShortLabel(examStartDate(exam))
     }
@@ -591,10 +774,12 @@ Rectangle {
         for (var i = 0; i < upcoming.length; ++i) {
             var exam = upcoming[i].exam
             rows.push({
-                "title": examStatus(exam, i) === "未开放" ? "考试未开放" : "新考试发布",
+                "title": examStatus(exam, i) === "待批改" || examStatus(exam, i) === "批改中"
+                         ? "成绩待批改"
+                         : (examStatus(exam, i) === "未开放" ? "考试未开放" : "新考试发布"),
                 "body": examSubject(exam) + " · " + examTitle(exam) + " · " + formatExamTime(exam),
-                "time": countdownShortLabel(examStartDate(exam)),
-                "color": "#f59e0b",
+                "time": examCountdownLabel(exam, i),
+                "color": examStatus(exam, i) === "待批改" || examStatus(exam, i) === "批改中" ? "#2563eb" : "#f59e0b",
                 "icon": "!"
             })
         }
@@ -669,6 +854,19 @@ Rectangle {
         return result
     }
 
+    function practiceSubjectOptions() {
+        var seen = ({"全部科目": true})
+        var result = ["全部科目"]
+        for (var i = 0; i < subjectCards.length; ++i) {
+            var name = String(subjectCards[i].name || "").trim()
+            if (name.length > 0 && !seen[name]) {
+                seen[name] = true
+                result.push(name)
+            }
+        }
+        return result
+    }
+
     function syncActiveReportSubject() {
         var options = analysisSubjectOptions()
         if (options.length === 0 || options[0] === "暂无成绩") return
@@ -695,10 +893,13 @@ Rectangle {
     function classTrendPointsFor(subject) {
         var rows = recentScoreRows(subject, 7)
         var result = []
+        var hasClassAverage = false
         for (var i = 0; i < rows.length; ++i) {
-            result.push(normalizedChartScore(rows[i], "classAverage"))
+            var value = normalizedChartScore(rows[i], "classAverage")
+            result.push(value)
+            if (value > 0) hasClassAverage = true
         }
-        return result
+        return hasClassAverage ? result : []
     }
 
     function trendLabelsFor(subject) {
@@ -909,10 +1110,29 @@ Rectangle {
     }
 
     function optionText(question, key) {
-        if (key === "A") return question.optionA || "--"
-        if (key === "B") return question.optionB || "--"
-        if (key === "C") return question.optionC || "--"
-        return question.optionD || "--"
+        if (!question) return "--"
+        var aliases = key === "A" ? ["optionA", "option_a", "optiona", "choiceA", "choice_a", "answerA", "answer_a", "选项A", "A", "a"]
+                    : key === "B" ? ["optionB", "option_b", "optionb", "choiceB", "choice_b", "answerB", "answer_b", "选项B", "B", "b"]
+                    : key === "C" ? ["optionC", "option_c", "optionc", "choiceC", "choice_c", "answerC", "answer_c", "选项C", "C", "c"]
+                    : ["optionD", "option_d", "optiond", "choiceD", "choice_d", "answerD", "answer_d", "选项D", "D", "d"]
+        for (var i = 0; i < aliases.length; ++i) {
+            var value = String(question[aliases[i]] || "").trim()
+            if (value.length > 0 && value !== "--") return value
+        }
+        var options = question.options || question.choices
+        if (options) {
+            var direct = String(options[key] || options[key.toLowerCase()] || "").trim()
+            if (direct.length > 0 && direct !== "--") return direct
+            if (Array.isArray(options)) {
+                var idx = "ABCD".indexOf(key)
+                if (idx >= 0 && idx < options.length) {
+                    var item = options[idx]
+                    var text = String(item && typeof item === "object" ? (item.text || item.content || item.value || item.label || "") : item || "").trim()
+                    if (text.length > 0 && text !== "--" && text !== key) return text
+                }
+            }
+        }
+        return "--"
     }
 
     function isObjective(type) {
@@ -958,7 +1178,11 @@ Rectangle {
     }
 
     function normalizePracticeAnswer(value) {
-        return String(value || "").replace(/，/g, ",").replace(/；/g, ";").replace(/\s/g, "").toUpperCase()
+        return String(value || "")
+            .replace(/，/g, ",")
+            .replace(/；/g, ";")
+            .replace(/[,\.;；、|．\s]/g, "")
+            .toUpperCase()
     }
 
     function practiceIsCorrect(question) {
@@ -1009,7 +1233,7 @@ Rectangle {
             showToast(studentApi.lastError() || "练习记录保存失败")
             return
         }
-        subjectCards = studentApi.getPracticeSubjectStats()
+        subjectCards = normalizePracticeSubjectCards(studentApi.getPracticeSubjectStats())
         if (!correct) wrongQuestionRows = studentApi.getWrongQuestions()
         aiSuggestions = aiSuggestionRows()
         markPracticeChecked(question.id)
@@ -1028,15 +1252,23 @@ Rectangle {
         return copy
     }
 
-    function startPracticeMockExam(count) {
-        var pool = practiceQuestions.length > 0 ? practiceQuestions : studentApi.getPracticeQuestions("", "", "")
+    function startPracticeMockExam(count, subject, type, difficulty) {
+        var safeCount = Math.max(1, Number(count || 10))
+        var safeSubject = subject === undefined ? lastRandomSubject : String(subject || "")
+        var safeType = type === undefined ? lastRandomType : String(type || "")
+        var safeDifficulty = difficulty === undefined ? lastRandomDifficulty : String(difficulty || "")
+        lastRandomSubject = safeSubject
+        lastRandomType = safeType
+        lastRandomDifficulty = safeDifficulty
+
+        var pool = studentApi.getRandomPracticeQuestions(safeType, safeDifficulty, safeSubject, safeCount)
         if (pool.length === 0) {
-            showToast("题库暂无可用题目")
+            showToast(studentApi.lastError() || "题库暂无可用题目")
             return
         }
-        var picked = shuffledRows(pool).slice(0, Math.min(Number(count || 10), pool.length))
-        practiceExamQuestions = picked
+        practiceExamQuestions = pool
         practiceExamAnswers = ({})
+        practiceExamMarkedQuestions = ({})
         activePracticeExamIndex = 0
         practiceExamFinished = false
         examMode = false
@@ -1044,7 +1276,7 @@ Rectangle {
         practiceMode = 0
         practiceExamMode = true
         triggerPageEnter(1)
-        showToast("已随机生成 " + picked.length + " 道题")
+        showToast("已随机生成 " + pool.length + " 道题")
     }
 
     function currentWrongQuestion() {
@@ -1072,6 +1304,25 @@ Rectangle {
         var count = 0
         for (var i = 0; i < practiceExamQuestions.length; ++i) {
             if (String(practiceExamAnswerFor(practiceExamQuestions[i].id)).trim().length > 0) count += 1
+        }
+        return count
+    }
+
+    function practiceExamQuestionMarked(questionId) {
+        return practiceExamMarkedQuestions[String(questionId)] === true
+    }
+
+    function togglePracticeExamQuestionMark(questionId) {
+        var next = {}
+        for (var key in practiceExamMarkedQuestions) next[key] = practiceExamMarkedQuestions[key]
+        next[String(questionId)] = !practiceExamQuestionMarked(questionId)
+        practiceExamMarkedQuestions = next
+    }
+
+    function practiceExamMarkedCount() {
+        var count = 0
+        for (var i = 0; i < practiceExamQuestions.length; ++i) {
+            if (practiceExamQuestionMarked(practiceExamQuestions[i].id)) count += 1
         }
         return count
     }
@@ -1140,7 +1391,7 @@ Rectangle {
             if (studentApi.savePracticeAnswer(Number(question.id || 0), answer, practiceExamIsCorrect(question), "随机组卷")) savedCount += 1
             else failedCount += 1
         }
-        subjectCards = studentApi.getPracticeSubjectStats()
+        subjectCards = normalizePracticeSubjectCards(studentApi.getPracticeSubjectStats())
         wrongQuestionRows = studentApi.getWrongQuestions()
         aiSuggestions = aiSuggestionRows()
         practiceExamFinished = true
@@ -1378,7 +1629,7 @@ Rectangle {
 
         StudentTopNav {
             Layout.fillWidth: true
-            Layout.preferredHeight: (root.examMode || root.practiceExamMode) ? (root.narrowShell ? 58 : 68) : root.normalNavHeight
+            Layout.preferredHeight: (root.examMode || root.practiceExamMode) ? (root.narrowShell ? 64 : 78) : root.normalNavHeight
             visible: true
             z: 20
         }
@@ -1389,11 +1640,23 @@ Rectangle {
             Layout.fillHeight: true
             sourceComponent: root.examMode ? answerPageComponent : (root.practiceExamMode ? practiceMockExamPageComponent : root.pageComponent())
             clip: true
-            transform: Translate { id: pageSlide; x: 0 }
+            transform: [
+                Translate { id: pageSlide; x: 0; y: 0 },
+                Scale {
+                    id: pageScale
+                    origin.x: pageLoader.width / 2
+                    origin.y: pageLoader.height / 2
+                    xScale: 1
+                    yScale: 1
+                }
+            ]
 
             function runEnter() {
                 pageEnter.stop()
-                pageSlide.x = root.pageEnterDirection * 46
+                pageSlide.x = root.pageEnterDirection * 58
+                pageSlide.y = 16
+                pageScale.xScale = 0.985
+                pageScale.yScale = 0.985
                 pageLoader.opacity = 0
                 pageEnter.restart()
             }
@@ -1407,8 +1670,11 @@ Rectangle {
 
             ParallelAnimation {
                 id: pageEnter
-                NumberAnimation { target: pageLoader; property: "opacity"; to: 1; duration: 330; easing.type: Easing.OutCubic }
-                NumberAnimation { target: pageSlide; property: "x"; to: 0; duration: 360; easing.type: Easing.OutCubic }
+                NumberAnimation { target: pageLoader; property: "opacity"; to: 1; duration: 420; easing.type: Easing.OutCubic }
+                NumberAnimation { target: pageSlide; property: "x"; to: 0; duration: 460; easing.type: Easing.OutCubic }
+                NumberAnimation { target: pageSlide; property: "y"; to: 0; duration: 460; easing.type: Easing.OutCubic }
+                NumberAnimation { target: pageScale; property: "xScale"; to: 1; duration: 460; easing.type: Easing.OutCubic }
+                NumberAnimation { target: pageScale; property: "yScale"; to: 1; duration: 460; easing.type: Easing.OutCubic }
             }
         }
     }
@@ -1452,10 +1718,10 @@ Rectangle {
             interactive: !root.innerScrollActive && contentHeight > height
             pixelAligned: false
             synchronousDrag: false
-            boundsBehavior: Flickable.OvershootBounds
+            boundsBehavior: Flickable.DragOverBounds
             boundsMovement: Flickable.FollowBoundsBehavior
-            maximumFlickVelocity: 12000
-            flickDeceleration: 3600
+            maximumFlickVelocity: 10800
+            flickDeceleration: 3400
             ScrollBar.vertical: ScrollBar {
                 policy: scroll.contentHeight > scroll.height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
                 width: 12
@@ -1498,6 +1764,7 @@ Rectangle {
             font.bold: true
         }
         contentItem: Text {
+            height: combo.height
             text: combo.displayText
             color: "#0f172a"
             font.pixelSize: 18
@@ -1505,6 +1772,7 @@ Rectangle {
             leftPadding: 18
             rightPadding: 34
             verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
             elide: Text.ElideNone
         }
         background: Rectangle {
@@ -1551,7 +1819,7 @@ Rectangle {
     component Card: Item {
         id: card
         property real radius: 24
-        property bool hoverable: false
+        property bool hoverable: true
         property int enterDelay: 0
         property int enterDirection: 1
         property real enterDistance: 34
@@ -1571,30 +1839,38 @@ Rectangle {
 
         ParallelAnimation {
             id: enterAnim
-            NumberAnimation { target: card; property: "opacity"; to: 1; duration: 380; easing.type: Easing.OutCubic }
-            NumberAnimation { target: cardSlide; property: "x"; to: 0; duration: 400; easing.type: Easing.OutCubic }
+            NumberAnimation { target: card; property: "opacity"; to: 1; duration: 420; easing.type: Easing.OutCubic }
+            NumberAnimation { target: cardSlide; property: "x"; to: 0; duration: 420; easing.type: Easing.OutCubic }
         }
+
+        HoverHandler { id: cardHover; enabled: card.hoverable }
 
         Rectangle {
             anchors.fill: parent
-            anchors.topMargin: 12
+            anchors.topMargin: cardHover.hovered ? 15 : 12
             anchors.leftMargin: 4
             anchors.rightMargin: 4
             radius: card.radius
             color: "#0f172a"
-            opacity: 0.07
+            opacity: cardHover.hovered ? 0.105 : 0.07
+            Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            Behavior on anchors.topMargin { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
         }
         Rectangle {
             id: body
             anchors.fill: parent
             radius: card.radius
             color: card.fillColor
-            border.color: card.borderColor
+            border.color: cardHover.hovered ? "#bcd2f3" : card.borderColor
+            border.width: 1
+            scale: cardHover.hovered ? 1.005 : 1
             clip: true
+            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            Behavior on border.color { ColorAnimation { duration: 150 } }
         }
     }
 
-    component LineChart: Canvas {
+    component LineChart: Item {
         id: chart
         property var points: []
         property var comparePoints: []
@@ -1602,42 +1878,58 @@ Rectangle {
         property int hoverIndex: -1
         property real hoverX: 0
         property real hoverY: 0
+        property real chartOpacity: 1
 
         function valueBounds() {
             var values = []
             for (var a = 0; points && a < points.length; ++a) values.push(Number(points[a] || 0))
             for (var b = 0; comparePoints && b < comparePoints.length; ++b) values.push(Number(comparePoints[b] || 0))
             if (values.length === 0) return {"min": 0, "max": 100}
+            var hasPositiveValue = false
             var minValue = values[0]
             var maxValue = values[0]
-            for (var i = 1; i < values.length; ++i) {
+            for (var i = 0; i < values.length; ++i) {
+                if (values[i] > 0) hasPositiveValue = true
                 minValue = Math.min(minValue, values[i])
                 maxValue = Math.max(maxValue, values[i])
             }
-            minValue = Math.max(0, Math.floor((minValue - 8) / 10) * 10)
-            maxValue = Math.ceil((maxValue + 8) / 10) * 10
-            if (maxValue - minValue < 20) maxValue = minValue + 20
+            if (!hasPositiveValue) return {"min": 0, "max": 100}
+            if (maxValue <= 100) {
+                if (maxValue < 60) {
+                    minValue = 0
+                    maxValue = Math.max(60, Math.ceil((maxValue + 10) / 10) * 10)
+                } else {
+                    minValue = Math.max(0, Math.floor((minValue - 10) / 10) * 10)
+                    maxValue = Math.min(100, Math.ceil((maxValue + 10) / 10) * 10)
+                    if (maxValue - minValue < 20) minValue = Math.max(0, maxValue - 20)
+                }
+            } else {
+                minValue = Math.max(0, Math.floor((minValue - 10) / 10) * 10)
+                maxValue = Math.ceil((maxValue + 10) / 10) * 10
+            }
             return {"min": minValue, "max": maxValue}
         }
 
+        function xCount() {
+            return Math.max(1,
+                            points ? points.length : 0,
+                            comparePoints ? comparePoints.length : 0,
+                            labels ? labels.length : 0)
+        }
+
         function pointPosition(values, index) {
-            var left = 44
-            var right = 18
-            var top = 16
-            var bottom = 34
-            var plotW = Math.max(1, width - left - right)
-            var plotH = Math.max(1, height - top - bottom)
+            var area = chartView.plotArea
+            var count = xCount()
             var bounds = valueBounds()
-            var x = left + (values.length === 1 ? 0 : plotW / (values.length - 1) * index)
+            var x = area.x + (count === 1 ? area.width / 2 : area.width / Math.max(1, count - 1) * index)
             var v = Math.max(bounds.min, Math.min(bounds.max, Number(values[index] || 0)))
-            var y = top + (bounds.max - v) / Math.max(1, bounds.max - bounds.min) * plotH
+            var y = area.y + (bounds.max - v) / Math.max(1, bounds.max - bounds.min) * area.height
             return {"x": x, "y": y}
         }
 
         function updateHover(mx, my) {
             if (!points || points.length === 0) {
                 hoverIndex = -1
-                requestPaint()
                 return
             }
 
@@ -1657,88 +1949,141 @@ Rectangle {
             }
 
             hoverIndex = bestDistance <= 36 ? best : -1
-            requestPaint()
         }
 
-        onPaint: {
-            var ctx = getContext("2d")
-            ctx.clearRect(0, 0, width, height)
-            var left = 44
-            var right = 18
-            var top = 16
-            var bottom = 34
-            var plotW = Math.max(1, width - left - right)
-            var plotH = Math.max(1, height - top - bottom)
+        function rebuildSeries() {
             var bounds = valueBounds()
-            ctx.lineWidth = 1
-            ctx.strokeStyle = "#eef2f7"
-            ctx.font = "12px sans-serif"
-            ctx.fillStyle = "#9ca3af"
-            for (var i = 0; i <= 4; ++i) {
-                var y = top + plotH / 4 * i
-                ctx.beginPath()
-                ctx.moveTo(left, y)
-                ctx.lineTo(left + plotW, y)
-                ctx.stroke()
-                ctx.fillText(String(Math.round(bounds.max - (bounds.max - bounds.min) / 4 * i)), 8, y + 4)
+            axisX.min = 0
+            axisX.max = Math.max(1, xCount() - 1)
+            axisY.min = bounds.min
+            axisY.max = bounds.max
+            personalSeries.clear()
+            classSeries.clear()
+            for (var i = 0; points && i < points.length; ++i) {
+                personalSeries.append(i, Number(points[i] || 0))
             }
-
-            function drawLine(values, color, alpha) {
-                if (!values || values.length === 0) return
-                ctx.globalAlpha = alpha
-                ctx.lineWidth = 3
-                ctx.strokeStyle = color
-                ctx.beginPath()
-                for (var p = 0; p < values.length; ++p) {
-                    var x = left + (values.length === 1 ? 0 : plotW / (values.length - 1) * p)
-                    var v = Math.max(bounds.min, Math.min(bounds.max, Number(values[p] || 0)))
-                    var py = top + (bounds.max - v) / Math.max(1, bounds.max - bounds.min) * plotH
-                    if (p === 0) ctx.moveTo(x, py)
-                    else ctx.lineTo(x, py)
-                }
-                ctx.stroke()
-                for (var d = 0; d < values.length; ++d) {
-                    var dx = left + (values.length === 1 ? 0 : plotW / (values.length - 1) * d)
-                    var dv = Math.max(bounds.min, Math.min(bounds.max, Number(values[d] || 0)))
-                    var dy = top + (bounds.max - dv) / Math.max(1, bounds.max - bounds.min) * plotH
-                    ctx.beginPath()
-                    ctx.arc(dx, dy, 4, 0, Math.PI * 2)
-                    ctx.fillStyle = color
-                    ctx.fill()
-                }
-                ctx.globalAlpha = 1
+            for (var j = 0; comparePoints && j < comparePoints.length; ++j) {
+                classSeries.append(j, Number(comparePoints[j] || 0))
             }
+            classSeries.visible = comparePoints && comparePoints.length > 0
+            hoverIndex = -1
+            chartOpacity = 0.35
+            chartFade.restart()
+        }
 
-            drawLine(comparePoints, "#94a3b8", 0.7)
-            drawLine(points, "#22c55e", 1)
-            ctx.fillStyle = "#8b949e"
-            var labelCount = labels ? labels.length : 0
-            for (var l = 0; l < labelCount; ++l) {
-                var lx = left + plotW / Math.max(1, labelCount - 1) * l
-                ctx.fillText(labels[l], lx - 12, height - 10)
+        function scheduleRefresh() {
+            chartRefresh.restart()
+        }
+
+        Timer {
+            id: chartRefresh
+            interval: 0
+            repeat: false
+            onTriggered: chart.rebuildSeries()
+        }
+
+        NumberAnimation {
+            id: chartFade
+            target: chart
+            property: "chartOpacity"
+            to: 1
+            duration: 520
+            easing.type: Easing.OutCubic
+        }
+
+        ChartView {
+            id: chartView
+            anchors.fill: parent
+            opacity: chart.chartOpacity
+            antialiasing: true
+            legend.visible: false
+            backgroundColor: "transparent"
+            plotAreaColor: "transparent"
+            dropShadowEnabled: false
+            animationOptions: ChartView.SeriesAnimations
+            animationDuration: 760
+            animationEasingCurve.type: Easing.OutCubic
+
+            ValueAxis {
+                id: axisX
+                min: 0
+                max: 6
+                labelsVisible: false
+                gridVisible: false
+                lineVisible: false
             }
-
-            if (hoverIndex >= 0 && hoverIndex < points.length) {
-                var hoverPos = pointPosition(points, hoverIndex)
-                ctx.beginPath()
-                ctx.arc(hoverPos.x, hoverPos.y, 10, 0, Math.PI * 2)
-                ctx.fillStyle = "rgba(34, 197, 94, 0.18)"
-                ctx.fill()
-                ctx.beginPath()
-                ctx.arc(hoverPos.x, hoverPos.y, 6, 0, Math.PI * 2)
-                ctx.fillStyle = "#22c55e"
-                ctx.fill()
-                ctx.beginPath()
-                ctx.arc(hoverPos.x, hoverPos.y, 3, 0, Math.PI * 2)
-                ctx.fillStyle = "#ffffff"
-                ctx.fill()
+            ValueAxis {
+                id: axisY
+                min: 0
+                max: 100
+                tickCount: 5
+                labelFormat: "%.0f"
+                labelsColor: "#94a3b8"
+                gridLineColor: "#eef2f7"
+                lineVisible: false
+            }
+            LineSeries {
+                id: classSeries
+                axisX: axisX
+                axisY: axisY
+                color: "#94a3b8"
+                width: 3
+                pointsVisible: true
+            }
+            LineSeries {
+                id: personalSeries
+                axisX: axisX
+                axisY: axisY
+                color: "#22c55e"
+                width: 4
+                pointsVisible: true
             }
         }
-        onWidthChanged: requestPaint()
-        onHeightChanged: requestPaint()
-        onPointsChanged: requestPaint()
-        onComparePointsChanged: requestPaint()
-        onLabelsChanged: requestPaint()
+
+        Repeater {
+            model: chart.labels ? chart.labels.length : 0
+            delegate: Text {
+                text: chart.labels[index]
+                color: "#8b949e"
+                font.pixelSize: 12
+                x: Math.max(0, Math.min(chart.width - width, chart.pointPosition(new Array(chart.xCount()).fill(0), index).x - width / 2))
+                y: chart.height - 19
+            }
+        }
+
+        Rectangle {
+            visible: chart.hoverIndex >= 0
+            width: 2
+            height: chartView.plotArea.height
+            radius: 1
+            color: "#22c55e"
+            opacity: visible ? 0.18 : 0
+            x: chart.hoverIndex >= 0 ? chart.hoverX - 1 : 0
+            y: chartView.plotArea.y
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+
+        Rectangle {
+            visible: chart.hoverIndex >= 0
+            width: 20
+            height: 20
+            radius: 10
+            color: "#22c55e"
+            opacity: 0.18
+            x: chart.hoverX - width / 2
+            y: chart.hoverY - height / 2
+        }
+        Rectangle {
+            visible: chart.hoverIndex >= 0
+            width: 10
+            height: 10
+            radius: 5
+            color: "#22c55e"
+            border.color: "#ffffff"
+            border.width: 2
+            x: chart.hoverX - width / 2
+            y: chart.hoverY - height / 2
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -1747,38 +2092,47 @@ Rectangle {
             onPositionChanged: (mouse) => chart.updateHover(mouse.x, mouse.y)
             onExited: {
                 chart.hoverIndex = -1
-                chart.requestPaint()
             }
         }
 
+        onWidthChanged: scheduleRefresh()
+        onHeightChanged: scheduleRefresh()
+        onPointsChanged: scheduleRefresh()
+        onComparePointsChanged: scheduleRefresh()
+        onLabelsChanged: scheduleRefresh()
+        Component.onCompleted: scheduleRefresh()
+
         Rectangle {
-            width: 132
+            width: 156
             height: chart.hoverIndex >= 0 && chart.comparePoints && chart.comparePoints.length > chart.hoverIndex ? 72 : 56
-            radius: 14
-            color: "#111827"
-            opacity: chart.hoverIndex >= 0 ? 0.94 : 0
+            radius: 16
+            color: "#ffffff"
+            border.color: "#dbeafe"
+            opacity: chart.hoverIndex >= 0 ? 1 : 0
             visible: opacity > 0
             x: Math.max(4, Math.min(chart.hoverX - width / 2, chart.width - width - 4))
             y: Math.max(4, chart.hoverY - height - 16)
             z: 20
             Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on x { NumberAnimation { duration: 110; easing.type: Easing.OutCubic } }
+            Behavior on y { NumberAnimation { duration: 110; easing.type: Easing.OutCubic } }
             Column {
                 anchors.fill: parent
-                anchors.margins: 10
+                anchors.margins: 12
                 spacing: 4
                 Text {
                     width: parent.width
                     text: chart.hoverIndex >= 0 ? (chart.labels[chart.hoverIndex] || ("第 " + (chart.hoverIndex + 1) + " 次")) : ""
-                    color: "#cbd5e1"
-                    font.pixelSize: 12
+                    color: "#64748b"
+                    font.pixelSize: 13
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                 }
                 Text {
                     width: parent.width
                     text: chart.hoverIndex >= 0 ? ("我的成绩 " + chart.points[chart.hoverIndex] + " 分") : ""
-                    color: "#4ade80"
-                    font.pixelSize: 14
+                    color: "#16a34a"
+                    font.pixelSize: 15
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                 }
@@ -1786,8 +2140,8 @@ Rectangle {
                     width: parent.width
                     visible: chart.hoverIndex >= 0 && chart.comparePoints && chart.comparePoints.length > chart.hoverIndex
                     text: chart.hoverIndex >= 0 && chart.comparePoints && chart.comparePoints.length > chart.hoverIndex ? ("班级均分 " + chart.comparePoints[chart.hoverIndex] + " 分") : ""
-                    color: "#cbd5e1"
-                    font.pixelSize: 12
+                    color: "#64748b"
+                    font.pixelSize: 13
                     horizontalAlignment: Text.AlignHCenter
                 }
             }
@@ -1797,6 +2151,16 @@ Rectangle {
     component BarChart: Canvas {
         id: barsChart
         property var bars: []
+        property real animationProgress: 0
+        NumberAnimation {
+            id: barGrow
+            target: barsChart
+            property: "animationProgress"
+            from: 0
+            to: 1
+            duration: 720
+            easing.type: Easing.OutCubic
+        }
         onPaint: {
             var ctx = getContext("2d")
             ctx.clearRect(0, 0, width, height)
@@ -1811,12 +2175,20 @@ Rectangle {
             var barW = Math.max(18, (plotW - gap * (count - 1)) / count)
             var maxValue = 1
             for (var m = 0; m < bars.length; ++m) maxValue = Math.max(maxValue, Number(bars[m] || 0))
+            ctx.fillStyle = "#eef2f7"
+            for (var grid = 0; grid <= 3; ++grid) {
+                var gy = top + plotH / 3 * grid
+                ctx.fillRect(left, gy, plotW, 1)
+            }
             for (var i = 0; i < count; ++i) {
                 var value = Number(bars[i] || 0)
-                var h = value <= 0 ? 0 : Math.max(8, plotH * value / maxValue)
+                var h = value <= 0 ? 0 : Math.max(8, plotH * value / maxValue * animationProgress)
                 var x = left + i * (barW + gap)
                 var y = top + plotH - h
-                ctx.fillStyle = i >= count - 2 ? "#22c55e" : "#bfdbfe"
+                var gradient = ctx.createLinearGradient(0, y, 0, y + h)
+                gradient.addColorStop(0, i >= count - 2 ? "#22c55e" : "#60a5fa")
+                gradient.addColorStop(1, i >= count - 2 ? "#bbf7d0" : "#dbeafe")
+                ctx.fillStyle = gradient
                 ctx.fillRect(x, y, barW, h)
                 ctx.fillStyle = "#8b949e"
                 ctx.font = "12px sans-serif"
@@ -1825,7 +2197,13 @@ Rectangle {
         }
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
-        onBarsChanged: requestPaint()
+        onAnimationProgressChanged: requestPaint()
+        onBarsChanged: {
+            animationProgress = 0
+            barGrow.restart()
+            requestPaint()
+        }
+        Component.onCompleted: barGrow.restart()
     }
 
     component MetricCard: Card {
@@ -2055,21 +2433,24 @@ Rectangle {
                 anchors.leftMargin: 28
                 anchors.right: parent.right
                 anchors.rightMargin: root.narrowShell ? 72 : 96
-                anchors.top: parent.top
-                anchors.topMargin: 8
-                spacing: root.narrowShell ? 12 : 18
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: root.narrowShell ? 8 : 12
                 Text { width: parent.width; text: stat.label; color: "#536784"; font.pixelSize: root.narrowShell ? 15 : 17; font.bold: true; elide: Text.ElideRight }
-                Text { text: stat.value; color: "#071226"; font.pixelSize: root.narrowShell ? 32 : 42; font.bold: true }
-            }
-            Rectangle {
-                width: 76
-                height: 6
-                radius: 3
-                anchors.left: parent.left
-                anchors.leftMargin: 28
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: -18
-                color: Qt.rgba(stat.accent.r, stat.accent.g, stat.accent.b, 0.34)
+                Text {
+                    id: statValueText
+                    text: stat.value
+                    color: "#071226"
+                    font.pixelSize: root.narrowShell ? 32 : 42
+                    font.bold: true
+                    height: root.narrowShell ? 42 : 50
+                    verticalAlignment: Text.AlignVCenter
+                }
+                Rectangle {
+                    width: 92
+                    height: 6
+                    radius: 3
+                    color: Qt.rgba(stat.accent.r, stat.accent.g, stat.accent.b, 0.34)
+                }
             }
         }
     }
@@ -2182,7 +2563,7 @@ Rectangle {
                 spacing: 4
                 Text { Layout.fillWidth: true; text: root.examTitle(item.exam); color: "#111827"; font.pixelSize: 16; font.bold: true; elide: Text.ElideRight }
                 Text { Layout.fillWidth: true; text: "科目：" + root.examSubject(item.exam); color: "#2563eb"; font.pixelSize: 12; font.bold: true; elide: Text.ElideRight }
-                Text { text: (item.exam.startTime || "2026-07-15 09:00") + "    " + (item.exam.duration || 90) + " 分钟"; color: "#6b7280"; font.pixelSize: 12 }
+                Text { text: (item.exam.startTime || "--") + "    " + (item.exam.duration || 90) + " 分钟"; color: "#6b7280"; font.pixelSize: 12 }
             }
             Rectangle {
                 Layout.preferredWidth: 78
@@ -2304,51 +2685,70 @@ Rectangle {
         }
         Card {
             width: parent.width
-            height: root.narrowShell ? 154 : 104
+            height: root.narrowShell ? 182 : 126
             Flow {
                 anchors.fill: parent
-                anchors.margins: 22
+                anchors.margins: root.narrowShell ? 18 : 22
                 spacing: 14
                 TextField {
                     id: examSearch
-                    width: root.narrowShell ? parent.width : Math.max(260, parent.width - 4 * 110 - 56)
-                    height: 48
+                    width: root.narrowShell ? parent.width : Math.max(300, parent.width - 5 * 112 - 72)
+                    height: 52
                     placeholderText: "搜索考试名称或科目"
                     verticalAlignment: TextInput.AlignVCenter
                     leftPadding: 18
                     rightPadding: 18
                     color: "#111827"
                     placeholderTextColor: "#94a3b8"
-                    font.pixelSize: 15
+                    font.pixelSize: 17
                     background: Rectangle { radius: 16; color: "#ffffff"; border.color: examSearch.activeFocus ? "#22c55e" : "#e5edf6" }
                 }
                 Repeater {
-                    model: ["全部", "待参加", "已完成", "未开放"]
+                    model: ["全部", "待参加", "待批改", "已完成", "未开放"]
                     delegate: Rectangle {
-                        width: root.narrowShell ? Math.max(72, (parent.width - 42) / 4) : 96
-                        height: 44
+                        width: root.narrowShell ? Math.max(84, (parent.width - 56) / 5) : 108
+                        height: 48
                         radius: 16
                         color: examPage.activeStatus === modelData ? "#ecfdf3" : "#ffffff"
                         border.color: examPage.activeStatus === modelData ? "#bbf7d0" : "#e5edf6"
-                        Text { anchors.centerIn: parent; text: modelData; color: examPage.activeStatus === modelData ? "#16a34a" : "#64748b"; font.pixelSize: 13; font.bold: true }
+                        Text { anchors.centerIn: parent; text: modelData; color: examPage.activeStatus === modelData ? "#16a34a" : "#64748b"; font.pixelSize: 15; font.bold: true }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: examPage.activeStatus = modelData }
                     }
                 }
             }
         }
-        GridLayout {
+        Flow {
+            id: examCardFlow
             width: parent.width
-            columns: parent.width > 980 ? 2 : 1
-            columnSpacing: root.narrowShell ? 12 : 18
-            rowSpacing: root.narrowShell ? 12 : 18
+            spacing: root.narrowShell ? 12 : 18
+            property int columnCount: width >= 1080 ? 3 : (width >= 700 ? 2 : 1)
+            property int itemCount: root.filteredExamRows(examSearch.text, examPage.activeStatus).length
+            property int cardHeight: root.narrowShell ? 258 : 236
+            function cardWidth() {
+                return Math.floor((width - spacing * (columnCount - 1)) / columnCount)
+            }
+            height: itemCount > 0
+                    ? Math.ceil(itemCount / columnCount) * cardHeight + Math.max(0, Math.ceil(itemCount / columnCount) - 1) * spacing
+                    : 170
             Repeater {
                 model: root.filteredExamRows(examSearch.text, examPage.activeStatus)
                 delegate: ExamGridCard {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: root.narrowShell ? 286 : 258
+                    width: examCardFlow.cardWidth()
+                    height: examCardFlow.cardHeight
                     exam: modelData
                     rowIndex: index
                 }
+            }
+            Text {
+                width: examCardFlow.width
+                height: examCardFlow.itemCount === 0 ? 160 : 0
+                visible: examCardFlow.itemCount === 0
+                text: "暂无符合条件的考试"
+                color: "#94a3b8"
+                font.pixelSize: 18
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
             }
         }
     }
@@ -2386,17 +2786,17 @@ Rectangle {
         Rectangle { anchors.left: parent.left; anchors.top: parent.top; anchors.right: parent.right; height: 6; radius: 3; color: card.accent }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 18
-            spacing: 10
+            anchors.margins: 14
+            spacing: 7
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 14
+                spacing: 10
                 Rectangle {
-                    Layout.preferredWidth: 52
-                    Layout.preferredHeight: 52
-                    radius: 16
+                    Layout.preferredWidth: 40
+                    Layout.preferredHeight: 40
+                    radius: 14
                     color: card.accent
-                    Text { anchors.centerIn: parent; text: root.examSubject(card.exam).charAt(0); color: "#ffffff"; font.pixelSize: 20; font.bold: true }
+                    Text { anchors.centerIn: parent; text: root.examSubject(card.exam).charAt(0); color: "#ffffff"; font.pixelSize: 18; font.bold: true }
                 }
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -2405,53 +2805,53 @@ Rectangle {
                     Text { Layout.fillWidth: true; text: root.examTitle(card.exam); color: "#111827"; font.pixelSize: 18; font.bold: true; elide: Text.ElideRight }
                 }
                 Rectangle {
-                    Layout.preferredWidth: 78
-                    Layout.preferredHeight: 34
+                    Layout.preferredWidth: 74
+                    Layout.preferredHeight: 30
                     radius: 17
-                    color: card.status === "已完成" ? "#ecfdf3" : (card.status === "未开放" ? "#f3f4f6" : "#fff7ed")
-                    Text { anchors.centerIn: parent; text: (card.status === "待参加" ? "◷ " : (card.status === "已完成" ? "✓ " : "⌂ ")) + card.status; color: card.status === "已完成" ? "#16a34a" : (card.status === "未开放" ? "#64748b" : "#f59e0b"); font.pixelSize: 12; font.bold: true }
+                    color: card.status === "已完成" ? "#ecfdf3" : (card.status === "待批改" || card.status === "批改中" ? "#eff6ff" : (card.status === "未开放" ? "#f3f4f6" : "#fff7ed"))
+                    Text { anchors.centerIn: parent; text: (card.status === "待参加" ? "◷ " : (card.status === "已完成" ? "✓ " : (card.status === "待批改" || card.status === "批改中" ? "● " : "⌂ "))) + card.status; color: card.status === "已完成" ? "#16a34a" : (card.status === "待批改" || card.status === "批改中" ? "#2563eb" : (card.status === "未开放" ? "#64748b" : "#f59e0b")); font.pixelSize: 12; font.bold: true }
                 }
             }
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 10
-                ExamInfoChip { Layout.fillWidth: true; icon: "▣"; text: (card.exam.startTime || "2026-07-15").slice(0, 10) }
+                spacing: 8
+                ExamInfoChip { Layout.fillWidth: true; icon: "▣"; text: card.exam.startTime ? String(card.exam.startTime).slice(0, 10) : "--" }
                 ExamInfoChip { Layout.fillWidth: true; icon: "◷"; text: (card.exam.duration || 90) + " 分钟" }
-                ExamInfoChip { Layout.fillWidth: true; icon: "☷"; text: card.status === "未开放" ? "-- 人" : (card.rowIndex % 2 === 0 ? "48 人" : "52 人") }
+                ExamInfoChip { Layout.fillWidth: true; icon: "☷"; text: (Number(card.exam.submittedCount || 0) > 0 ? (card.exam.submittedCount + "/" + (card.exam.targetStudentCount || "--")) : (card.exam.targetStudentCount || "--")) + " 人" }
             }
 
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: card.status === "已完成" ? 64 : 52
+                Layout.preferredHeight: 50
                 radius: 16
                 color: card.status === "已完成" ? Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.07) : "#fffaf5"
                 border.color: card.status === "已完成" ? Qt.rgba(card.accent.r, card.accent.g, card.accent.b, 0.20) : "#fed7aa"
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 18
-                    anchors.rightMargin: 18
-                    spacing: 12
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    spacing: 8
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
                         Text {
                             text: card.status === "已完成" ? (root.examCountdownLabel(card.exam, card.rowIndex).replace(" 分", "")) : "考试时间： " + (card.exam.startTime || "--") + "–" + (card.exam.endTime || "--").split(" ")[1]
                             color: card.status === "已完成" ? card.accent : "#6b7280"
-                            font.pixelSize: card.status === "已完成" ? 30 : 14
+                            font.pixelSize: card.status === "已完成" ? 22 : 12
                             font.bold: true
                         }
                         Text {
                             visible: card.status === "已完成"
-                            text: "满分 " + (card.exam.totalScore || 100) + "    班级第 " + (card.rowIndex === 2 ? "1" : "4") + " 名"
+                            text: "满分 " + (card.exam.totalScore || card.exam.fullScore || 100) + "    " + ((card.exam.rank && card.exam.rank !== "--") ? ("班级" + card.exam.rank) : "班级排名 --")
                             color: card.accent
-                            font.pixelSize: 12
+                            font.pixelSize: 11
                             font.bold: true
                         }
                     }
                     Rectangle {
-                        Layout.preferredWidth: card.status === "已完成" ? 58 : 68
-                        Layout.preferredHeight: 32
+                        Layout.preferredWidth: card.status === "已完成" ? 54 : 62
+                        Layout.preferredHeight: 28
                         radius: 16
                         color: card.status === "已完成" ? "#ecfdf3" : "#fff7ed"
                         Text { anchors.centerIn: parent; text: card.status === "已完成" ? (Number(root.examCountdownLabel(card.exam, card.rowIndex).replace(" 分", "")) >= 90 ? "优秀" : "良好") : root.examCountdownLabel(card.exam, card.rowIndex); color: card.status === "已完成" ? "#16a34a" : "#f59e0b"; font.pixelSize: 12; font.bold: true }
@@ -2463,9 +2863,10 @@ Rectangle {
                 Layout.fillWidth: true
                 PrimaryButton {
                     Layout.fillWidth: true
-                    text: card.status === "待参加" ? "▷ 进入考试" : (card.status === "已完成" ? "查看成绩报告 ›" : "未开放")
-                    enabled: card.status !== "未开放"
-                    onClicked: card.status === "待参加" ? root.startExam(card.exam) : root.openScoreReport(card.exam)
+                    Layout.preferredHeight: 48
+                    text: card.status === "待参加" ? "▷ 进入考试" : (card.status === "已完成" ? "查看成绩报告 ›" : (card.status === "待批改" || card.status === "批改中" ? "等待批改" : "未开放"))
+                    enabled: card.status === "待参加" || card.status === "已完成"
+                    onClicked: card.status === "待参加" ? root.startExam(card.exam) : (card.status === "已完成" ? root.openScoreReport(card.exam) : undefined)
                 }
             }
         }
@@ -2475,7 +2876,7 @@ Rectangle {
         id: chip
         property string icon: ""
         property string text: ""
-        Layout.preferredHeight: 34
+        Layout.preferredHeight: 30
         radius: 14
         color: "#f8fafc"
         Row {
@@ -2562,18 +2963,12 @@ Rectangle {
             spacing: root.narrowShell ? 12 : 18
             RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 56
+                Layout.preferredHeight: 66
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
-                    Text { text: "在线考试"; color: "#111827"; font.pixelSize: 28; font.bold: true }
-                    Text { text: "自动保存答案，支持题号导航、倒计时与交卷确认"; color: "#8b949e"; font.pixelSize: 13 }
-                }
-                ExamControlStrip {
-                    Layout.preferredWidth: root.narrowShell ? 188 : 224
-                    Layout.preferredHeight: 42
-                    statusText: "考试中"
-                    onExitRequested: root.exitExamMode()
+                    Text { text: "在线考试"; color: "#111827"; font.pixelSize: 31; font.bold: true }
+                    Text { text: "自动保存答案，支持题号导航、倒计时与交卷确认"; color: "#8b949e"; font.pixelSize: 15 }
                 }
             }
 
@@ -2621,7 +3016,9 @@ Rectangle {
                         Loader {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            sourceComponent: root.isObjective(root.currentQuestion().type) ? optionAnswerComponent : textAnswerComponent
+                            sourceComponent: root.isObjective(root.currentQuestion().type)
+                                             ? optionAnswerComponent
+                                             : (root.isCodeQuestion(root.currentQuestion().type) ? codeAnswerComponent : plainTextAnswerComponent)
                         }
                         RowLayout {
                             Layout.fillWidth: true
@@ -2652,25 +3049,30 @@ Rectangle {
                     Layout.fillHeight: true
                     Layout.columnSpan: 1
                     spacing: root.narrowShell ? 12 : 14
+                    ExamControlStrip {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: root.narrowShell ? 46 : 52
+                        statusText: "考试中"
+                        onExitRequested: root.exitExamMode()
+                    }
                     ExamClockCard {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: root.narrowShell ? 150 : 184
+                        Layout.preferredHeight: root.narrowShell ? 220 : 336
                         label: "◷  剩余时间"
                         value: "42 : 12"
                         hint: "43 分钟后结束"
                     }
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.minimumHeight: 220
+                        Layout.preferredHeight: root.narrowShell ? 226 : 292
                         radius: 24
                         color: "#ffffff"
                         border.color: "#e5edf6"
                         clip: true
                         ColumnLayout {
                             anchors.fill: parent
-                            anchors.margins: 20
-                            spacing: 14
+                            anchors.margins: 16
+                            spacing: 10
                             RowLayout {
                                 Layout.fillWidth: true
                                 Text { text: "答题卡"; color: "#111827"; font.pixelSize: 20; font.bold: true; Layout.fillWidth: true }
@@ -2678,26 +3080,25 @@ Rectangle {
                             }
                             GridLayout {
                                 Layout.fillWidth: true
-                                columns: 5
+                                columns: Math.max(4, Math.floor(width / 50))
                                 columnSpacing: 8
                                 rowSpacing: 8
                                 Repeater {
                                     model: root.questions
                                     delegate: Rectangle {
-                                        Layout.preferredWidth: 38
-                                        Layout.preferredHeight: 38
+                                        Layout.preferredWidth: 42
+                                        Layout.preferredHeight: 42
                                         radius: 14
                                         property bool current: index === root.activeQuestionIndex
                                         property bool answered: root.answerFor(modelData.id).length > 0
                                         property bool marked: root.questionMarked(modelData.id)
                                         color: current ? "#3b82f6" : (marked ? "#fff7ed" : (answered ? "#eff6ff" : "#f3f4f6"))
                                         border.color: marked ? "#f59e0b" : (current ? "#3b82f6" : "transparent")
-                                        Text { anchors.centerIn: parent; text: String(index + 1); color: current ? "#ffffff" : (marked ? "#f59e0b" : "#64748b"); font.pixelSize: 14; font.bold: true }
+                                        Text { anchors.centerIn: parent; text: String(index + 1); color: current ? "#ffffff" : (marked ? "#f59e0b" : "#64748b"); font.pixelSize: 16; font.bold: true }
                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.activeQuestionIndex = index }
                                     }
                                 }
                             }
-                            Item { Layout.fillHeight: true }
                             RowLayout {
                                 spacing: 12
                                 LegendDot { colorValue: "#dbeafe"; label: "已答" }
@@ -2719,14 +3120,14 @@ Rectangle {
                     model: ["A", "B", "C", "D"]
                     delegate: Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 68
+                        Layout.preferredHeight: 60
                         radius: 16
                         color: root.optionSelected(root.currentQuestion(), modelData) ? "#eff6ff" : "#f8fafc"
                         border.color: root.optionSelected(root.currentQuestion(), modelData) ? "#3b82f6" : "#e5e7eb"
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 14
-                            spacing: 14
+                            anchors.margins: 12
+                            spacing: 12
                             Rectangle {
                                 Layout.preferredWidth: 34
                                 Layout.preferredHeight: 34
@@ -2744,15 +3145,225 @@ Rectangle {
         }
 
         Component {
-            id: textAnswerComponent
-            TextArea {
-                text: root.answerFor(root.currentQuestion().id)
-                placeholderText: "在这里输入答案"
-                wrapMode: TextArea.Wrap
+            id: codeAnswerComponent
+            CodeAnswerEditor {
+                value: root.answerFor(root.currentQuestion().id)
+                placeholderText: "在这里编写程序代码..."
+                onEdited: function(value) { root.setAnswer(root.currentQuestion().id, value) }
+            }
+        }
+
+        Component {
+            id: plainTextAnswerComponent
+            PlainAnswerEditor {
+                value: root.answerFor(root.currentQuestion().id)
+                placeholderText: root.displayQuestionType(root.currentQuestion().type) === "填空题"
+                                 ? "请输入填空答案..."
+                                 : "在这里输入答案..."
+                onEdited: function(value) { root.setAnswer(root.currentQuestion().id, value) }
+            }
+        }
+    }
+
+    component CodeAnswerEditor: Rectangle {
+        id: codeEditor
+        property string value: ""
+        property string placeholderText: "在这里输入答案..."
+        property bool editable: true
+        property string fileName: "answer.java"
+        property string headerText: editable ? "编程答题区" : "参考答案"
+        property string displayText: editable ? value : root.prettyCode(value)
+        property int lineNumberCount: root.codeLineCount(displayText, Math.ceil(Math.max(0, height - 44) / 24) + 4)
+        signal edited(string value)
+        radius: 20
+        color: "#0f172a"
+        border.color: "#1e293b"
+        clip: true
+        onValueChanged: {
+            if (editor.text !== codeEditor.displayText) editor.text = codeEditor.displayText
+        }
+        onDisplayTextChanged: {
+            if (editor.text !== codeEditor.displayText) editor.text = codeEditor.displayText
+        }
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 0
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 44
                 color: "#111827"
-                font.pixelSize: 16
-                onTextChanged: root.setAnswer(root.currentQuestion().id, text)
-                background: Rectangle { radius: 18; color: "#ffffff"; border.color: "#e5edf6" }
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
+                    spacing: 10
+                    Repeater {
+                        model: ["#ef4444", "#f59e0b", "#22c55e"]
+                        Rectangle { Layout.preferredWidth: 10; Layout.preferredHeight: 10; radius: 5; color: modelData }
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: codeEditor.fileName
+                        color: "#cbd5e1"
+                        font.pixelSize: 13
+                        font.bold: true
+                    }
+                    Text {
+                        text: codeEditor.headerText
+                        color: "#60a5fa"
+                        font.pixelSize: 13
+                        font.bold: true
+                    }
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: 0
+                Rectangle {
+                    id: lineNumberGutter
+                    Layout.preferredWidth: 52
+                    Layout.fillHeight: true
+                    color: "#111827"
+                    Column {
+                        id: lineNumberColumn
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: 14 - codeVerticalBar.position * Math.max(0, implicitHeight - Math.max(0, lineNumberGutter.height - 28))
+                        spacing: 8
+                        Repeater {
+                            model: codeEditor.lineNumberCount
+                            Text {
+                                width: 32
+                                height: 16
+                                text: index + 1
+                                color: "#64748b"
+                                font.family: "Consolas"
+                                font.pixelSize: 14
+                                horizontalAlignment: Text.AlignRight
+                            }
+                        }
+                    }
+                }
+                ScrollView {
+                    id: codeScroll
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    contentWidth: Math.max(availableWidth, editor.implicitWidth + 36)
+                    ScrollBar.horizontal: ScrollBar {
+                        policy: codeScroll.contentWidth > codeScroll.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                        parent: codeScroll
+                        anchors.left: codeScroll.left
+                        anchors.right: codeScroll.right
+                        anchors.bottom: codeScroll.bottom
+                        height: 8
+                        contentItem: Rectangle { radius: 4; color: "#4b5563" }
+                        background: Rectangle { radius: 4; color: "#0b1220"; opacity: 0.82 }
+                    }
+                    ScrollBar.vertical: ScrollBar {
+                        id: codeVerticalBar
+                        policy: editor.implicitHeight > codeScroll.availableHeight ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                        parent: codeScroll
+                        anchors.top: codeScroll.top
+                        anchors.right: codeScroll.right
+                        anchors.bottom: codeScroll.bottom
+                        width: 10
+                        contentItem: Rectangle {
+                            radius: 5
+                            color: codeVerticalBar.pressed ? "#111827" : (codeVerticalBar.hovered ? "#374151" : "#4b5563")
+                        }
+                        background: Rectangle {
+                            radius: 5
+                            color: "#0b1220"
+                            opacity: 0.76
+                        }
+                    }
+                    HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
+                    TextArea {
+                        id: editor
+                        width: Math.max(codeScroll.availableWidth, implicitWidth + 36)
+                        height: Math.max(codeScroll.availableHeight, implicitHeight + 28)
+                        text: codeEditor.displayText
+                        placeholderText: codeEditor.placeholderText
+                        placeholderTextColor: "#64748b"
+                        readOnly: !codeEditor.editable
+                        wrapMode: TextArea.NoWrap
+                        color: "#e5e7eb"
+                        selectedTextColor: "#ffffff"
+                        selectionColor: "#2563eb"
+                        font.family: "Consolas"
+                        font.pixelSize: 16
+                        leftPadding: 16
+                        rightPadding: 30
+                        topPadding: 14
+                        bottomPadding: 14
+                        onTextChanged: {
+                            if (codeEditor.editable) codeEditor.edited(text)
+                        }
+                        background: Rectangle { color: "transparent" }
+                    }
+                }
+            }
+        }
+    }
+
+    component PlainAnswerEditor: Rectangle {
+        id: plainEditor
+        property string value: ""
+        property string placeholderText: "在这里输入答案..."
+        property bool editable: true
+        signal edited(string value)
+        radius: 20
+        color: "#f8fbff"
+        border.color: plainText.activeFocus ? "#2563eb" : "#dbe7f6"
+        border.width: plainText.activeFocus ? 2 : 1
+        clip: true
+        onValueChanged: {
+            if (plainText.text !== value) {
+                plainText.text = value
+            }
+        }
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 18
+            spacing: 12
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 10
+                Rectangle {
+                    Layout.preferredWidth: 36
+                    Layout.preferredHeight: 36
+                    radius: 12
+                    color: "#eff6ff"
+                    Text { anchors.centerIn: parent; text: "答"; color: "#2563eb"; font.pixelSize: 16; font.bold: true }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: "答案填写区"
+                    color: "#0f172a"
+                    font.pixelSize: 18
+                    font.bold: true
+                }
+            }
+            TextArea {
+                id: plainText
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                text: plainEditor.value
+                placeholderText: plainEditor.placeholderText
+                placeholderTextColor: "#94a3b8"
+                readOnly: !plainEditor.editable
+                wrapMode: TextArea.Wrap
+                color: "#0f172a"
+                selectedTextColor: "#ffffff"
+                selectionColor: "#2563eb"
+                font.pixelSize: 18
+                leftPadding: 0
+                rightPadding: 0
+                topPadding: 2
+                bottomPadding: 2
+                onTextChanged: plainEditor.edited(text)
+                background: Rectangle { color: "transparent" }
             }
         }
     }
@@ -2791,9 +3402,9 @@ Rectangle {
             PracticeQuickCard { Layout.fillWidth: true; title: "随机组卷"; hint: "选择题型科目难度，限时模拟"; accent: "#2563eb"; icon: "卷"; onClicked: root.openRandomPaperConfig() }
         }
 
-        PracticeSubjectGrid { width: parent.width; height: root.practiceMode === 0 ? (width > 1120 ? 602 : (width > 760 ? 912 : 1842)) : 0; visible: root.practiceMode === 0 }
+        PracticeSubjectGrid { width: parent.width; height: root.practiceMode === 0 ? (width > 1120 ? 512 : (width > 760 ? 782 : 1540)) : 0; visible: root.practiceMode === 0 }
         WrongQuestionPage { width: parent.width; height: root.practiceMode === 1 ? (root.narrowShell ? 1180 : 760) : 0; visible: root.practiceMode === 1 }
-        RandomPaperConfigPage { width: parent.width; height: root.practiceMode === 2 ? (root.narrowShell ? 840 : 620) : 0; visible: root.practiceMode === 2 }
+        RandomPaperConfigPage { width: parent.width; height: root.practiceMode === 2 ? (root.narrowShell ? 780 : 600) : 0; visible: root.practiceMode === 2 }
         PracticeBankPanel { width: parent.width; height: root.practiceMode === 3 ? (root.narrowShell ? 1180 : 760) : 0; visible: root.practiceMode === 3 }
     }
 
@@ -2805,7 +3416,7 @@ Rectangle {
             model: root.subjectCards
             delegate: SubjectPracticeCard {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 292
+                Layout.preferredHeight: 244
                 subject: modelData
             }
         }
@@ -2985,12 +3596,16 @@ Rectangle {
             }
             Loader {
                 Layout.fillWidth: true
-                Layout.preferredHeight: root.isObjective(detail.question.type) ? 230 : 210
-                sourceComponent: root.isObjective(detail.question.type) ? practiceOptionComponent : practiceTextComponent
+                Layout.preferredHeight: root.isObjective(detail.question.type) ? 230 : (root.isCodeQuestion(detail.question.type) ? 260 : 210)
+                sourceComponent: root.isObjective(detail.question.type)
+                                 ? practiceOptionComponent
+                                 : (root.isCodeQuestion(detail.question.type) ? practiceCodeComponent : practiceTextComponent)
             }
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: root.practiceIsChecked(detail.question.id) ? 112 : 0
+                Layout.preferredHeight: root.practiceIsChecked(detail.question.id)
+                                        ? (root.isCodeQuestion(detail.question.type) ? 300 : 130)
+                                        : 0
                 visible: root.practiceIsChecked(detail.question.id)
                 radius: 18
                 color: root.practiceIsCorrect(detail.question) ? "#f0fdf4" : "#fff7ed"
@@ -2999,11 +3614,10 @@ Rectangle {
                     anchors.fill: parent
                     anchors.margins: 14
                     spacing: 6
-                    Text {
-                        text: "正确答案：" + (detail.question.answer || "暂无")
-                        color: root.practiceIsCorrect(detail.question) ? "#16a34a" : "#f97316"
-                        font.pixelSize: 15
-                        font.bold: true
+                    Loader {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: root.isCodeQuestion(detail.question.type) ? 188 : 28
+                        sourceComponent: root.isCodeQuestion(detail.question.type) ? practiceCodeResultComponent : practicePlainResultComponent
                     }
                     Text {
                         Layout.fillWidth: true
@@ -3011,7 +3625,7 @@ Rectangle {
                         color: "#475569"
                         font.pixelSize: 13
                         wrapMode: Text.WordWrap
-                        maximumLineCount: 3
+                        maximumLineCount: root.isCodeQuestion(detail.question.type) ? 4 : 3
                         elide: Text.ElideRight
                     }
                 }
@@ -3086,15 +3700,42 @@ Rectangle {
 
         Component {
             id: practiceTextComponent
-            TextArea {
-                text: root.practiceAnswerFor(root.currentPracticeQuestion().id)
-                placeholderText: "在这里输入你的答案"
-                placeholderTextColor: "#94a3b8"
-                wrapMode: TextArea.Wrap
-                color: "#0f172a"
-                font.pixelSize: 16
-                onTextChanged: root.setPracticeAnswer(root.currentPracticeQuestion().id, text)
-                background: Rectangle { radius: 18; color: "#f8fbff"; border.color: "#dbe7f6" }
+            PlainAnswerEditor {
+                value: root.practiceAnswerFor(root.currentPracticeQuestion().id)
+                placeholderText: root.displayQuestionType(root.currentPracticeQuestion().type) === "填空题"
+                                 ? "请输入填空答案..."
+                                 : "在这里输入你的答案..."
+                onEdited: function(value) { root.setPracticeAnswer(root.currentPracticeQuestion().id, value) }
+            }
+        }
+
+        Component {
+            id: practiceCodeComponent
+            CodeAnswerEditor {
+                value: root.practiceAnswerFor(root.currentPracticeQuestion().id)
+                placeholderText: "在这里编写程序代码..."
+                onEdited: function(value) { root.setPracticeAnswer(root.currentPracticeQuestion().id, value) }
+            }
+        }
+
+        Component {
+            id: practicePlainResultComponent
+            Text {
+                text: "正确答案：" + (root.currentPracticeQuestion().answer || "暂无")
+                color: root.practiceIsCorrect(root.currentPracticeQuestion()) ? "#16a34a" : "#f97316"
+                font.pixelSize: 15
+                font.bold: true
+                elide: Text.ElideRight
+            }
+        }
+
+        Component {
+            id: practiceCodeResultComponent
+            CodeAnswerEditor {
+                value: root.currentPracticeQuestion().answer || "暂无"
+                editable: false
+                fileName: "standard_answer.java"
+                headerText: "正确答案"
             }
         }
     }
@@ -3272,58 +3913,12 @@ Rectangle {
                 font.bold: true
                 wrapMode: Text.WordWrap
             }
-            GridLayout {
+            Loader {
                 Layout.fillWidth: true
-                columns: width > 760 ? 2 : 1
-                columnSpacing: 14
-                rowSpacing: 14
-                Repeater {
-                    model: ["A", "B", "C", "D"]
-                    delegate: Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 74
-                        radius: 18
-                        property bool selected: wrongDetail.redoAnswer.indexOf(modelData) >= 0
-                        property bool wasWrong: String(wrongDetail.question.wrongAnswer || "").indexOf(modelData) >= 0
-                        property bool correct: String(wrongDetail.question.answer || "").indexOf(modelData) >= 0
-                        color: selected ? "#eff6ff" : (wasWrong ? "#fff7ed" : (correct ? "#f0fdf4" : "#f8fbff"))
-                        border.color: selected ? "#2563eb" : (wasWrong ? "#fed7aa" : (correct ? "#bbf7d0" : "#e2edf8"))
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 14
-                            spacing: 12
-                            Rectangle {
-                                Layout.preferredWidth: 36
-                                Layout.preferredHeight: 36
-                                radius: 18
-                                color: selected ? "#2563eb" : "#ffffff"
-                                border.color: selected ? "#2563eb" : "#e2edf8"
-                                Text { anchors.centerIn: parent; text: modelData; color: selected ? "#ffffff" : "#64748b"; font.pixelSize: 15; font.bold: true }
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                text: root.optionText(wrongDetail.question, modelData)
-                                color: "#0f172a"
-                                font.pixelSize: 15
-                                font.bold: true
-                                wrapMode: Text.WordWrap
-                                maximumLineCount: 2
-                                elide: Text.ElideRight
-                            }
-                            Text {
-                                text: wasWrong ? "当时错选" : (correct ? "正确答案" : "")
-                                color: wasWrong ? "#f97316" : "#16a34a"
-                                font.pixelSize: 12
-                                font.bold: true
-                            }
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: wrongDetail.redoAnswer = root.isMultipleChoice(wrongDetail.question.type) ? (wrongDetail.redoAnswer.indexOf(modelData) >= 0 ? wrongDetail.redoAnswer.replace(modelData, "") : wrongDetail.redoAnswer + modelData) : modelData
-                        }
-                    }
-                }
+                Layout.preferredHeight: root.isObjective(wrongDetail.question.type) ? (root.narrowShell ? 338 : 166) : (root.isCodeQuestion(wrongDetail.question.type) ? 240 : 150)
+                sourceComponent: root.isObjective(wrongDetail.question.type)
+                                 ? wrongOptionCorrectionComponent
+                                 : (root.isCodeQuestion(wrongDetail.question.type) ? wrongCodeCorrectionComponent : wrongTextCorrectionComponent)
             }
             Rectangle {
                 Layout.fillWidth: true
@@ -3392,13 +3987,89 @@ Rectangle {
                 SoftButton { Layout.fillWidth: true; text: "下一题"; enabled: root.activeWrongQuestionIndex < root.wrongQuestionRows.length - 1; onClicked: root.activeWrongQuestionIndex += 1 }
             }
         }
+
+        Component {
+            id: wrongOptionCorrectionComponent
+            GridLayout {
+                columns: width > 760 ? 2 : 1
+                columnSpacing: 14
+                rowSpacing: 14
+                Repeater {
+                    model: ["A", "B", "C", "D"]
+                    delegate: Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 74
+                        radius: 18
+                        property bool selected: wrongDetail.redoAnswer.indexOf(modelData) >= 0
+                        property bool wasWrong: String(wrongDetail.question.wrongAnswer || "").indexOf(modelData) >= 0
+                        property bool correct: String(wrongDetail.question.answer || "").indexOf(modelData) >= 0
+                        color: selected ? "#eff6ff" : (wasWrong ? "#fff7ed" : (correct ? "#f0fdf4" : "#f8fbff"))
+                        border.color: selected ? "#2563eb" : (wasWrong ? "#fed7aa" : (correct ? "#bbf7d0" : "#e2edf8"))
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 12
+                            Rectangle {
+                                Layout.preferredWidth: 36
+                                Layout.preferredHeight: 36
+                                radius: 18
+                                color: selected ? "#2563eb" : "#ffffff"
+                                border.color: selected ? "#2563eb" : "#e2edf8"
+                                Text { anchors.centerIn: parent; text: modelData; color: selected ? "#ffffff" : "#64748b"; font.pixelSize: 15; font.bold: true }
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.optionText(wrongDetail.question, modelData)
+                                color: "#0f172a"
+                                font.pixelSize: 15
+                                font.bold: true
+                                wrapMode: Text.WordWrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                text: wasWrong ? "当时错选" : (correct ? "正确答案" : "")
+                                color: wasWrong ? "#f97316" : "#16a34a"
+                                font.pixelSize: 12
+                                font.bold: true
+                            }
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: wrongDetail.redoAnswer = root.isMultipleChoice(wrongDetail.question.type) ? (wrongDetail.redoAnswer.indexOf(modelData) >= 0 ? wrongDetail.redoAnswer.replace(modelData, "") : wrongDetail.redoAnswer + modelData) : modelData
+                        }
+                    }
+                }
+            }
+        }
+
+        Component {
+            id: wrongTextCorrectionComponent
+            PlainAnswerEditor {
+                value: wrongDetail.redoAnswer
+                placeholderText: root.displayQuestionType(wrongDetail.question.type) === "填空题"
+                                 ? "重新填写本题答案..."
+                                 : "重新作答本题..."
+                onEdited: function(value) { wrongDetail.redoAnswer = value }
+            }
+        }
+
+        Component {
+            id: wrongCodeCorrectionComponent
+            CodeAnswerEditor {
+                value: wrongDetail.redoAnswer
+                placeholderText: "重新编写本题程序代码..."
+                onEdited: function(value) { wrongDetail.redoAnswer = value }
+            }
+        }
     }
 
     component RandomPaperConfigPage: Card {
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: root.narrowShell ? 18 : 28
-            spacing: root.narrowShell ? 14 : 20
+            anchors.margins: root.narrowShell ? 18 : 24
+            spacing: root.narrowShell ? 12 : 16
             GridLayout {
                 Layout.fillWidth: true
                 columns: root.narrowShell ? 1 : 2
@@ -3408,7 +4079,7 @@ Rectangle {
                     Layout.fillWidth: true
                     text: "随机组卷设置"
                     color: "#0f172a"
-                    font.pixelSize: 26
+                    font.pixelSize: 28
                     font.bold: true
                     elide: Text.ElideRight
                 }
@@ -3424,13 +4095,13 @@ Rectangle {
             }
             GridLayout {
                 Layout.fillWidth: true
-                columns: parent.width > 980 ? 4 : (parent.width > 560 ? 2 : 1)
+                columns: parent.width > 980 ? 5 : (parent.width > 560 ? 2 : 1)
                 columnSpacing: root.narrowShell ? 12 : 18
                 rowSpacing: root.narrowShell ? 12 : 18
                 RandomConfigBlock {
                     Layout.fillWidth: true
                     title: "科目"
-                    FilterCombo { id: randomSubjectCombo; anchors.fill: parent; model: ["全部科目", "高等数学", "Java基础", "数据库基础", "计算机网络", "数据结构"] }
+                    FilterCombo { id: randomSubjectCombo; anchors.fill: parent; model: root.practiceSubjectOptions() }
                 }
                 RandomConfigBlock {
                     Layout.fillWidth: true
@@ -3455,41 +4126,41 @@ Rectangle {
             }
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: root.narrowShell ? 260 : 180
+                Layout.preferredHeight: root.narrowShell ? 240 : 176
                 radius: 24
                 color: "#f8fbff"
                 border.color: "#e2edf8"
                 GridLayout {
                     anchors.fill: parent
-                    anchors.margins: root.narrowShell ? 18 : 24
+                    anchors.margins: root.narrowShell ? 16 : 20
                     columns: root.narrowShell ? 1 : 3
                     columnSpacing: 18
                     rowSpacing: 14
                     Rectangle {
-                        Layout.preferredWidth: 76
-                        Layout.preferredHeight: 76
+                        Layout.preferredWidth: 64
+                        Layout.preferredHeight: 64
                         radius: 24
                         color: "#eff6ff"
-                        Text { anchors.centerIn: parent; text: "卷"; color: "#2563eb"; font.pixelSize: 28; font.bold: true }
+                        Text { anchors.centerIn: parent; text: "卷"; color: "#2563eb"; font.pixelSize: 26; font.bold: true }
                     }
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 8
                         Text { text: "限时模拟考试"; color: "#0f172a"; font.pixelSize: 22; font.bold: true }
-                        Text { Layout.fillWidth: true; text: "系统将按当前条件随机抽题，进入后按模拟考试流程作答，提交后查看客观题得分与解析。"; color: "#64748b"; font.pixelSize: 14; wrapMode: Text.WordWrap }
+                        Text { Layout.fillWidth: true; text: "按当前条件从真实题库随机抽题，进入后使用正式考试界面作答。"; color: "#64748b"; font.pixelSize: 17; wrapMode: Text.WordWrap }
                     }
                     PrimaryButton {
                         Layout.fillWidth: root.narrowShell
-                        Layout.preferredWidth: root.narrowShell ? parent.width : 160
+                        Layout.preferredWidth: root.narrowShell ? parent.width : 180
                         text: "开始组卷"
                         onClicked: {
                             randomCountBox.commitInput()
                             randomTimeBox.commitInput()
                             root.practiceTimeLimit = randomTimeBox.value
-                            root.loadPracticeQuestions(randomTypeCombo.currentText === "全部题型" ? "" : randomTypeCombo.currentText,
-                                                       randomDifficultyCombo.currentText === "全部难度" ? "" : randomDifficultyCombo.currentText,
-                                                       randomSubjectCombo.currentText === "全部科目" ? "" : randomSubjectCombo.currentText)
-                            root.startPracticeMockExam(randomCountBox.value)
+                            root.startPracticeMockExam(randomCountBox.value,
+                                                       randomSubjectCombo.currentText === "全部科目" ? "" : randomSubjectCombo.currentText,
+                                                       randomTypeCombo.currentText === "全部题型" ? "" : randomTypeCombo.currentText,
+                                                       randomDifficultyCombo.currentText === "全部难度" ? "" : randomDifficultyCombo.currentText)
                         }
                     }
                 }
@@ -3661,24 +4332,31 @@ Rectangle {
         property color accent: subject.color || "#22c55e"
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 22
-            spacing: 12
+            anchors.margins: 18
+            spacing: 10
             RowLayout {
                 Layout.fillWidth: true
                 Rectangle {
-                    Layout.preferredWidth: 54
-                    Layout.preferredHeight: 54
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
                     radius: 18
                     color: subjectCard.accent
-                    Text { anchors.centerIn: parent; text: subjectCard.subject.icon || "题"; color: "#ffffff"; font.pixelSize: 21; font.bold: true }
+                    Text { anchors.centerIn: parent; text: subjectCard.subject.icon || "题"; color: "#ffffff"; font.pixelSize: 20; font.bold: true }
                 }
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 3
-                    Text { text: subjectCard.subject.name || "--"; color: "#111827"; font.pixelSize: 20; font.bold: true }
-                    Text { text: "准确率 " + (subjectCard.subject.accuracy || 0) + "%"; color: "#64748b"; font.pixelSize: 13 }
+                    Text { text: subjectCard.subject.name || "--"; color: "#111827"; font.pixelSize: 22; font.bold: true }
+                    Text { text: "题库 " + (subjectCard.subject.totalCount || 0) + " 题 · 准确率 " + (subjectCard.subject.accuracy || 0) + "%"; color: "#64748b"; font.pixelSize: 14 }
                 }
-                Text { text: (subjectCard.subject.progress || 0) + "%"; color: subjectCard.accent; font.pixelSize: 20; font.bold: true }
+                Text {
+                    Layout.preferredWidth: 64
+                    text: (subjectCard.subject.progress || 0) + "%"
+                    color: subjectCard.accent
+                    font.pixelSize: 20
+                    font.bold: true
+                    horizontalAlignment: Text.AlignRight
+                }
             }
             ProgressBarLine { Layout.fillWidth: true; value: (subjectCard.subject.progress || 0) / 100; accent: subjectCard.accent }
             RowLayout {
@@ -3821,12 +4499,16 @@ Rectangle {
                     }
                     Loader {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: root.isObjective(mockDialog.question.type) ? 156 : 74
-                        sourceComponent: root.isObjective(mockDialog.question.type) ? mockOptionAnswerComponent : mockTextAnswerComponent
+                        Layout.preferredHeight: root.isObjective(mockDialog.question.type) ? 156 : (root.isCodeQuestion(mockDialog.question.type) ? 210 : 96)
+                        sourceComponent: root.isObjective(mockDialog.question.type)
+                                         ? mockOptionAnswerComponent
+                                         : (root.isCodeQuestion(mockDialog.question.type) ? mockCodeAnswerComponent : mockTextAnswerComponent)
                     }
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: root.practiceExamFinished ? 82 : 0
+                        Layout.preferredHeight: root.practiceExamFinished
+                                                ? (root.isCodeQuestion(mockDialog.question.type) ? 250 : 98)
+                                                : 0
                         visible: root.practiceExamFinished
                         radius: 18
                         color: root.practiceExamIsCorrect(mockDialog.question) ? "#f0fdf4" : "#fff7ed"
@@ -3835,11 +4517,10 @@ Rectangle {
                             anchors.fill: parent
                             anchors.margins: 14
                             spacing: 4
-                            Text {
-                                text: "正确答案：" + (mockDialog.question.answer || "暂无")
-                                color: root.practiceExamIsCorrect(mockDialog.question) ? "#16a34a" : "#f97316"
-                                font.pixelSize: 14
-                                font.bold: true
+                            Loader {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: root.isCodeQuestion(mockDialog.question.type) ? 154 : 24
+                                sourceComponent: root.isCodeQuestion(mockDialog.question.type) ? mockCodeResultComponent : mockPlainResultComponent
                             }
                             Text {
                                 Layout.fillWidth: true
@@ -3924,18 +4605,48 @@ Rectangle {
 
         Component {
             id: mockTextAnswerComponent
-            TextArea {
-                text: root.practiceExamAnswerFor(root.currentPracticeExamQuestion().id)
-                placeholderText: "在此输入答案..."
-                placeholderTextColor: "#94a3b8"
-                wrapMode: TextArea.Wrap
-                enabled: !root.practiceExamFinished
-                color: "#111827"
-                font.pixelSize: 15
-                onTextChanged: {
-                    if (!root.practiceExamFinished) root.setPracticeExamAnswer(root.currentPracticeExamQuestion().id, text)
+            PlainAnswerEditor {
+                value: root.practiceExamAnswerFor(root.currentPracticeExamQuestion().id)
+                editable: !root.practiceExamFinished
+                placeholderText: root.displayQuestionType(root.currentPracticeExamQuestion().type) === "填空题"
+                                 ? "请输入填空答案..."
+                                 : "在此输入答案..."
+                onEdited: function(value) {
+                    if (!root.practiceExamFinished) root.setPracticeExamAnswer(root.currentPracticeExamQuestion().id, value)
                 }
-                background: Rectangle { radius: 18; color: "#f8fbff"; border.color: "#dbe7f6" }
+            }
+        }
+
+        Component {
+            id: mockCodeAnswerComponent
+            CodeAnswerEditor {
+                value: root.practiceExamAnswerFor(root.currentPracticeExamQuestion().id)
+                editable: !root.practiceExamFinished
+                placeholderText: "在这里编写程序代码..."
+                onEdited: function(value) {
+                    if (!root.practiceExamFinished) root.setPracticeExamAnswer(root.currentPracticeExamQuestion().id, value)
+                }
+            }
+        }
+
+        Component {
+            id: mockPlainResultComponent
+            Text {
+                text: "正确答案：" + (root.currentPracticeExamQuestion().answer || "暂无")
+                color: root.practiceExamIsCorrect(root.currentPracticeExamQuestion()) ? "#16a34a" : "#f97316"
+                font.pixelSize: 14
+                font.bold: true
+                elide: Text.ElideRight
+            }
+        }
+
+        Component {
+            id: mockCodeResultComponent
+            CodeAnswerEditor {
+                value: root.currentPracticeExamQuestion().answer || "暂无"
+                editable: false
+                fileName: "standard_answer.java"
+                headerText: "正确答案"
             }
         }
     }
@@ -3953,18 +4664,12 @@ Rectangle {
 
             RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 56
+                Layout.preferredHeight: 66
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 4
-                    Text { text: "随机组卷模拟考试"; color: "#111827"; font.pixelSize: 28; font.bold: true }
-                    Text { text: "按正式考试界面作答，提交后查看客观题得分与解析"; color: "#8b949e"; font.pixelSize: 13 }
-                }
-                ExamControlStrip {
-                    Layout.preferredWidth: root.narrowShell ? 188 : 224
-                    Layout.preferredHeight: 42
-                    statusText: "考试中"
-                    onExitRequested: root.exitPracticeExamMode()
+                    Text { text: "随机组卷模拟考试"; color: "#111827"; font.pixelSize: 31; font.bold: true }
+                    Text { text: "按正式考试界面作答，提交后查看客观题得分与解析"; color: "#8b949e"; font.pixelSize: 15 }
                 }
             }
 
@@ -3989,31 +4694,44 @@ Rectangle {
                             spacing: 8
                             Text { Layout.fillWidth: true; text: "模拟试卷"; color: "#111827"; font.pixelSize: 24; font.bold: true; elide: Text.ElideRight }
                             Text {
-                                text: root.displayQuestionType(root.currentPracticeExamQuestion().type) + " · 共 " + root.practiceExamQuestions.length + " 题 · 已答 " + root.practiceExamAnsweredCount() + " 题"
+                                text: root.displayQuestionType(root.currentPracticeExamQuestion().type) + " · 共 " + root.practiceExamQuestions.length + " 题 · 已答 " + root.practiceExamAnsweredCount() + " 题 · 已标记 " + root.practiceExamMarkedCount() + " 题"
                                 color: "#64748b"
                                 font.pixelSize: 13
                             }
                         }
                         Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: "#eef2f7" }
 
-                        Text {
+                        RowLayout {
                             Layout.fillWidth: true
-                            text: (root.activePracticeExamIndex + 1) + ". " + (root.currentPracticeExamQuestion().content || "暂无题目")
-                            color: "#111827"
-                            font.pixelSize: 18
-                            font.bold: true
-                            wrapMode: Text.WordWrap
+                            spacing: 12
+                            Text {
+                                Layout.fillWidth: true
+                                text: (root.activePracticeExamIndex + 1) + ". " + (root.currentPracticeExamQuestion().content || "暂无题目")
+                                color: "#111827"
+                                font.pixelSize: 18
+                                font.bold: true
+                                wrapMode: Text.WordWrap
+                            }
+                            SoftButton {
+                                Layout.preferredWidth: 116
+                                text: root.practiceExamQuestionMarked(root.currentPracticeExamQuestion().id) ? "★ 已标记" : "☆ 标记"
+                                onClicked: root.togglePracticeExamQuestionMark(root.currentPracticeExamQuestion().id)
+                            }
                         }
 
                         Loader {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            sourceComponent: root.isObjective(root.currentPracticeExamQuestion().type) ? mockFormalOptionComponent : mockFormalTextComponent
+                            sourceComponent: root.isObjective(root.currentPracticeExamQuestion().type)
+                                             ? mockFormalOptionComponent
+                                             : (root.isCodeQuestion(root.currentPracticeExamQuestion().type) ? mockFormalCodeComponent : mockFormalTextComponent)
                         }
 
                         Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: root.practiceExamFinished ? 96 : 0
+                            Layout.preferredHeight: root.practiceExamFinished
+                                                    ? (root.isCodeQuestion(root.currentPracticeExamQuestion().type) ? 286 : 108)
+                                                    : 0
                             visible: root.practiceExamFinished
                             radius: 18
                             color: root.practiceExamIsCorrect(root.currentPracticeExamQuestion()) ? "#f0fdf4" : "#fff7ed"
@@ -4022,11 +4740,10 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.margins: 14
                                 spacing: 5
-                                Text {
-                                    text: "正确答案：" + (root.currentPracticeExamQuestion().answer || "暂无")
-                                    color: root.practiceExamIsCorrect(root.currentPracticeExamQuestion()) ? "#16a34a" : "#f97316"
-                                    font.pixelSize: 14
-                                    font.bold: true
+                                Loader {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: root.isCodeQuestion(root.currentPracticeExamQuestion().type) ? 182 : 24
+                                    sourceComponent: root.isCodeQuestion(root.currentPracticeExamQuestion().type) ? mockFormalCodeResultComponent : mockFormalPlainResultComponent
                                 }
                                 Text {
                                     Layout.fillWidth: true
@@ -4049,6 +4766,11 @@ Rectangle {
                                 enabled: root.activePracticeExamIndex > 0
                                 onClicked: root.activePracticeExamIndex -= 1
                             }
+                            SoftButton {
+                                Layout.fillWidth: true
+                                text: root.practiceExamQuestionMarked(root.currentPracticeExamQuestion().id) ? "取消标记" : "标记本题"
+                                onClicked: root.togglePracticeExamQuestionMark(root.currentPracticeExamQuestion().id)
+                            }
                             PrimaryButton {
                                 Layout.fillWidth: true
                                 text: "下一题"
@@ -4065,25 +4787,30 @@ Rectangle {
                     Layout.fillHeight: true
                     Layout.columnSpan: 1
                     spacing: root.narrowShell ? 12 : 14
+                    ExamControlStrip {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: root.narrowShell ? 46 : 52
+                        statusText: "考试中"
+                        onExitRequested: root.exitPracticeExamMode()
+                    }
                     ExamClockCard {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: root.narrowShell ? 150 : 184
+                        Layout.preferredHeight: root.narrowShell ? 220 : 336
                         label: "◷  模拟倒计时"
                         value: (root.practiceTimeLimit < 10 ? "0" : "") + root.practiceTimeLimit + " : 00"
                         hint: root.practiceExamFinished ? ("客观题得分 " + root.practiceExamScoreText()) : "提交后查看解析"
                     }
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.minimumHeight: 220
+                        Layout.preferredHeight: root.narrowShell ? 226 : 292
                         radius: 24
                         color: "#ffffff"
                         border.color: "#e5edf6"
                         clip: true
                         ColumnLayout {
                             anchors.fill: parent
-                            anchors.margins: 20
-                            spacing: 14
+                            anchors.margins: 16
+                            spacing: 10
                             RowLayout {
                                 Layout.fillWidth: true
                                 Text { text: "答题卡"; color: "#111827"; font.pixelSize: 20; font.bold: true; Layout.fillWidth: true }
@@ -4102,20 +4829,21 @@ Rectangle {
                                 GridLayout {
                                     id: mockCardGrid
                                     width: parent.width
-                                    columns: 5
+                                    columns: Math.max(4, Math.floor(width / 50))
                                     columnSpacing: 8
                                     rowSpacing: 8
                                     Repeater {
                                         model: root.practiceExamQuestions
                                         delegate: Rectangle {
-                                            Layout.preferredWidth: 38
-                                            Layout.preferredHeight: 38
+                                            Layout.preferredWidth: 42
+                                            Layout.preferredHeight: 42
                                             radius: 14
                                             property bool current: index === root.activePracticeExamIndex
                                             property bool answered: root.practiceExamAnswerFor(modelData.id).length > 0
-                                            color: current ? "#3b82f6" : (answered ? "#eff6ff" : "#f3f4f6")
-                                            border.color: current ? "#3b82f6" : "transparent"
-                                            Text { anchors.centerIn: parent; text: String(index + 1); color: current ? "#ffffff" : "#64748b"; font.pixelSize: 14; font.bold: true }
+                                            property bool marked: root.practiceExamQuestionMarked(modelData.id)
+                                            color: current ? "#3b82f6" : (marked ? "#fff7ed" : (answered ? "#eff6ff" : "#f3f4f6"))
+                                            border.color: marked ? "#f59e0b" : (current ? "#3b82f6" : "transparent")
+                                            Text { anchors.centerIn: parent; text: String(index + 1); color: current ? "#ffffff" : (marked ? "#f59e0b" : "#64748b"); font.pixelSize: 16; font.bold: true }
                                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.activePracticeExamIndex = index }
                                         }
                                     }
@@ -4125,6 +4853,7 @@ Rectangle {
                                 spacing: 12
                                 LegendDot { colorValue: "#dbeafe"; label: "已答" }
                                 LegendDot { colorValue: "#f3f4f6"; label: "未答" }
+                                LegendDot { colorValue: "#f59e0b"; label: "标记" }
                             }
                         }
                     }
@@ -4148,7 +4877,7 @@ Rectangle {
                     model: ["A", "B", "C", "D"]
                     delegate: Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 68
+                        Layout.preferredHeight: 60
                         radius: 16
                         property var question: root.currentPracticeExamQuestion()
                         property bool selected: root.practiceExamOptionSelected(question, modelData)
@@ -4157,8 +4886,8 @@ Rectangle {
                         border.color: root.practiceExamFinished && correct ? "#22c55e" : (selected ? "#3b82f6" : "#e5e7eb")
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 14
-                            spacing: 14
+                            anchors.margins: 12
+                            spacing: 12
                             Rectangle {
                                 Layout.preferredWidth: 34
                                 Layout.preferredHeight: 34
@@ -4182,18 +4911,48 @@ Rectangle {
 
         Component {
             id: mockFormalTextComponent
-            TextArea {
-                text: root.practiceExamAnswerFor(root.currentPracticeExamQuestion().id)
-                placeholderText: "在这里输入答案"
-                placeholderTextColor: "#94a3b8"
-                wrapMode: TextArea.Wrap
-                color: "#111827"
-                font.pixelSize: 16
-                enabled: !root.practiceExamFinished
-                onTextChanged: {
-                    if (!root.practiceExamFinished) root.setPracticeExamAnswer(root.currentPracticeExamQuestion().id, text)
+            PlainAnswerEditor {
+                value: root.practiceExamAnswerFor(root.currentPracticeExamQuestion().id)
+                editable: !root.practiceExamFinished
+                placeholderText: root.displayQuestionType(root.currentPracticeExamQuestion().type) === "填空题"
+                                 ? "请输入填空答案..."
+                                 : "在这里输入答案..."
+                onEdited: function(value) {
+                    if (!root.practiceExamFinished) root.setPracticeExamAnswer(root.currentPracticeExamQuestion().id, value)
                 }
-                background: Rectangle { radius: 18; color: "#ffffff"; border.color: "#e5edf6" }
+            }
+        }
+
+        Component {
+            id: mockFormalCodeComponent
+            CodeAnswerEditor {
+                value: root.practiceExamAnswerFor(root.currentPracticeExamQuestion().id)
+                editable: !root.practiceExamFinished
+                placeholderText: "在这里编写程序代码..."
+                onEdited: function(value) {
+                    if (!root.practiceExamFinished) root.setPracticeExamAnswer(root.currentPracticeExamQuestion().id, value)
+                }
+            }
+        }
+
+        Component {
+            id: mockFormalPlainResultComponent
+            Text {
+                text: "正确答案：" + (root.currentPracticeExamQuestion().answer || "暂无")
+                color: root.practiceExamIsCorrect(root.currentPracticeExamQuestion()) ? "#16a34a" : "#f97316"
+                font.pixelSize: 14
+                font.bold: true
+                elide: Text.ElideRight
+            }
+        }
+
+        Component {
+            id: mockFormalCodeResultComponent
+            CodeAnswerEditor {
+                value: root.currentPracticeExamQuestion().answer || "暂无"
+                editable: false
+                fileName: "standard_answer.java"
+                headerText: "正确答案"
             }
         }
     }
@@ -4205,8 +4964,8 @@ Rectangle {
             SectionTitle { width: parent.width; title: "成绩分析"; subtitle: "按科目查看个人成绩趋势、班级均值对比、考试历史和学习建议" }
             FilterCombo {
                 id: analysisSubjectCombo
-                width: root.narrowShell ? Math.min(parent.width, 190) : 174
-                height: 46
+                width: root.narrowShell ? Math.min(parent.width, 220) : 206
+                height: 52
                 model: root.analysisSubjectOptions()
                 currentIndex: Math.max(0, root.analysisSubjectOptions().indexOf(root.activeReportSubject))
                 onCurrentTextChanged: {
@@ -4235,6 +4994,7 @@ Rectangle {
             TrendChartCard {
                 Layout.fillWidth: true
                 Layout.columnSpan: parent.width > 1180 ? 2 : 1
+                Layout.alignment: Qt.AlignTop
                 Layout.preferredHeight: root.narrowShell ? 360 : 430
                 title: root.activeReportSubject + "成绩趋势"
                 subtitle: "绿色为个人曲线，灰色为班级均值，鼠标悬浮节点查看具体数据"
@@ -4244,7 +5004,8 @@ Rectangle {
             }
             SubjectScorePanel {
                 Layout.fillWidth: true
-                Layout.preferredHeight: root.narrowShell ? 360 : 430
+                Layout.alignment: Qt.AlignTop
+                Layout.preferredHeight: root.narrowShell ? 390 : 430
             }
         }
 
@@ -4580,23 +5341,23 @@ Rectangle {
         property string value: ""
         property string delta: ""
         property color accent: "#22c55e"
-        height: root.narrowShell ? 128 : 150
+        height: root.narrowShell ? 136 : 160
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: root.narrowShell ? 18 : 22
+            anchors.margins: root.narrowShell ? 20 : 24
             spacing: root.narrowShell ? 6 : 8
             RowLayout {
                 Layout.fillWidth: true
-                Text { text: kpi.label; color: "#64748b"; font.pixelSize: 14; font.bold: true; Layout.fillWidth: true }
+                Text { text: kpi.label; color: "#64748b"; font.pixelSize: 16; font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
                 Rectangle {
                     Layout.preferredWidth: 72
                     Layout.preferredHeight: 28
                     radius: 14
                     color: Qt.rgba(kpi.accent.r, kpi.accent.g, kpi.accent.b, 0.10)
-                    Text { anchors.centerIn: parent; text: kpi.delta; color: kpi.accent; font.pixelSize: 11; font.bold: true }
+                    Text { anchors.centerIn: parent; text: kpi.delta; color: kpi.accent; font.pixelSize: 12; font.bold: true }
                 }
             }
-            Text { text: kpi.value; color: "#111827"; font.pixelSize: root.narrowShell ? 30 : 38; font.bold: true }
+            Text { text: kpi.value; color: "#111827"; font.pixelSize: root.narrowShell ? 32 : 40; font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
             ProgressBarLine { Layout.fillWidth: true; value: 0.82; accent: kpi.accent }
         }
     }
@@ -4606,7 +5367,7 @@ Rectangle {
             anchors.fill: parent
             anchors.margins: 24
             spacing: 16
-            Text { text: "科目成绩"; color: "#111827"; font.pixelSize: 22; font.bold: true }
+            Text { text: "科目成绩"; color: "#111827"; font.pixelSize: 24; font.bold: true }
             Text {
                 Layout.fillWidth: true
                 visible: root.subjectScoreRows().length === 0
@@ -4617,27 +5378,59 @@ Rectangle {
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillHeight: true
             }
-            Repeater {
-                model: root.subjectScoreRows()
-                delegate: SubjectScoreRow { Layout.fillWidth: true; row: modelData }
+            Flickable {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                visible: root.subjectScoreRows().length > 0
+                contentWidth: width
+                contentHeight: subjectScoreColumn.height
+                clip: true
+                contentY: 0
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.vertical: ScrollBar { policy: contentHeight > height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
+                Column {
+                    id: subjectScoreColumn
+                    width: parent.width
+                    spacing: 12
+                    Repeater {
+                        model: root.subjectScoreRows()
+                        delegate: SubjectScoreRow { width: subjectScoreColumn.width; row: modelData }
+                    }
+                }
             }
         }
     }
 
-    component SubjectScoreRow: ColumnLayout {
-        id: row
+    component SubjectScoreRow: Rectangle {
+        id: scoreRow
         property var row: ({})
-        spacing: 8
-        RowLayout {
-            Layout.fillWidth: true
-            Text { text: row.row.name; color: "#111827"; font.pixelSize: 14; font.bold: true; Layout.fillWidth: true }
-            Text { text: row.row.score; color: row.row.color; font.pixelSize: 15; font.bold: true }
-            Rectangle { Layout.preferredWidth: 50; Layout.preferredHeight: 26; radius: 13; color: "#eff6ff"; Text { anchors.centerIn: parent; text: row.row.level; color: row.row.color; font.pixelSize: 11; font.bold: true } }
-        }
-        ProgressBarLine {
-            Layout.fillWidth: true
-            value: isNaN(Number(row.row.score)) ? 0 : Number(row.row.score) / Math.max(1, Number(row.row.full || 100))
-            accent: row.row.color
+        height: 82
+        Layout.preferredHeight: 82
+        radius: 18
+        color: "#f8fbff"
+        border.color: "#e2edf8"
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 16
+            spacing: 9
+            RowLayout {
+                Layout.fillWidth: true
+                Text { text: scoreRow.row.name; color: "#111827"; font.pixelSize: 18; font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
+                Text { text: scoreRow.row.score; color: scoreRow.row.color; font.pixelSize: 20; font.bold: true; Layout.preferredWidth: 64; horizontalAlignment: Text.AlignRight }
+                Rectangle {
+                    Layout.preferredWidth: 56
+                    Layout.preferredHeight: 28
+                    radius: 14
+                    color: "#eff6ff"
+                    Text { anchors.centerIn: parent; text: scoreRow.row.level; color: scoreRow.row.color; font.pixelSize: 13; font.bold: true }
+                }
+            }
+            ProgressBarLine {
+                Layout.fillWidth: true
+                value: isNaN(Number(scoreRow.row.score)) ? 0 : Number(scoreRow.row.score) / Math.max(1, Number(scoreRow.row.full || 100))
+                accent: scoreRow.row.color
+            }
         }
     }
 
@@ -4744,7 +5537,7 @@ Rectangle {
             Text { text: "AI 个性化建议"; color: "#111827"; font.pixelSize: 22; font.bold: true }
             GridLayout {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: Math.min(300, Math.ceil(Math.max(1, root.aiSuggestions.length) / (width > 980 ? 3 : 1)) * 146)
                 columns: width > 980 ? 3 : 1
                 columnSpacing: 14
                 rowSpacing: 14
@@ -4752,7 +5545,6 @@ Rectangle {
                     model: root.aiSuggestions
                     delegate: Rectangle {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
                         Layout.preferredHeight: 132
                         radius: 18
                         color: "#ffffff"
@@ -4772,6 +5564,7 @@ Rectangle {
                     }
                 }
             }
+            Item { Layout.fillHeight: true }
         }
     }
 
@@ -5214,27 +6007,26 @@ Rectangle {
         id: strip
         property string statusText: "考试中"
         signal exitRequested()
-        implicitWidth: 224
-        implicitHeight: 40
-        Layout.preferredHeight: 40
-        radius: 0
+        implicitWidth: 252
+        implicitHeight: 52
+        Layout.preferredHeight: 52
+        radius: 18
         color: "transparent"
         border.color: "transparent"
         Row {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: strip.width < 214 ? 8 : 12
+            anchors.centerIn: parent
+            spacing: strip.width < 230 ? 8 : 12
             Rectangle {
-                width: strip.width < 214 ? 84 : 96
-                height: 36
-                radius: 18
+                width: strip.width < 230 ? 92 : 112
+                height: 44
+                radius: 22
                 color: "#fef2f2"
                 border.color: "#fecaca"
-                Text { anchors.centerIn: parent; text: strip.statusText; color: "#ef4444"; font.pixelSize: 13; font.bold: true }
+                Text { anchors.centerIn: parent; text: strip.statusText; color: "#ef4444"; font.pixelSize: 16; font.bold: true }
             }
             DangerButton {
-                width: strip.width < 214 ? 96 : 104
-                height: 36
+                width: strip.width < 230 ? 104 : 118
+                height: 44
                 text: "退出考试"
                 onClicked: strip.exitRequested()
             }
@@ -5292,13 +6084,18 @@ Rectangle {
         id: legend
         property color colorValue: "#dbeafe"
         property string label: ""
-        spacing: 6
-        Rectangle { width: 12; height: 12; radius: 4; color: legend.colorValue; anchors.verticalCenter: parent.verticalCenter }
-        Text { text: legend.label; color: "#8b949e"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+        spacing: 7
+        Rectangle { width: 14; height: 14; radius: 5; color: legend.colorValue; anchors.verticalCenter: parent.verticalCenter }
+        Text { text: legend.label; color: "#8b949e"; font.pixelSize: 14; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
     }
 
     component StudentTopNav: Rectangle {
         id: nav
+        property int controlsRightInset: root.width < 760 ? 18 : (root.narrowShell ? 24 : 34)
+        property int controlsReservedWidth: root.width < 760 ? 118 : (root.narrowShell ? 138 : 156)
+        property int controlsHeight: root.width < 760 ? 38 : (root.narrowShell ? 44 : 50)
+        property int rightActionsGap: root.width < 760 ? 10 : (root.narrowShell ? 14 : 20)
+        property int rightActionsWidth: root.width < 760 ? 98 : (root.narrowShell ? 128 : (root.compactShell ? 154 : 272))
         color: (root.examMode || root.practiceExamMode) ? "#ffffff" : "#f8fafc"
         border.color: (root.examMode || root.practiceExamMode) ? "#fee2e2" : "#eef2f7"
         Rectangle {
@@ -5325,13 +6122,44 @@ Rectangle {
             sourceComponent: (root.examMode || root.practiceExamMode) ? examNavComponent : normalNavComponent
         }
 
+        WindowControls {
+            id: navWindowControls
+            z: 20
+            width: nav.controlsReservedWidth
+            height: nav.controlsHeight
+            anchors.right: parent.right
+            anchors.rightMargin: nav.controlsRightInset
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        RowLayout {
+            id: studentRightActions
+            visible: !(root.examMode || root.practiceExamMode)
+            z: 18
+            width: nav.rightActionsWidth
+            height: root.width < 760 ? 48 : (root.narrowShell ? 60 : 78)
+            anchors.right: navWindowControls.left
+            anchors.rightMargin: nav.rightActionsGap
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: root.width < 760 ? 6 : (root.narrowShell ? 8 : 12)
+            StudentNotificationButton {
+                Layout.preferredWidth: root.width < 760 ? 42 : (root.narrowShell ? 56 : 66)
+                Layout.preferredHeight: root.width < 760 ? 44 : (root.narrowShell ? 58 : 76)
+            }
+            StudentUserMenu {
+                Layout.fillWidth: true
+                Layout.minimumWidth: root.width < 760 ? 48 : (root.narrowShell ? 64 : (root.compactShell ? 84 : 190))
+                Layout.preferredHeight: root.width < 760 ? 44 : (root.narrowShell ? 58 : 76)
+            }
+        }
+
         Component {
             id: normalNavComponent
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: root.width < 760 ? 8 : (root.narrowShell ? 14 : 32)
-                anchors.rightMargin: root.width < 760 ? 8 : (root.narrowShell ? 12 : 24)
-                spacing: root.width < 760 ? 6 : (root.narrowShell ? 8 : 18)
+                anchors.rightMargin: nav.controlsReservedWidth + nav.controlsRightInset + nav.rightActionsWidth + nav.rightActionsGap + (root.width < 760 ? 12 : 24)
+                spacing: root.width < 760 ? 6 : (root.narrowShell ? 9 : (root.compactShell ? 9 : 16))
 
                 RowLayout {
                     Layout.preferredWidth: root.width < 760 ? 42 : (root.narrowShell ? 66 : (root.compactShell ? 166 : 260))
@@ -5357,6 +6185,7 @@ Rectangle {
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
                         interactive: contentWidth > width
+                        HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
                         Row {
                             id: studentNavRow
                             anchors.verticalCenter: parent.verticalCenter
@@ -5364,8 +6193,8 @@ Rectangle {
                             Repeater {
                                 model: root.menuItems
                                 TopNavButton {
-                                    width: root.width < 760 ? 74 : (root.narrowShell ? 98 : (root.compactShell ? 148 : 196))
-                                    height: root.narrowShell ? 56 : 78
+                                    width: root.width < 760 ? 78 : (root.narrowShell ? 104 : (root.compactShell ? 158 : 206))
+                                    height: root.narrowShell ? 58 : 82
                                     text: modelData.title
                                     icon: modelData.icon
                                     selected: root.currentPage === modelData.page && !root.examMode
@@ -5376,13 +6205,6 @@ Rectangle {
                     }
                 }
 
-                StudentNotificationButton { Layout.preferredWidth: root.width < 760 ? 42 : (root.narrowShell ? 54 : 66); Layout.preferredHeight: root.width < 760 ? 44 : (root.narrowShell ? 56 : 76) }
-                StudentUserMenu { Layout.preferredWidth: root.width < 760 ? 46 : (root.narrowShell ? 64 : (root.compactShell ? 86 : 230)); Layout.preferredHeight: root.width < 760 ? 44 : (root.narrowShell ? 56 : 76) }
-                WindowControls {
-                    Layout.preferredWidth: root.width < 760 ? 112 : (root.narrowShell ? 132 : 150)
-                    Layout.minimumWidth: root.width < 760 ? 112 : (root.narrowShell ? 132 : 150)
-                    Layout.preferredHeight: root.width < 760 ? 38 : (root.narrowShell ? 44 : 50)
-                }
             }
         }
 
@@ -5391,7 +6213,7 @@ Rectangle {
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: root.width < 760 ? 8 : (root.narrowShell ? 12 : 28)
-                anchors.rightMargin: root.width < 760 ? 8 : (root.narrowShell ? 10 : 18)
+                anchors.rightMargin: nav.controlsReservedWidth + nav.controlsRightInset + (root.width < 760 ? 8 : 14)
                 spacing: root.width < 760 ? 6 : (root.narrowShell ? 8 : 14)
                 LogoMark { Layout.preferredWidth: root.width < 760 ? 30 : (root.narrowShell ? 34 : 42); Layout.preferredHeight: root.width < 760 ? 30 : (root.narrowShell ? 34 : 42) }
                 Text { visible: !root.narrowShell; text: "智考星"; color: "#111827"; font.pixelSize: 17; font.bold: true }
@@ -5402,11 +6224,6 @@ Rectangle {
                     Text { Layout.fillWidth: true; text: root.practiceExamMode ? "随机组卷模拟考试" : root.examTitle(root.selectedExam()); color: "#111827"; font.pixelSize: 17; font.bold: true; elide: Text.ElideRight }
                     Text { text: root.practiceExamMode ? (root.practiceExamAnsweredCount() + " / " + root.practiceExamQuestions.length + " 已作答") : (root.answeredCount() + " / " + root.questions.length + " 已作答"); color: "#64748b"; font.pixelSize: 12 }
                 }
-                WindowControls {
-                    Layout.preferredWidth: root.width < 760 ? 112 : (root.narrowShell ? 132 : 150)
-                    Layout.minimumWidth: root.width < 760 ? 112 : (root.narrowShell ? 132 : 150)
-                    Layout.preferredHeight: root.width < 760 ? 38 : (root.narrowShell ? 44 : 50)
-                }
             }
         }
     }
@@ -5415,12 +6232,14 @@ Rectangle {
         id: menu
         property bool hovered: chipMouse.containsMouse
         z: 1
+        clip: true
         Rectangle {
             id: profileChip
             anchors.fill: parent
             radius: 28
             color: menu.hovered ? "#f0fdf4" : "#ffffff"
             border.color: menu.hovered ? "#bbf7d0" : "#eef2f7"
+            clip: true
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: root.compactShell ? 5 : 8
@@ -5473,34 +6292,34 @@ Rectangle {
         Rectangle {
             id: bell
             anchors.centerIn: parent
-            width: 58
-            height: 58
-            radius: 29
+            width: Math.min(notice.width, root.width < 760 ? 44 : 58)
+            height: width
+            radius: width / 2
             color: bellMouse.containsMouse || notice.open ? "#f1f5f9" : "transparent"
-            Text { anchors.centerIn: parent; text: "🔔"; color: "#111827"; font.pixelSize: 28 }
+            Text { anchors.centerIn: parent; text: "🔔"; color: "#111827"; font.pixelSize: root.width < 760 ? 22 : 28 }
             Rectangle {
-                width: 9
-                height: 9
+                width: root.width < 760 ? 7 : 9
+                height: width
                 radius: 5
                 color: "#ef4444"
                 anchors.right: parent.right
-                anchors.rightMargin: 8
+                anchors.rightMargin: root.width < 760 ? 6 : 8
                 anchors.top: parent.top
-                anchors.topMargin: 9
+                anchors.topMargin: root.width < 760 ? 7 : 9
                 border.color: "#ffffff"
                 border.width: 2
             }
             Rectangle {
-                width: 28
-                height: 28
-                radius: 14
+                width: root.width < 760 ? 22 : 28
+                height: width
+                radius: width / 2
                 color: "#ef4444"
                 visible: root.notificationCount() > 0
                 anchors.right: parent.right
                 anchors.rightMargin: -1
                 anchors.top: parent.top
                 anchors.topMargin: -1
-                Text { anchors.centerIn: parent; text: String(root.notificationCount()); color: "#ffffff"; font.pixelSize: 16; font.bold: true }
+                Text { anchors.centerIn: parent; text: String(root.notificationCount()); color: "#ffffff"; font.pixelSize: root.width < 760 ? 12 : 16; font.bold: true }
             }
             MouseArea {
                 id: bellMouse
@@ -5673,14 +6492,14 @@ Rectangle {
         property string icon: ""
         property bool selected: false
         signal clicked()
-        Layout.preferredWidth: root.narrowShell ? 98 : (root.compactShell ? 148 : 196)
-        Layout.preferredHeight: root.narrowShell ? 56 : 78
+        Layout.preferredWidth: root.narrowShell ? 104 : (root.compactShell ? 158 : 206)
+        Layout.preferredHeight: root.narrowShell ? 58 : 82
         Rectangle { anchors.fill: parent; radius: 18; color: mouse.containsMouse ? "#f3f7f5" : "transparent" }
         Row {
             anchors.centerIn: parent
             spacing: root.narrowShell ? 5 : 10
             Text { text: control.icon; color: control.selected ? "#22c55e" : "#6b7280"; font.pixelSize: root.narrowShell ? 22 : 30; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
-            Text { width: root.narrowShell ? 60 : implicitWidth; text: control.text; color: control.selected ? "#22c55e" : "#6b7280"; font.pixelSize: root.narrowShell ? 19 : (root.compactShell ? 23 : 26); font.bold: true; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight }
+            Text { width: root.narrowShell ? 64 : implicitWidth; text: control.text; color: control.selected ? "#22c55e" : "#6b7280"; font.pixelSize: root.narrowShell ? 20 : (root.compactShell ? 24 : 27); font.bold: true; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight }
         }
         MouseArea { id: mouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: control.clicked() }
     }
@@ -5690,7 +6509,6 @@ Rectangle {
         property int controlGap: root.width < 760 ? 5 : (root.narrowShell ? 5 : 6)
         width: buttonSize * 3 + controlGap * 2
         height: root.width < 760 ? 38 : (root.narrowShell ? 44 : 50)
-        z: 20
         spacing: controlGap
         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
         Layout.minimumWidth: width

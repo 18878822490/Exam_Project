@@ -5,7 +5,9 @@ import com.exam.exam_platform.mapper.OperationLogMapper;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class OperationLogService {
@@ -30,5 +32,12 @@ public class OperationLogService {
 
     public List<OperationLog> list(Long userId, String action, Integer limit) {
         return operationLogMapper.list(userId, action, limit == null ? 50 : limit);
+    }
+
+    public Map<String, Object> dashboard(Long userId, String action, Integer limit) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("stats", operationLogMapper.stats());
+        result.put("logs", operationLogMapper.listRows(userId, action, limit == null ? 80 : limit));
+        return result;
     }
 }

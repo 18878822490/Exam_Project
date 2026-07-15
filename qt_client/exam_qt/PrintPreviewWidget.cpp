@@ -86,10 +86,10 @@ QRectF PrintPreviewWidget::drawHeader(QPainter *painter, const QRectF &page) con
     painter->setFont(metaFont);
     painter->setPen(QColor(QStringLiteral("#475569")));
 
-    const QString examName = currentReport.value(QStringLiteral("examName"), QStringLiteral("Java期末考试")).toString();
-    const QString className = currentReport.value(QStringLiteral("className"), QStringLiteral("软件工程2501班")).toString();
+    const QString examName = currentReport.value(QStringLiteral("examName"), QStringLiteral("未选择考试")).toString();
+    const QString className = currentReport.value(QStringLiteral("className"), QStringLiteral("未选择班级")).toString();
     const QString reportType = currentReport.value(QStringLiteral("reportType"), QStringLiteral("班级成绩总表")).toString();
-    const QString date = currentReport.value(QStringLiteral("date"), QStringLiteral("2026-07-14")).toString();
+    const QString date = currentReport.value(QStringLiteral("date"), QStringLiteral("--")).toString();
     const QString line = QStringLiteral("考试名称：%1    班级：%2    报表类型：%3    日期：%4")
             .arg(examName, className, reportType, date);
     painter->drawText(QRectF(page.left(), page.top() + 42, page.width(), 24), Qt::AlignCenter, line);

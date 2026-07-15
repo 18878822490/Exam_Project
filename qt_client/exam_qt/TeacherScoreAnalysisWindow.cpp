@@ -56,25 +56,6 @@ QPushButton *navButton(const QString &text, int page, int activePage, QWidget *p
     return button;
 }
 
-QStringList fallbackClasses()
-{
-    return {
-        QStringLiteral("软件工程2501班"),
-        QStringLiteral("计算机科学2502班"),
-        QStringLiteral("人工智能2501班")
-    };
-}
-
-QStringList fallbackExams()
-{
-    return {
-        QStringLiteral("Java期末考试"),
-        QStringLiteral("Java阶段测试"),
-        QStringLiteral("数据结构单元测验"),
-        QStringLiteral("算法综合训练")
-    };
-}
-
 void slideCardIn(QWidget *widget, const QPoint &offset, int delayMs)
 {
     if (widget == nullptr) {
@@ -129,39 +110,19 @@ void TeacherScoreAnalysisWindow::loadInitialData()
 {
     const QStringList classes = repositoryClassNames();
     const QStringList exams = repositoryExamNames();
-    filterWidget->setClasses(classes.isEmpty() ? fallbackClasses() : classes);
-    filterWidget->setExams(exams.isEmpty() ? fallbackExams() : exams);
+    filterWidget->setClasses(classes);
+    filterWidget->setExams(exams);
     applyFilter(filterWidget->currentClass(), filterWidget->currentExam(), filterWidget->currentTimeRange());
 }
 
 QVariantList TeacherScoreAnalysisWindow::loadClassScore(const QString &className, const QString &examName, const QString &timeRange)
 {
     Q_UNUSED(timeRange)
-    const QStringList names = {
-        QStringLiteral("石晓虹"), QStringLiteral("张思远"), QStringLiteral("李雨涵"), QStringLiteral("王一鸣"),
-        QStringLiteral("陈嘉宁"), QStringLiteral("赵若溪"), QStringLiteral("刘子墨"), QStringLiteral("周明轩"),
-        QStringLiteral("孙亦辰"), QStringLiteral("吴佳怡"), QStringLiteral("郑云帆"), QStringLiteral("高梓萱"),
-        QStringLiteral("马天宇"), QStringLiteral("何清越"), QStringLiteral("罗星然"), QStringLiteral("许安琪"),
-        QStringLiteral("宋景行"), QStringLiteral("林芷若"), QStringLiteral("唐书宁"), QStringLiteral("韩知远")
-    };
-
-    const uint seed = qHash(className + examName);
-    QVariantList rows;
-    for (int i = 0; i < names.size(); ++i) {
-        const double wave = ((seed / (i + 3)) % 19) - 8;
-        const double score = qBound(42.0, 76.0 + wave + (i % 5) * 3.5 - (i % 4) * 1.8, 99.0);
-        rows.append(QVariantMap{
-            {QStringLiteral("studentNo"), QStringLiteral("S%1%2").arg(seed % 100, 2, 10, QLatin1Char('0')).arg(i + 1, 3, 10, QLatin1Char('0'))},
-            {QStringLiteral("name"), names.at(i)},
-            {QStringLiteral("score"), score}
-        });
+    if (repository == nullptr) {
+        return {};
     }
-
-    std::sort(rows.begin(), rows.end(), [](const QVariant &left, const QVariant &right) {
-        return left.toMap().value(QStringLiteral("score")).toDouble()
-                > right.toMap().value(QStringLiteral("score")).toDouble();
-    });
-    return rows;
+    const int examId = repository->examIdForName(examName);
+    return repository->getScoreAnalysis(examId, className).value(QStringLiteral("scores")).toList();
 }
 
 QVariantMap TeacherScoreAnalysisWindow::loadExamStatistics(const QVariantList &scores)
@@ -199,60 +160,16 @@ QVariantMap TeacherScoreAnalysisWindow::loadExamStatistics(const QVariantList &s
 QVariantList TeacherScoreAnalysisWindow::loadScoreTrend(const QString &className, const QString &timeRange)
 {
     Q_UNUSED(timeRange)
-    const uint seed = qHash(className);
-    const QStringList labels = {
-        QStringLiteral("第一次"),
-        QStringLiteral("第二次"),
-        QStringLiteral("第三次"),
-        QStringLiteral("第四次"),
-        QStringLiteral("第五次"),
-        QStringLiteral("第六次")
-    };
-
-    QVariantList rows;
-    for (int i = 0; i < labels.size(); ++i) {
-        const double base = 72.0 + i * 2.4 + ((seed / (i + 5)) % 9);
-        rows.append(QVariantMap{
-            {QStringLiteral("label"), labels.at(i)},
-            {QStringLiteral("value"), qBound(58.0, base, 94.0)}
-        });
-    }
-    return rows;
+    return repository == nullptr ? QVariantList{} : repository->getClassScoreTrend(className, QString());
 }
 
 QVariantList TeacherScoreAnalysisWindow::loadQuestionAnalysis(const QString &className, const QString &examName)
 {
-    const uint seed = qHash(className + examName + QStringLiteral("questions"));
-    const QStringList types = {
-        QStringLiteral("单选题"),
-        QStringLiteral("多选题"),
-        QStringLiteral("判断题"),
-        QStringLiteral("填空题"),
-        QStringLiteral("简答题"),
-        QStringLiteral("编程题"),
-        QStringLiteral("分析题"),
-        QStringLiteral("综合题")
-    };
-
-    QVariantList rows;
-    for (int i = 0; i < types.size(); ++i) {
-        const double full = i < 4 ? 5.0 : (i < 6 ? 10.0 : 15.0);
-        const double rate = qBound(0.38, 0.58 + ((seed / (i + 7)) % 32) / 100.0, 0.96);
-        rows.append(QVariantMap{
-            {QStringLiteral("number"), i + 1},
-            {QStringLiteral("type"), types.at(i)},
-            {QStringLiteral("full"), full},
-            {QStringLiteral("average"), full * rate}
-        });
+    if (repository == nullptr) {
+        return {};
     }
-    std::sort(rows.begin(), rows.end(), [](const QVariant &left, const QVariant &right) {
-        const QVariantMap leftRow = left.toMap();
-        const QVariantMap rightRow = right.toMap();
-        const double leftRate = leftRow.value(QStringLiteral("average")).toDouble() / qMax(1.0, leftRow.value(QStringLiteral("full")).toDouble());
-        const double rightRate = rightRow.value(QStringLiteral("average")).toDouble() / qMax(1.0, rightRow.value(QStringLiteral("full")).toDouble());
-        return leftRate < rightRate;
-    });
-    return rows;
+    const int examId = repository->examIdForName(examName);
+    return repository->getScoreAnalysis(examId, className).value(QStringLiteral("questionAnalysis")).toList();
 }
 
 void TeacherScoreAnalysisWindow::playEnterAnimation()
@@ -587,15 +504,29 @@ void TeacherScoreAnalysisWindow::applyStyle()
 
 void TeacherScoreAnalysisWindow::applyFilter(const QString &className, const QString &examName, const QString &timeRange)
 {
-    const QVariantList scores = loadClassScore(className, examName, timeRange);
-    const QVariantMap stats = loadExamStatistics(scores);
+    Q_UNUSED(timeRange)
+
+    QVariantMap analysis;
+    QVariantMap exam;
+    if (repository != nullptr) {
+        exam = repository->examForName(examName);
+        analysis = repository->getScoreAnalysis(exam.value(QStringLiteral("id")).toInt(), className);
+    }
+
+    const QVariantList scores = analysis.value(QStringLiteral("scores")).toList();
+    const QVariantMap stats = analysis.value(QStringLiteral("summary")).toMap().isEmpty()
+            ? loadExamStatistics(scores)
+            : analysis.value(QStringLiteral("summary")).toMap();
     refreshStatisticCards(stats);
 
     rankWidget->setRankData(scores);
-    trendChart->setTrendData(loadScoreTrend(className, timeRange));
-    distributionChart->setDistributionData(buildDistribution(scores));
+    trendChart->setTrendData(repository == nullptr
+                             ? QVariantList{}
+                             : repository->getClassScoreTrend(className, exam.value(QStringLiteral("subject")).toString()));
+    const QVariantList distribution = analysis.value(QStringLiteral("distribution")).toList();
+    distributionChart->setDistributionData(distribution.isEmpty() ? buildDistribution(scores) : distribution);
     levelPieChart->setLevelData(buildLevelData(scores));
-    questionWidget->setQuestionData(loadQuestionAnalysis(className, examName));
+    questionWidget->setQuestionData(analysis.value(QStringLiteral("questionAnalysis")).toList());
 
     trendChart->playChartAnimation();
     distributionChart->playChartAnimation();

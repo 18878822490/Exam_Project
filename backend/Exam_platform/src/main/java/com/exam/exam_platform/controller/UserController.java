@@ -86,6 +86,15 @@ public class UserController {
         }
     }
 
+    @PostMapping("/teachers")
+    public ApiResponse<Map<String, Object>> createTeacher(@RequestBody RegisterRequest request) {
+        try {
+            return ApiResponse.success("教师已新增", userService.createTeacherForAdmin(request));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
     @PutMapping("/students/{id}")
     public ApiResponse<Map<String, Object>> updateStudent(@PathVariable Long id,
                                                           @RequestBody Map<String, Object> payload) {

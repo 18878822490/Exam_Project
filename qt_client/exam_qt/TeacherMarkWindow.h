@@ -47,7 +47,7 @@ private slots:
 private:
     void buildUi();
     void applyStyle();
-    void seedMockData();
+    void clearData();
     void loadBackendExam(int examId);
     QVariantMap normalizeExam(const QVariantMap &exam) const;
     void refreshExamSelector();

@@ -29,11 +29,11 @@ QLabel *makeLabel(const QString &text, const QString &objectName)
 
 ExamInfoCard::ExamInfoCard(QWidget *parent)
     : QFrame(parent)
-    , titleLabel(makeLabel(QStringLiteral("Java期末考试"), QStringLiteral("MarkExamTitle")))
-    , courseLabel(makeLabel(QStringLiteral("课程：Java程序设计"), QStringLiteral("MarkMetaText")))
-    , timeLabel(makeLabel(QStringLiteral("考试时间：2026-06-20"), QStringLiteral("MarkMetaText")))
-    , scoreLabel(makeLabel(QStringLiteral("总分：100"), QStringLiteral("MarkMetaText")))
-    , progressLabel(makeLabel(QStringLiteral("已完成 32 / 45"), QStringLiteral("MarkProgressText")))
+    , titleLabel(makeLabel(QStringLiteral("暂无可批改考试"), QStringLiteral("MarkExamTitle")))
+    , courseLabel(makeLabel(QStringLiteral("课程：等待学生提交"), QStringLiteral("MarkMetaText")))
+    , timeLabel(makeLabel(QStringLiteral("考试时间：--"), QStringLiteral("MarkMetaText")))
+    , scoreLabel(makeLabel(QStringLiteral("总分：0"), QStringLiteral("MarkMetaText")))
+    , progressLabel(makeLabel(QStringLiteral("已完成 0 / 0"), QStringLiteral("MarkProgressText")))
     , pendingValueLabel(nullptr)
     , averageValueLabel(nullptr)
     , progressBar(new QProgressBar(this))
@@ -89,10 +89,10 @@ void ExamInfoCard::setExamInfo(const QVariantMap &exam, int completedCount, int 
     const int pending = qMax(0, totalCount - completedCount);
     const int progress = qBound(0, int((completedCount * 100.0) / progressTotal + 0.5), 100);
 
-    titleLabel->setText(exam.value(QStringLiteral("title"), QStringLiteral("Java期末考试")).toString());
-    courseLabel->setText(QStringLiteral("课程：%1").arg(exam.value(QStringLiteral("course"), QStringLiteral("Java程序设计")).toString()));
-    timeLabel->setText(QStringLiteral("考试时间：%1").arg(exam.value(QStringLiteral("date"), QStringLiteral("2026-06-20")).toString()));
-    scoreLabel->setText(QStringLiteral("总分：%1").arg(exam.value(QStringLiteral("totalScore"), 100).toString()));
+    titleLabel->setText(exam.value(QStringLiteral("title"), QStringLiteral("暂无可批改考试")).toString());
+    courseLabel->setText(QStringLiteral("课程：%1").arg(exam.value(QStringLiteral("course"), QStringLiteral("等待学生提交")).toString()));
+    timeLabel->setText(QStringLiteral("考试时间：%1").arg(exam.value(QStringLiteral("date"), QStringLiteral("--")).toString()));
+    scoreLabel->setText(QStringLiteral("总分：%1").arg(exam.value(QStringLiteral("totalScore"), 0).toString()));
     progressLabel->setText(QStringLiteral("已完成 %1 / %2").arg(completedCount).arg(displayTotal));
     progressBar->setValue(progress);
     pendingValueLabel->setText(QStringLiteral("%1人").arg(pending));

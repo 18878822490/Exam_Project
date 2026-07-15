@@ -59,6 +59,7 @@ public class QuestionMapper {
         ensureColumn("questions", "knowledge_point", "VARCHAR(128)");
         ensureColumn("questions", "created_by", "BIGINT");
         ensureColumn("questions", "created_time", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+        normalizeLegacyProgrammingQuestionTypes();
 
         jdbcTemplate.execute("""
                 CREATE TABLE IF NOT EXISTS question_import_logs (
@@ -120,6 +121,22 @@ public class QuestionMapper {
         Long id = Objects.requireNonNull(keyHolder.getKey()).longValue();
         question.setId(id);
         return id;
+    }
+
+    public boolean existsDuplicate(Question question) {
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM questions
+                WHERE subject = ?
+                  AND type = ?
+                  AND TRIM(content) = ?
+                  AND COALESCE(TRIM(answer), '') = ?
+                """, Integer.class,
+                question.getSubject(),
+                question.getType(),
+                question.getContent() == null ? "" : question.getContent().trim(),
+                question.getAnswer() == null ? "" : question.getAnswer().trim());
+        return count != null && count > 0;
     }
 
     public boolean update(Long id, Question question) {
@@ -198,15 +215,17 @@ public class QuestionMapper {
     }
 
     public List<Question> randomQuestions(String subject, String type, String difficulty, String knowledgePoint, int count) {
-        StringBuilder sql = new StringBuilder("SELECT * FROM questions WHERE ");
+        StringBuilder sql = new StringBuilder("SELECT * FROM questions WHERE 1=1");
         List<Object> args = new ArrayList<>();
-        List<String> typeValues = typeAliases(type);
-        sql.append("(");
-        appendInClause(sql, args, "type", typeValues);
-        sql.append(" OR ");
-        appendInClause(sql, args, "content", typeValues);
-        sql.append(")");
-        if (hasText(subject)) {
+        if (hasText(type)) {
+            List<String> typeValues = typeAliases(type);
+            sql.append(" AND (");
+            appendInClause(sql, args, "type", typeValues);
+            sql.append(" OR ");
+            appendInClause(sql, args, "content", typeValues);
+            sql.append(")");
+        }
+        if (hasSpecificRandomSubject(subject)) {
             appendInFilter(sql, args, "subject", subjectAliases(subject));
         }
         if (hasText(difficulty)) {
@@ -547,11 +566,9 @@ public class QuestionMapper {
         if ("填空题".equals(normalized)) {
             return List.of("填空题", "填空", "blank", "fill");
         }
-        if ("高数大题".equals(normalized)) {
-            return List.of("高数大题", "高数题", "数学大题", "math");
-        }
         if ("编程题".equals(normalized)) {
-            return List.of("编程题", "代码题", "program", "coding", "code");
+            return List.of("编程题", "代码题", "程序题", "编程大题", "大题", "高数大题", "高数题", "数学大题",
+                    "program", "coding", "code", "hard_math", "math");
         }
         return List.of(trimText(type));
     }
@@ -586,11 +603,19 @@ public class QuestionMapper {
         if ("blank".equals(lower) || "fill".equals(lower) || "填空".equals(text)) {
             return "填空题";
         }
-        if ("program".equals(lower) || "coding".equals(lower) || "code".equals(lower) || "代码题".equals(text)) {
+        if ("program".equals(lower)
+                || "coding".equals(lower)
+                || "code".equals(lower)
+                || "hard_math".equals(lower)
+                || "math".equals(lower)
+                || "代码题".equals(text)
+                || "程序题".equals(text)
+                || "编程大题".equals(text)
+                || "大题".equals(text)
+                || "高数题".equals(text)
+                || "高数大题".equals(text)
+                || "数学大题".equals(text)) {
             return "编程题";
-        }
-        if ("math".equals(lower) || "高数题".equals(text) || "数学大题".equals(text)) {
-            return "高数大题";
         }
         return text;
     }
@@ -601,8 +626,16 @@ public class QuestionMapper {
                 || "多选题".equals(normalized)
                 || "判断题".equals(normalized)
                 || "填空题".equals(normalized)
-                || "高数大题".equals(normalized)
                 || "编程题".equals(normalized);
+    }
+
+    private void normalizeLegacyProgrammingQuestionTypes() {
+        jdbcTemplate.update("""
+                UPDATE questions
+                SET type = '编程题'
+                WHERE type IN ('代码题', '程序题', '编程大题', '大题', '高数大题', '高数题', '数学大题')
+                   OR LOWER(type) IN ('program', 'coding', 'code', 'hard_math', 'math')
+                """);
     }
 
     private List<String> distinctValues(List<String> values) {
@@ -627,6 +660,17 @@ public class QuestionMapper {
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    private boolean hasSpecificRandomSubject(String value) {
+        if (!hasText(value)) {
+            return false;
+        }
+        String text = value.trim();
+        String lower = text.toLowerCase();
+        return !"全部".equals(text)
+                && !"全部科目".equals(text)
+                && !"all".equals(lower);
     }
 
     private void ensureColumn(String tableName, String columnName, String definition) {

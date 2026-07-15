@@ -16,6 +16,7 @@ public class CreateExamPaperRequest {
     private Long createdBy;
     private String difficulty;
     private String knowledgePoint;
+    private Integer maxTotalScore;
     private Map<String, Integer> typeCounts;
     private List<Long> questionIds;
 }

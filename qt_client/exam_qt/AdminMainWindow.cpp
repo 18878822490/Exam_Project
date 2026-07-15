@@ -9,6 +9,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMap>
 #include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -57,6 +58,67 @@ double doubleValue(const QVariantMap &row, const QString &key, double fallback =
     bool ok = false;
     const double value = row.value(key).toDouble(&ok);
     return ok ? value : fallback;
+}
+
+QString normalizedTime(const QVariant &value)
+{
+    QString text = value.toString();
+    text.replace(QLatin1Char('T'), QLatin1Char(' '));
+    if (text.size() > 19) {
+        text = text.left(19);
+    }
+    return text;
+}
+
+QString moduleForAction(const QString &action)
+{
+    if (action.startsWith(QStringLiteral("USER_REGISTER_STUDENT"))
+            || action.startsWith(QStringLiteral("USER_UPDATE_STUDENT"))) {
+        return QStringLiteral("学生管理");
+    }
+    if (action.startsWith(QStringLiteral("USER_REGISTER_TEACHER"))
+            || action.startsWith(QStringLiteral("USER_UPDATE_TEACHER"))) {
+        return QStringLiteral("教师管理");
+    }
+    if (action.startsWith(QStringLiteral("PASSWORD_CHANGE"))) {
+        return QStringLiteral("账号安全");
+    }
+    if (action.startsWith(QStringLiteral("QUESTION_IMPORT"))
+            || action.startsWith(QStringLiteral("QUESTION_"))) {
+        return QStringLiteral("题库管理");
+    }
+    if (action.startsWith(QStringLiteral("EXAM_REVIEW"))
+            || action.contains(QStringLiteral("REVIEW"))) {
+        return QStringLiteral("批改试卷");
+    }
+    if (action.startsWith(QStringLiteral("EXAM_"))) {
+        return QStringLiteral("考试管理");
+    }
+    return QStringLiteral("系统设置");
+}
+
+QString readableAction(const QString &action)
+{
+    static const QMap<QString, QString> names = {
+        {QStringLiteral("USER_REGISTER_STUDENT"), QStringLiteral("学生注册")},
+        {QStringLiteral("USER_REGISTER_TEACHER"), QStringLiteral("教师注册")},
+        {QStringLiteral("USER_REGISTER_ADMIN"), QStringLiteral("管理员注册")},
+        {QStringLiteral("USER_UPDATE_STUDENT"), QStringLiteral("修改学生信息")},
+        {QStringLiteral("USER_UPDATE_TEACHER"), QStringLiteral("修改教师信息")},
+        {QStringLiteral("QUESTION_CREATE"), QStringLiteral("新增题目")},
+        {QStringLiteral("QUESTION_UPDATE"), QStringLiteral("修改题目")},
+        {QStringLiteral("QUESTION_DELETE"), QStringLiteral("删除题目")},
+        {QStringLiteral("EXAM_CREATE"), QStringLiteral("生成试卷")},
+        {QStringLiteral("EXAM_COPY"), QStringLiteral("复制试卷")},
+        {QStringLiteral("EXAM_PUBLISH"), QStringLiteral("发布考试")},
+        {QStringLiteral("EXAM_SUBMIT"), QStringLiteral("提交考试")},
+        {QStringLiteral("EXAM_REVIEW"), QStringLiteral("批改评分")},
+        {QStringLiteral("EXAM_QUESTION_ADD"), QStringLiteral("试卷加题")},
+        {QStringLiteral("EXAM_QUESTION_REMOVE"), QStringLiteral("试卷删题")},
+        {QStringLiteral("EXAM_QUESTION_REORDER"), QStringLiteral("调整题序")},
+        {QStringLiteral("EXAM_QUESTION_REPLACE"), QStringLiteral("保存试卷题目")}
+    };
+    return names.value(action, action);
 }
 }
 
@@ -132,6 +194,76 @@ void AdminMainWindow::startWindowMove()
     if (windowHandle() != nullptr) {
         windowHandle()->startSystemMove();
     }
+}
+
+QVariantMap AdminMainWindow::getSystemOverviewData() const
+{
+    errorMessage.clear();
+
+    const QJsonObject examResponse = requestJson(QStringLiteral("GET"), QStringLiteral("/exams/dashboard"));
+    const QJsonObject examListResponse = requestJson(QStringLiteral("GET"), QStringLiteral("/exams"));
+    const QJsonObject logsResponse = requestJson(QStringLiteral("GET"), QStringLiteral("/logs/dashboard"));
+    if (!examResponse.value(QStringLiteral("success")).toBool()) {
+        errorMessage = QStringLiteral("系统概览数据读取失败，请确认后端服务已启动");
+        return {};
+    }
+
+    const QVariantMap examStats = responseMap(examResponse);
+    const QVariantMap logDashboard = responseMap(logsResponse);
+    const QVariantMap logStats = logDashboard.value(QStringLiteral("stats")).toMap();
+
+    QVariantList recentExams;
+    const QVariantList examsRaw = responseList(examListResponse);
+    for (const QVariant &value : examsRaw) {
+        if (recentExams.size() >= 5) {
+            break;
+        }
+        const QVariantMap exam = value.toMap();
+        const QString timeText = normalizedTime(exam.value(QStringLiteral("startTime"),
+                                          exam.value(QStringLiteral("start_time"),
+                                          exam.value(QStringLiteral("createdTime"),
+                                          exam.value(QStringLiteral("created_time"))))));
+        const int submitted = intValue(exam, QStringLiteral("participants"));
+        const int target = intValue(exam, QStringLiteral("targetStudentCount"),
+                          intValue(exam, QStringLiteral("target_student_count")));
+        recentExams.append(QVariantMap{
+            {QStringLiteral("name"), textValue(exam, QStringLiteral("title"), textValue(exam, QStringLiteral("name"), QStringLiteral("未命名考试")))},
+            {QStringLiteral("subject"), textValue(exam, QStringLiteral("subject"), QStringLiteral("综合"))},
+            {QStringLiteral("owner"), exam.value(QStringLiteral("createdBy"), exam.value(QStringLiteral("created_by"))).toString().isEmpty()
+                 ? QStringLiteral("教师")
+                 : QStringLiteral("教师#%1").arg(exam.value(QStringLiteral("createdBy"), exam.value(QStringLiteral("created_by"))).toString())},
+            {QStringLiteral("time"), timeText.isEmpty() ? QStringLiteral("--") : timeText},
+            {QStringLiteral("status"), textValue(exam, QStringLiteral("flowStatus"), textValue(exam, QStringLiteral("status"), QStringLiteral("草稿")))},
+            {QStringLiteral("count"), target > 0 ? QStringLiteral("%1/%2").arg(submitted).arg(target) : QStringLiteral("%1").arg(submitted)}
+        });
+    }
+
+    QVariantList logs;
+    const QVariantList logRows = logDashboard.value(QStringLiteral("logs")).toList();
+    for (const QVariant &value : logRows.mid(0, 6)) {
+        const QVariantMap row = value.toMap();
+        const QString action = textValue(row, QStringLiteral("action"), QStringLiteral("系统操作"));
+        logs.append(QVariantMap{
+            {QStringLiteral("text"), QStringLiteral("%1 %2")
+                    .arg(row.value(QStringLiteral("user_id")).isNull()
+                         ? QStringLiteral("系统")
+                         : QStringLiteral("用户#%1").arg(row.value(QStringLiteral("user_id")).toString()),
+                         textValue(row, QStringLiteral("detail"), readableAction(action)))},
+            {QStringLiteral("time"), normalizedTime(row.value(QStringLiteral("created_time"))).right(8)}
+        });
+    }
+
+    return QVariantMap{
+        {QStringLiteral("examCount"), examStats.value(QStringLiteral("examCount"), 0)},
+        {QStringLiteral("examDelta"), examStats.value(QStringLiteral("examDelta"), 0)},
+        {QStringLiteral("questionCount"), examStats.value(QStringLiteral("questionCount"), 0)},
+        {QStringLiteral("questionDelta"), examStats.value(QStringLiteral("questionDelta"), 0)},
+        {QStringLiteral("todayReferenceCount"), logStats.value(QStringLiteral("today_count"), 0)},
+        {QStringLiteral("pendingCount"), examStats.value(QStringLiteral("pendingCount"), 0)},
+        {QStringLiteral("recentExams"), recentExams},
+        {QStringLiteral("logs"), logs},
+        {QStringLiteral("loaded"), true}
+    };
 }
 
 QVariantMap AdminMainWindow::getStudentManagementData() const
@@ -387,6 +519,130 @@ QVariantMap AdminMainWindow::getTeacherManagementData() const
         {QStringLiteral("detailRows"), detailRows},
         {QStringLiteral("workflowPanels"), workflowPanels},
         {QStringLiteral("focusCards"), focusCards},
+        {QStringLiteral("loaded"), true}
+    };
+}
+
+QVariantMap AdminMainWindow::getOperationLogData() const
+{
+    errorMessage.clear();
+
+    const QJsonObject response = requestJson(QStringLiteral("GET"), QStringLiteral("/logs/dashboard"));
+    if (!response.value(QStringLiteral("success")).toBool()) {
+        errorMessage = QStringLiteral("操作日志读取失败，请确认后端服务已启动");
+        return {};
+    }
+
+    const QVariantMap data = responseMap(response);
+    const QVariantMap statsRaw = data.value(QStringLiteral("stats")).toMap();
+    const QVariantList logsRaw = data.value(QStringLiteral("logs")).toList();
+
+    QVariantList rows;
+    QVariantList compactLogs;
+    QVariantList sensitiveRows;
+    QVariantMap moduleCounts;
+
+    for (const QVariant &value : logsRaw) {
+        const QVariantMap log = value.toMap();
+        const QString action = textValue(log, QStringLiteral("action"), QStringLiteral("SYSTEM"));
+        const QString module = moduleForAction(action);
+        const QString detail = textValue(log, QStringLiteral("detail"), readableAction(action));
+        const QString timeText = normalizedTime(log.value(QStringLiteral("created_time"), log.value(QStringLiteral("createdTime"))));
+        const QString operatorName = log.value(QStringLiteral("user_id")).isNull()
+                ? QStringLiteral("系统")
+                : QStringLiteral("用户#%1").arg(log.value(QStringLiteral("user_id")).toString());
+
+        rows.append(QVariantList{
+            operatorName,
+            module,
+            detail,
+            QStringLiteral("127.0.0.1"),
+            timeText.isEmpty() ? QStringLiteral("--") : timeText,
+            QStringLiteral("成功")
+        });
+        if (compactLogs.size() < 6) {
+            compactLogs.append(QVariantMap{
+                {QStringLiteral("text"), QStringLiteral("%1 %2").arg(operatorName, detail)},
+                {QStringLiteral("time"), timeText.right(8)}
+            });
+        }
+
+        const int count = moduleCounts.value(module, 0).toInt() + 1;
+        moduleCounts.insert(module, count);
+        if (sensitiveRows.size() < 4 && (action.contains(QStringLiteral("PASSWORD"))
+                                         || action.contains(QStringLiteral("DELETE"))
+                                         || action.contains(QStringLiteral("REMOVE"))
+                                         || action.contains(QStringLiteral("PUBLISH")))) {
+            sensitiveRows.append(QVariantList{
+                readableAction(action),
+                detail,
+                action.contains(QStringLiteral("DELETE")) || action.contains(QStringLiteral("REMOVE")) ? QStringLiteral("高风险") : QStringLiteral("中风险"),
+                QStringLiteral("成功")
+            });
+        }
+    }
+
+    if (rows.isEmpty()) {
+        rows.append(QVariantList{QStringLiteral("系统"), QStringLiteral("操作日志"), QStringLiteral("暂无操作记录"), QStringLiteral("127.0.0.1"), QStringLiteral("--"), QStringLiteral("成功")});
+    }
+    while (sensitiveRows.size() < 4) {
+        sensitiveRows.append(QVariantList{QStringLiteral("常规操作"), QStringLiteral("暂无更多敏感操作"), QStringLiteral("低风险"), QStringLiteral("成功")});
+    }
+
+    QVariantList moduleRows;
+    const QStringList modules = {QStringLiteral("学生管理"), QStringLiteral("教师管理"), QStringLiteral("题库管理"), QStringLiteral("考试管理"), QStringLiteral("批改试卷"), QStringLiteral("系统设置")};
+    for (const QString &module : modules) {
+        const int count = moduleCounts.value(module, 0).toInt();
+        moduleRows.append(QVariantList{
+            module,
+            QStringLiteral("%1 条").arg(count),
+            module == QStringLiteral("学生管理") ? QStringLiteral("注册、编辑、改密")
+                : module == QStringLiteral("教师管理") ? QStringLiteral("注册、授权、资料维护")
+                : module == QStringLiteral("题库管理") ? QStringLiteral("新增、导入、删除")
+                : module == QStringLiteral("批改试卷") ? QStringLiteral("评分、提交批改")
+                : QStringLiteral("发布、复制、调整"),
+            QStringLiteral("0 条")
+        });
+    }
+
+    const QString total = statsRaw.value(QStringLiteral("total_count"), rows.size()).toString();
+    const QString today = statsRaw.value(QStringLiteral("today_count"), 0).toString();
+    const QString registerCount = statsRaw.value(QStringLiteral("register_count"), 0).toString();
+    const QString examCount = statsRaw.value(QStringLiteral("exam_count"), 0).toString();
+
+    return QVariantMap{
+        {QStringLiteral("stats"), QVariantList{
+             QVariantMap{{QStringLiteral("label"), QStringLiteral("日志总数")}, {QStringLiteral("value"), total}, {QStringLiteral("color"), QStringLiteral("#2563eb")}},
+             QVariantMap{{QStringLiteral("label"), QStringLiteral("今日操作")}, {QStringLiteral("value"), today}, {QStringLiteral("color"), QStringLiteral("#16a34a")}},
+             QVariantMap{{QStringLiteral("label"), QStringLiteral("注册记录")}, {QStringLiteral("value"), registerCount}, {QStringLiteral("color"), QStringLiteral("#f97316")}},
+             QVariantMap{{QStringLiteral("label"), QStringLiteral("考试操作")}, {QStringLiteral("value"), examCount}, {QStringLiteral("color"), QStringLiteral("#7c3aed")}}
+         }},
+        {QStringLiteral("rows"), rows},
+        {QStringLiteral("detailRows"), QVariantList{
+             QVariantList{QStringLiteral("LOG-LIVE"), QStringLiteral("实时数据库"), total + QStringLiteral(" 条"), adminName(), QStringLiteral("完整"), QStringLiteral("查看")}
+         }},
+        {QStringLiteral("workflowPanels"), QVariantList{
+             QVariantMap{
+                 {QStringLiteral("title"), QStringLiteral("敏感操作追踪")},
+                 {QStringLiteral("headers"), QVariantList{QStringLiteral("操作类型"), QStringLiteral("操作对象"), QStringLiteral("风险等级"), QStringLiteral("处理状态")}},
+                 {QStringLiteral("weights"), QVariantList{0.95, 1.45, 0.86, 1.0}},
+                 {QStringLiteral("statusIndex"), 3},
+                 {QStringLiteral("rows"), sensitiveRows}
+             },
+             QVariantMap{
+                 {QStringLiteral("title"), QStringLiteral("模块操作分布")},
+                 {QStringLiteral("headers"), QVariantList{QStringLiteral("模块"), QStringLiteral("今日操作"), QStringLiteral("主要动作"), QStringLiteral("异常记录")}},
+                 {QStringLiteral("weights"), QVariantList{0.95, 0.82, 1.4, 0.86}},
+                 {QStringLiteral("statusIndex"), 3},
+                 {QStringLiteral("rows"), moduleRows}
+             }
+         }},
+        {QStringLiteral("focusCards"), QVariantList{
+             QVariantMap{{QStringLiteral("title"), QStringLiteral("今日审计")}, {QStringLiteral("value"), today + QStringLiteral(" 条")}, {QStringLiteral("detail"), QStringLiteral("来自数据库 operation_logs 实时统计")}, {QStringLiteral("accent"), QStringLiteral("#2563eb")}},
+             QVariantMap{{QStringLiteral("title"), QStringLiteral("注册记录")}, {QStringLiteral("value"), registerCount + QStringLiteral(" 条")}, {QStringLiteral("detail"), QStringLiteral("学生、教师、管理员注册自动留痕")}, {QStringLiteral("accent"), QStringLiteral("#f97316")}},
+             QVariantMap{{QStringLiteral("title"), QStringLiteral("考试操作")}, {QStringLiteral("value"), examCount + QStringLiteral(" 条")}, {QStringLiteral("detail"), QStringLiteral("生成、复制、发布、提交、批改均可追踪")}, {QStringLiteral("accent"), QStringLiteral("#16a34a")}}
+         }},
+        {QStringLiteral("logs"), compactLogs},
         {QStringLiteral("loaded"), true}
     };
 }

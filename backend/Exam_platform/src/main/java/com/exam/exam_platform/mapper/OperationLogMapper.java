@@ -13,6 +13,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Repository
@@ -68,6 +69,39 @@ public class OperationLogMapper {
         sql.append(" ORDER BY id DESC LIMIT ?");
         args.add(Math.max(1, Math.min(limit, 200)));
         return jdbcTemplate.query(sql.toString(), this::mapLog, args.toArray());
+    }
+
+    public List<Map<String, Object>> listRows(Long userId, String action, int limit) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT id, user_id, action, detail,
+                       DATE_FORMAT(created_time, '%Y-%m-%d %H:%i:%s') AS created_time
+                FROM operation_logs
+                WHERE 1=1
+                """);
+        List<Object> args = new ArrayList<>();
+        if (userId != null) {
+            sql.append(" AND user_id = ?");
+            args.add(userId);
+        }
+        if (action != null && !action.isBlank()) {
+            sql.append(" AND action = ?");
+            args.add(action.trim());
+        }
+        sql.append(" ORDER BY id DESC LIMIT ?");
+        args.add(Math.max(1, Math.min(limit, 500)));
+        return jdbcTemplate.queryForList(sql.toString(), args.toArray());
+    }
+
+    public Map<String, Object> stats() {
+        return jdbcTemplate.queryForMap("""
+                SELECT COUNT(*) AS total_count,
+                       COALESCE(SUM(CASE WHEN DATE(created_time) = CURDATE() THEN 1 ELSE 0 END), 0) AS today_count,
+                       COALESCE(SUM(CASE WHEN action LIKE 'USER_REGISTER_%' THEN 1 ELSE 0 END), 0) AS register_count,
+                       COALESCE(SUM(CASE WHEN action LIKE 'EXAM_%' THEN 1 ELSE 0 END), 0) AS exam_count,
+                       COALESCE(SUM(CASE WHEN action LIKE '%REVIEW%' THEN 1 ELSE 0 END), 0) AS review_count,
+                       COALESCE(SUM(CASE WHEN action LIKE 'QUESTION_IMPORT%' THEN 1 ELSE 0 END), 0) AS import_count
+                FROM operation_logs
+                """);
     }
 
     private OperationLog mapLog(ResultSet rs, int rowNum) throws SQLException {

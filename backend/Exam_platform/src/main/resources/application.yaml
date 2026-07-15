@@ -13,6 +13,7 @@ mybatis:
   type-aliases-package: com.exam.exam_platform.entity
 
 openai:
+  api-key: ${OPENAI_API_KEY:}
   responses-url: ${OPENAI_RESPONSES_URL:https://api.openai.com/v1/responses}
-  vision-model: ${OPENAI_VISION_MODEL:gpt-5.6}
+  vision-model: ${OPENAI_VISION_MODEL:gpt-4o-mini}
   timeout-seconds: ${OPENAI_TIMEOUT_SECONDS:60}

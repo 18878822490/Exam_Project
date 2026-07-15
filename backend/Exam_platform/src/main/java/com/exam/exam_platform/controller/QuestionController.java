@@ -47,6 +47,16 @@ public class QuestionController {
         return ApiResponse.success("查询成功", questionService.subjectPracticeStats(studentNo));
     }
 
+    @GetMapping("/random")
+    public ApiResponse<List<Question>> random(@RequestParam(required = false) String subject,
+                                              @RequestParam(required = false) String type,
+                                              @RequestParam(required = false) String difficulty,
+                                              @RequestParam(required = false) String knowledgePoint,
+                                              @RequestParam(defaultValue = "10") Integer count) {
+        return ApiResponse.success("抽题成功",
+                questionService.randomQuestions(subject, type, difficulty, knowledgePoint, count));
+    }
+
     @PostMapping("/practice-record")
     public ApiResponse<Void> recordPracticeAnswer(@RequestBody PracticeAnswerRequest request) {
         try {

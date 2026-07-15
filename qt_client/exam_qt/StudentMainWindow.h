@@ -26,7 +26,11 @@ public:
     Q_INVOKABLE QVariantList getPracticeSubjectStats() const;
     Q_INVOKABLE QVariantList getPracticeQuestions(const QString &type,
                                                   const QString &difficulty,
-                                                  const QString &keyword) const;
+                                                  const QString &subject) const;
+    Q_INVOKABLE QVariantList getRandomPracticeQuestions(const QString &type,
+                                                        const QString &difficulty,
+                                                        const QString &subject,
+                                                        int count) const;
     Q_INVOKABLE bool savePracticeAnswer(int questionId,
                                          const QString &answer,
                                          bool correct,

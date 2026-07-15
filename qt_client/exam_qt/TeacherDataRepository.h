@@ -35,6 +35,8 @@ public:
                                          const QString &knowledgePoint) const;
     QVariantList getQuestionAnalysis() const;
     QVariantMap getScoreStatistics() const;
+    QVariantMap getScoreAnalysis(int examId, const QString &className) const;
+    QVariantMap getScoreReport(int examId, const QString &className, const QString &studentNo = QString()) const;
     QVariantList getClassScoreTrend(const QString &className, const QString &subject) const;
     QVariantList getPendingReviews() const;
     QVariantList getStudentAnswers() const;
@@ -45,6 +47,7 @@ public:
     QVariantList getReviewStudentAnswers(int examId, const QString &studentNo) const;
     QVariantList getPaperQuestions(int paperId) const;
     QVariantList getTodoItems() const;
+    QVariantMap getTeacherSettings() const;
     QVariantList getImportLogs() const;
 
     int addQuestion(const QVariantMap &question);
@@ -53,6 +56,8 @@ public:
     int importQuestionsFromCsv(const QString &filePath);
     bool recordImportLog(const QString &type, const QString &fileName, int totalCount, int successCount, int failedCount, const QString &status, const QString &message);
     bool addTodoItem(const QString &title, const QString &type, const QString &remindTime);
+    bool updateTodoStatus(int id, const QString &status);
+    QVariantMap saveTeacherSettings(const QVariantMap &settings);
 
     int createDraftPaper(const QString &name,
                          const QString &subject,
@@ -64,12 +69,25 @@ public:
                                       const QDateTime &startTime,
                                       const QDateTime &endTime,
                                       const QVariantList &questions);
+    int createDraftPaperFromQuestions(const QString &name,
+                                      const QString &subject,
+                                      const QDateTime &startTime,
+                                      const QDateTime &endTime,
+                                      const QVariantList &questions,
+                                      int maxTotalScore);
+    bool addQuestionToPaper(int paperId, const QVariantMap &question, int maxTotalScore);
+    bool removeQuestionFromPaper(int paperId, int questionId);
+    bool reorderPaperQuestions(int paperId, const QVariantList &questions, int maxTotalScore);
+    bool replacePaperQuestions(int paperId, const QVariantList &questions, int maxTotalScore);
     int copyExamAsDraft(const QString &examName, const QDateTime &startTime, const QDateTime &endTime);
     int copyExamAsDraftById(int examId, const QString &copyTitle);
     bool publishExam(int paperId, const QStringList &classNames, const QDateTime &startTime, const QDateTime &endTime);
     bool saveReviewScore(int answerId, double score, const QString &comment);
     bool updateTeacherProfile(const QVariantMap &profileData);
     bool changePassword(const QString &oldPassword, const QString &newPassword);
+    bool logout();
+    int examIdForName(const QString &examName) const;
+    QVariantMap examForName(const QString &examName) const;
 
 private:
     bool openDatabase();

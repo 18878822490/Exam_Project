@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/logs")
@@ -26,5 +27,12 @@ public class OperationLogController {
                                                 @RequestParam(required = false) String action,
                                                 @RequestParam(required = false) Integer limit) {
         return ApiResponse.success("查询成功", operationLogService.list(userId, action, limit));
+    }
+
+    @GetMapping("/dashboard")
+    public ApiResponse<Map<String, Object>> dashboard(@RequestParam(required = false) Long userId,
+                                                      @RequestParam(required = false) String action,
+                                                      @RequestParam(required = false) Integer limit) {
+        return ApiResponse.success("查询成功", operationLogService.dashboard(userId, action, limit));
     }
 }

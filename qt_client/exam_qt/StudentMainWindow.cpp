@@ -19,8 +19,10 @@
 #include <QQmlError>
 #include <QQuickWidget>
 #include <QPrinter>
+#include <QRandomGenerator>
 #include <QScreen>
 #include <QStandardPaths>
+#include <QStringList>
 #include <QTextDocument>
 #include <QTimer>
 #include <QUrl>
@@ -44,6 +46,17 @@ QVariantMap responseMap(const QJsonObject &response)
         return {};
     }
     return response.value(QStringLiteral("data")).toObject().toVariantMap();
+}
+
+QVariant firstNonBlankValue(const QVariantMap &row, const QStringList &keys, const QVariant &fallback = {})
+{
+    for (const QString &key : keys) {
+        const QVariant value = row.value(key);
+        if (value.isValid() && !value.toString().trimmed().isEmpty()) {
+            return value;
+        }
+    }
+    return fallback;
 }
 
 QString subjectAccent(const QString &subject)
@@ -94,6 +107,124 @@ QString subjectIcon(const QString &subject)
     }
     return subject.isEmpty() ? QStringLiteral("题") : subject.left(1);
 }
+
+QString practiceSubjectBucket(const QString &subject)
+{
+    const QString raw = subject.trimmed();
+    const QString lower = raw.toLower();
+    if (raw.isEmpty()) {
+        return {};
+    }
+    if (lower.contains(QStringLiteral("codex")) || lower.contains(QStringLiteral("test"))
+        || raw.contains(QStringLiteral("测试")) || lower == QStringLiteral("single")
+        || lower == QStringLiteral("multiple")) {
+        return {};
+    }
+    if (raw.contains(QStringLiteral("高数")) || raw.contains(QStringLiteral("高等数学"))
+        || raw.contains(QStringLiteral("数学")) || lower == QStringLiteral("math")) {
+        return QStringLiteral("高数");
+    }
+    if (raw.contains(QStringLiteral("线性代数")) || raw.contains(QStringLiteral("线代"))) {
+        return QStringLiteral("线性代数");
+    }
+    if (raw.contains(QStringLiteral("数据结构")) || raw.contains(QStringLiteral("算法"))
+        || lower.contains(QStringLiteral("data structure"))) {
+        return QStringLiteral("数据结构");
+    }
+    if (raw.contains(QStringLiteral("数据库")) || lower.contains(QStringLiteral("mysql"))
+        || lower.contains(QStringLiteral("sql"))) {
+        return QStringLiteral("数据库");
+    }
+    if (lower.contains(QStringLiteral("java"))) {
+        return QStringLiteral("Java");
+    }
+    if (lower.contains(QStringLiteral("c++")) || lower.contains(QStringLiteral("cpp"))) {
+        return QStringLiteral("C++");
+    }
+    if (raw.contains(QStringLiteral("英语")) || lower.contains(QStringLiteral("english"))) {
+        return QStringLiteral("英语");
+    }
+    return raw;
+}
+
+bool isPracticeSubjectBucket(const QString &subject)
+{
+    static const QStringList buckets = {
+        QStringLiteral("高数"),
+        QStringLiteral("线性代数"),
+        QStringLiteral("数据库"),
+        QStringLiteral("Java"),
+        QStringLiteral("数据结构"),
+        QStringLiteral("C++"),
+        QStringLiteral("英语")
+    };
+    return buckets.contains(subject.trimmed(), Qt::CaseInsensitive);
+}
+
+bool practiceSubjectMatches(const QString &rawSubject, const QString &selectedSubject)
+{
+    const QString selected = selectedSubject.trimmed();
+    if (selected.isEmpty() || selected == QStringLiteral("全部科目") || selected == QStringLiteral("全部")) {
+        return true;
+    }
+    if (isPracticeSubjectBucket(selected)) {
+        return practiceSubjectBucket(rawSubject).compare(selected, Qt::CaseInsensitive) == 0;
+    }
+    return rawSubject.trimmed().compare(selected, Qt::CaseInsensitive) == 0;
+}
+
+QString normalizedQuestionType(const QVariantMap &row)
+{
+    const QString text = row.value(QStringLiteral("type")).toString().trimmed();
+    const QString lower = text.toLower();
+    if (lower == QStringLiteral("single") || lower == QStringLiteral("singlechoice")
+        || text == QStringLiteral("单选") || text == QStringLiteral("选择题")) {
+        return QStringLiteral("单选题");
+    }
+    if (lower == QStringLiteral("multiple") || lower == QStringLiteral("multiplechoice")
+        || lower == QStringLiteral("multi") || text == QStringLiteral("多选")) {
+        return QStringLiteral("多选题");
+    }
+    if (lower == QStringLiteral("judge") || lower == QStringLiteral("truefalse")
+        || lower == QStringLiteral("true/false") || text == QStringLiteral("判断")) {
+        return QStringLiteral("判断题");
+    }
+    if (lower == QStringLiteral("blank") || lower == QStringLiteral("fill")
+        || text == QStringLiteral("填空")) {
+        return QStringLiteral("填空题");
+    }
+    if (lower == QStringLiteral("program") || lower == QStringLiteral("coding")
+        || lower == QStringLiteral("code") || text == QStringLiteral("代码题")) {
+        return QStringLiteral("编程题");
+    }
+    if (lower == QStringLiteral("math") || text == QStringLiteral("高数题")
+        || text == QStringLiteral("数学大题") || text == QStringLiteral("高数大题")) {
+        return QStringLiteral("编程题");
+    }
+    return text;
+}
+
+QVariantMap practiceQuestionMap(const QVariantMap &row, const QString &selectedSubject)
+{
+    const QString rawSubject = row.value(QStringLiteral("subject"), selectedSubject).toString();
+    const QString bucket = practiceSubjectBucket(rawSubject);
+    const QString displaySubject = !bucket.isEmpty() ? bucket : (rawSubject.trimmed().isEmpty() ? QStringLiteral("综合") : rawSubject.trimmed());
+    return QVariantMap{
+        {"id", row.value(QStringLiteral("question_id"), row.value(QStringLiteral("questionId"), row.value(QStringLiteral("id"))))},
+        {"subject", displaySubject},
+        {"type", normalizedQuestionType(row)},
+        {"content", row.value(QStringLiteral("content"))},
+        {"optionA", firstNonBlankValue(row, {QStringLiteral("optionA"), QStringLiteral("option_a"), QStringLiteral("optiona"), QStringLiteral("A"), QStringLiteral("a")})},
+        {"optionB", firstNonBlankValue(row, {QStringLiteral("optionB"), QStringLiteral("option_b"), QStringLiteral("optionb"), QStringLiteral("B"), QStringLiteral("b")})},
+        {"optionC", firstNonBlankValue(row, {QStringLiteral("optionC"), QStringLiteral("option_c"), QStringLiteral("optionc"), QStringLiteral("C"), QStringLiteral("c")})},
+        {"optionD", firstNonBlankValue(row, {QStringLiteral("optionD"), QStringLiteral("option_d"), QStringLiteral("optiond"), QStringLiteral("D"), QStringLiteral("d")})},
+        {"answer", row.value(QStringLiteral("answer"), row.value(QStringLiteral("standard_answer")))},
+        {"analysis", row.value(QStringLiteral("analysis"))},
+        {"difficulty", row.value(QStringLiteral("difficulty"), QStringLiteral("基础"))},
+        {"knowledgePoint", row.value(QStringLiteral("knowledgePoint"), row.value(QStringLiteral("knowledge_point")))},
+        {"score", row.value(QStringLiteral("score"), 0)}
+    };
+}
 }
 
 StudentMainWindow::StudentMainWindow(qint64 studentId,
@@ -108,6 +239,12 @@ StudentMainWindow::StudentMainWindow(qint64 studentId,
     , studentNo(studentNo.trimmed())
     , className(className.trimmed())
 {
+    studentSettings = QVariantMap{
+        {QStringLiteral("noticeEnabled"), true},
+        {QStringLiteral("autoSaveEnabled"), true},
+        {QStringLiteral("compactMode"), false}
+    };
+
     setWindowTitle(QStringLiteral("智考星考试系统 - 学生端"));
     setWindowFlag(Qt::FramelessWindowHint, true);
     setMinimumSize(920, 620);
@@ -152,6 +289,17 @@ QVariantMap StudentMainWindow::getStudentProfile()
             className = remote.value(QStringLiteral("class_name"), remote.value(QStringLiteral("className"), className)).toString();
         }
     }
+    if (studentId > 0) {
+        QUrlQuery settingsQuery;
+        settingsQuery.addQueryItem(QStringLiteral("studentId"), QString::number(studentId));
+        QVariantMap remoteSettings = responseMap(requestJson(QStringLiteral("GET"),
+                                                             QStringLiteral("/student-settings"),
+                                                             {},
+                                                             settingsQuery));
+        if (!remoteSettings.isEmpty()) {
+            studentSettings = remoteSettings;
+        }
+    }
     return {
         {"id", studentId},
         {"name", studentName},
@@ -186,8 +334,14 @@ QVariantList StudentMainWindow::getPublishedExams() const
             {"duration", row.value(QStringLiteral("duration"), 90)},
             {"totalScore", row.value(QStringLiteral("total_score"), row.value(QStringLiteral("totalScore"), 100))},
             {"status", row.value(QStringLiteral("status"), QStringLiteral("待参加"))},
-            {"startTime", row.value(QStringLiteral("start_time"), row.value(QStringLiteral("startTime"), QStringLiteral("2026-07-12 09:00")))},
-            {"endTime", row.value(QStringLiteral("end_time"), row.value(QStringLiteral("endTime"), QStringLiteral("2026-07-12 11:00")))},
+            {"score", row.value(QStringLiteral("student_score"), row.value(QStringLiteral("studentScore")))},
+            {"answerCount", row.value(QStringLiteral("answer_count"), row.value(QStringLiteral("answerCount"), 0))},
+            {"pendingReviewCount", row.value(QStringLiteral("pending_review_count"), row.value(QStringLiteral("pendingReviewCount"), 0))},
+            {"targetStudentCount", row.value(QStringLiteral("target_student_count"), row.value(QStringLiteral("targetStudentCount"), 0))},
+            {"submittedCount", row.value(QStringLiteral("submitted_count"), row.value(QStringLiteral("submittedCount"), 0))},
+            {"reviewedStudentCount", row.value(QStringLiteral("reviewed_student_count"), row.value(QStringLiteral("reviewedStudentCount"), 0))},
+            {"startTime", row.value(QStringLiteral("start_time"), row.value(QStringLiteral("startTime"), QString()))},
+            {"endTime", row.value(QStringLiteral("end_time"), row.value(QStringLiteral("endTime"), QString()))},
             {"className", row.value(QStringLiteral("class_name"), row.value(QStringLiteral("className"), className))}
         });
     }
@@ -207,12 +361,12 @@ QVariantList StudentMainWindow::getExamQuestions(int examId) const
         const QVariantMap row = value.toMap();
         questions.append(QVariantMap{
             {"id", row.value(QStringLiteral("question_id"), row.value(QStringLiteral("questionId"), row.value(QStringLiteral("id"))))},
-            {"type", row.value(QStringLiteral("type"))},
+            {"type", normalizedQuestionType(row)},
             {"content", row.value(QStringLiteral("content"))},
-            {"optionA", row.value(QStringLiteral("option_a"), row.value(QStringLiteral("optionA")))},
-            {"optionB", row.value(QStringLiteral("option_b"), row.value(QStringLiteral("optionB")))},
-            {"optionC", row.value(QStringLiteral("option_c"), row.value(QStringLiteral("optionC")))},
-            {"optionD", row.value(QStringLiteral("option_d"), row.value(QStringLiteral("optionD")))},
+            {"optionA", firstNonBlankValue(row, {QStringLiteral("optionA"), QStringLiteral("option_a"), QStringLiteral("optiona"), QStringLiteral("A"), QStringLiteral("a")})},
+            {"optionB", firstNonBlankValue(row, {QStringLiteral("optionB"), QStringLiteral("option_b"), QStringLiteral("optionb"), QStringLiteral("B"), QStringLiteral("b")})},
+            {"optionC", firstNonBlankValue(row, {QStringLiteral("optionC"), QStringLiteral("option_c"), QStringLiteral("optionc"), QStringLiteral("C"), QStringLiteral("c")})},
+            {"optionD", firstNonBlankValue(row, {QStringLiteral("optionD"), QStringLiteral("option_d"), QStringLiteral("optiond"), QStringLiteral("D"), QStringLiteral("d")})},
             {"answer", row.value(QStringLiteral("answer"), row.value(QStringLiteral("standard_answer")))},
             {"analysis", row.value(QStringLiteral("analysis"))},
             {"subject", row.value(QStringLiteral("subject"), QStringLiteral("综合"))},
@@ -232,20 +386,62 @@ QVariantList StudentMainWindow::getPracticeSubjectStats() const
     }
 
     const QVariantList rows = responseList(requestJson(QStringLiteral("GET"), QStringLiteral("/questions/subject-stats"), {}, query));
-    QVariantList subjects;
+    QVariantMap grouped;
+    QStringList order = {
+        QStringLiteral("高数"),
+        QStringLiteral("线性代数"),
+        QStringLiteral("数据库"),
+        QStringLiteral("Java"),
+        QStringLiteral("数据结构"),
+        QStringLiteral("C++"),
+        QStringLiteral("英语")
+    };
     for (const QVariant &value : rows) {
-        const QVariantMap row = value.toMap();
-        const QString subject = row.value(QStringLiteral("subject"), QStringLiteral("综合")).toString();
+        const QVariantMap rawRow = value.toMap();
+        const QString subject = practiceSubjectBucket(rawRow.value(QStringLiteral("subject"), QStringLiteral("综合")).toString());
+        if (subject.isEmpty()) {
+            continue;
+        }
+        if (!order.contains(subject)) {
+            order.append(subject);
+        }
+        QVariantMap row = grouped.value(subject).toMap();
+        const int total = rawRow.value(QStringLiteral("total_count"), rawRow.value(QStringLiteral("totalCount"), 0)).toInt();
+        const int practiced = rawRow.value(QStringLiteral("practiced_count"), rawRow.value(QStringLiteral("practicedCount"), 0)).toInt();
+        const int weight = qMax(1, total);
+        row[QStringLiteral("totalCount")] = row.value(QStringLiteral("totalCount"), 0).toInt() + total;
+        row[QStringLiteral("practicedCount")] = row.value(QStringLiteral("practicedCount"), 0).toInt() + practiced;
+        row[QStringLiteral("easyCount")] = row.value(QStringLiteral("easyCount"), 0).toInt() + rawRow.value(QStringLiteral("easy"), 0).toInt();
+        row[QStringLiteral("middleCount")] = row.value(QStringLiteral("middleCount"), 0).toInt() + rawRow.value(QStringLiteral("middle"), 0).toInt();
+        row[QStringLiteral("hardCount")] = row.value(QStringLiteral("hardCount"), 0).toInt() + rawRow.value(QStringLiteral("hard"), 0).toInt();
+        row[QStringLiteral("progressSum")] = row.value(QStringLiteral("progressSum"), 0).toInt() + rawRow.value(QStringLiteral("progress"), 0).toInt() * weight;
+        row[QStringLiteral("accuracySum")] = row.value(QStringLiteral("accuracySum"), 0).toInt() + rawRow.value(QStringLiteral("accuracy"), 0).toInt() * weight;
+        row[QStringLiteral("weight")] = row.value(QStringLiteral("weight"), 0).toInt() + weight;
+        grouped.insert(subject, row);
+    }
+
+    QVariantList subjects;
+    for (const QString &subject : order) {
+        const QVariantMap row = grouped.value(subject).toMap();
+        if (row.isEmpty()) {
+            continue;
+        }
+        const int total = row.value(QStringLiteral("totalCount"), 0).toInt();
+        const int easy = row.value(QStringLiteral("easyCount"), 0).toInt();
+        const int middle = row.value(QStringLiteral("middleCount"), 0).toInt();
+        const int hard = row.value(QStringLiteral("hardCount"), 0).toInt();
+        const int difficultyTotal = qMax(1, easy + middle + hard);
+        const int weight = qMax(1, row.value(QStringLiteral("weight"), 0).toInt());
         subjects.append(QVariantMap{
             {"name", subject},
             {"icon", subjectIcon(subject)},
-            {"progress", row.value(QStringLiteral("progress"), 0).toInt()},
-            {"accuracy", row.value(QStringLiteral("accuracy"), 0).toInt()},
-            {"easy", row.value(QStringLiteral("easy"), 0).toInt()},
-            {"middle", row.value(QStringLiteral("middle"), 0).toInt()},
-            {"hard", row.value(QStringLiteral("hard"), 0).toInt()},
-            {"totalCount", row.value(QStringLiteral("total_count"), row.value(QStringLiteral("totalCount"), 0)).toInt()},
-            {"practicedCount", row.value(QStringLiteral("practiced_count"), row.value(QStringLiteral("practicedCount"), 0)).toInt()},
+            {"progress", row.value(QStringLiteral("progressSum"), 0).toInt() / weight},
+            {"accuracy", row.value(QStringLiteral("accuracySum"), 0).toInt() / weight},
+            {"easy", int(easy * 100.0 / difficultyTotal)},
+            {"middle", int(middle * 100.0 / difficultyTotal)},
+            {"hard", int(hard * 100.0 / difficultyTotal)},
+            {"totalCount", total},
+            {"practicedCount", row.value(QStringLiteral("practicedCount"), 0).toInt()},
             {"color", subjectAccent(subject)}
         });
     }
@@ -259,7 +455,7 @@ QVariantList StudentMainWindow::getPracticeSubjectStats() const
 
 QVariantList StudentMainWindow::getPracticeQuestions(const QString &type,
                                                      const QString &difficulty,
-                                                     const QString &keyword) const
+                                                     const QString &subject) const
 {
     QUrlQuery query;
     if (!type.trimmed().isEmpty() && type != QStringLiteral("全部题型")) {
@@ -268,46 +464,83 @@ QVariantList StudentMainWindow::getPracticeQuestions(const QString &type,
     if (!difficulty.trimmed().isEmpty() && difficulty != QStringLiteral("全部难度")) {
         query.addQueryItem(QStringLiteral("difficulty"), difficulty.trimmed());
     }
-    const QStringList subjects = {
-        QStringLiteral("高数"), QStringLiteral("高等数学"), QStringLiteral("Java"),
-        QStringLiteral("C++"), QStringLiteral("数据结构"), QStringLiteral("数据库"),
-        QStringLiteral("英语"), QStringLiteral("综合")
-    };
-    const QString third = keyword.trimmed();
-    const bool thirdIsSubject = subjects.contains(third);
-    if (thirdIsSubject) {
-        query.addQueryItem(QStringLiteral("subject"), third);
+    const QString subjectName = subject.trimmed();
+    const bool selectedBucket = isPracticeSubjectBucket(subjectName);
+    if (!subjectName.isEmpty()
+        && subjectName != QStringLiteral("全部科目")
+        && subjectName != QStringLiteral("全部")
+        && !selectedBucket) {
+        query.addQueryItem(QStringLiteral("subject"), subjectName);
     }
 
     QVariantList rows = responseList(requestJson(QStringLiteral("GET"), QStringLiteral("/questions"), {}, query));
     QVariantList questions;
-    const QString needle = thirdIsSubject ? QString() : third;
     for (const QVariant &value : rows) {
         const QVariantMap row = value.toMap();
-        const QString content = row.value(QStringLiteral("content")).toString();
-        const QString knowledgePoint = row.value(QStringLiteral("knowledgePoint"), row.value(QStringLiteral("knowledge_point"))).toString();
-        if (!needle.isEmpty()
-            && !content.contains(needle, Qt::CaseInsensitive)
-            && !knowledgePoint.contains(needle, Qt::CaseInsensitive)) {
+        const QString rawSubject = row.value(QStringLiteral("subject")).toString();
+        if (practiceSubjectBucket(rawSubject).isEmpty() || !practiceSubjectMatches(rawSubject, subjectName)) {
             continue;
         }
-
-        questions.append(QVariantMap{
-            {"id", row.value(QStringLiteral("question_id"), row.value(QStringLiteral("questionId"), row.value(QStringLiteral("id"))))},
-            {"type", row.value(QStringLiteral("type"))},
-            {"content", content},
-            {"optionA", row.value(QStringLiteral("option_a"), row.value(QStringLiteral("optionA")))} ,
-            {"optionB", row.value(QStringLiteral("option_b"), row.value(QStringLiteral("optionB")))} ,
-            {"optionC", row.value(QStringLiteral("option_c"), row.value(QStringLiteral("optionC")))} ,
-            {"optionD", row.value(QStringLiteral("option_d"), row.value(QStringLiteral("optionD")))} ,
-            {"answer", row.value(QStringLiteral("answer"), row.value(QStringLiteral("standard_answer")))},
-            {"analysis", row.value(QStringLiteral("analysis"))},
-            {"difficulty", row.value(QStringLiteral("difficulty"), QStringLiteral("基础"))},
-            {"knowledgePoint", knowledgePoint},
-            {"score", row.value(QStringLiteral("score"), 0)}
-        });
+        questions.append(practiceQuestionMap(row, subjectName));
     }
 
+    return questions;
+}
+
+QVariantList StudentMainWindow::getRandomPracticeQuestions(const QString &type,
+                                                           const QString &difficulty,
+                                                           const QString &subject,
+                                                           int count) const
+{
+    QUrlQuery query;
+    if (!type.trimmed().isEmpty() && type != QStringLiteral("全部题型")) {
+        query.addQueryItem(QStringLiteral("type"), type.trimmed());
+    }
+    if (!difficulty.trimmed().isEmpty() && difficulty != QStringLiteral("全部难度")) {
+        query.addQueryItem(QStringLiteral("difficulty"), difficulty.trimmed());
+    }
+    const QString subjectName = subject.trimmed();
+    const bool selectedBucket = isPracticeSubjectBucket(subjectName);
+    const bool clientSideSubjectFilter = selectedBucket
+            || subjectName.isEmpty()
+            || subjectName == QStringLiteral("全部科目")
+            || subjectName == QStringLiteral("全部");
+    if (!subjectName.isEmpty()
+        && subjectName != QStringLiteral("全部科目")
+        && subjectName != QStringLiteral("全部")
+        && !selectedBucket) {
+        query.addQueryItem(QStringLiteral("subject"), subjectName);
+    }
+    const int safeCount = qBound(1, count, 100);
+    if (!clientSideSubjectFilter) {
+        query.addQueryItem(QStringLiteral("count"), QString::number(safeCount));
+    }
+
+    QVariantList rows = responseList(requestJson(QStringLiteral("GET"),
+                                                 clientSideSubjectFilter ? QStringLiteral("/questions") : QStringLiteral("/questions/random"),
+                                                 {}, query));
+    QVariantList questions;
+    for (const QVariant &value : rows) {
+        const QVariantMap row = value.toMap();
+        const QString rawSubject = row.value(QStringLiteral("subject")).toString();
+        if (practiceSubjectBucket(rawSubject).isEmpty() || !practiceSubjectMatches(rawSubject, subjectName)) {
+            continue;
+        }
+        questions.append(practiceQuestionMap(row, subjectName));
+    }
+
+    for (int i = questions.size() - 1; i > 0; --i) {
+        questions.swapItemsAt(i, QRandomGenerator::global()->bounded(i + 1));
+    }
+    while (questions.size() > safeCount) {
+        questions.removeLast();
+    }
+
+    if (questions.isEmpty()) {
+        errorMessage = QStringLiteral("当前条件下没有可抽取的题目");
+    } else {
+        errorMessage.clear();
+    }
     return questions;
 }
 
@@ -376,6 +609,12 @@ QVariantMap StudentMainWindow::getScoreReport(int examId) const
         summary.insert(QStringLiteral("passRate"), summary.value(QStringLiteral("pass_rate"), 0));
     }
     report.insert(QStringLiteral("summary"), summary);
+    report.insert(QStringLiteral("reviewStatus"),
+                  report.value(QStringLiteral("reviewStatus"), report.value(QStringLiteral("review_status"), QStringLiteral("暂无提交"))));
+    report.insert(QStringLiteral("pendingCount"),
+                  report.value(QStringLiteral("pendingCount"), report.value(QStringLiteral("pending_count"), 0)));
+    report.insert(QStringLiteral("answerCount"),
+                  report.value(QStringLiteral("answerCount"), report.value(QStringLiteral("answer_count"), 0)));
 
     QVariantList scores;
     int rank = 1;
@@ -410,6 +649,7 @@ QVariantMap StudentMainWindow::getScoreReport(int examId) const
     QVariantList typeBreakdown;
     for (const QVariant &value : report.value(QStringLiteral("typeBreakdown")).toList()) {
         QVariantMap row = value.toMap();
+        row.insert(QStringLiteral("type"), normalizedQuestionType(row));
         row.insert(QStringLiteral("fullScore"), row.value(QStringLiteral("fullScore"), row.value(QStringLiteral("full_score"), 0)));
         row.insert(QStringLiteral("score"), row.value(QStringLiteral("score"), 0));
         row.insert(QStringLiteral("deduction"), row.value(QStringLiteral("deduction"), row.value(QStringLiteral("deduct"), 0)));
@@ -429,6 +669,7 @@ QVariantMap StudentMainWindow::getScoreReport(int examId) const
     QVariantList deductionDetails;
     for (const QVariant &value : report.value(QStringLiteral("deductionDetails")).toList()) {
         QVariantMap row = value.toMap();
+        row.insert(QStringLiteral("type"), normalizedQuestionType(row));
         row.insert(QStringLiteral("questionIndex"), row.value(QStringLiteral("questionIndex"), row.value(QStringLiteral("question_index"))));
         row.insert(QStringLiteral("index"), row.value(QStringLiteral("index"), QStringLiteral("第%1题").arg(row.value(QStringLiteral("questionIndex")).toInt())));
         row.insert(QStringLiteral("fullScore"), row.value(QStringLiteral("fullScore"), row.value(QStringLiteral("full_score"), 0)));
@@ -533,13 +774,13 @@ QVariantList StudentMainWindow::getWrongQuestions() const
             {"source", row.value(QStringLiteral("exam_title"), row.value(QStringLiteral("examTitle"), QStringLiteral("考试错题")))},
             {"sourceType", row.value(QStringLiteral("source_type"), row.value(QStringLiteral("sourceType"), QStringLiteral("exam")))},
             {"subject", row.value(QStringLiteral("subject"), QStringLiteral("综合"))},
-            {"type", row.value(QStringLiteral("type"))},
+            {"type", normalizedQuestionType(row)},
             {"difficulty", row.value(QStringLiteral("difficulty"), QStringLiteral("中等"))},
             {"content", row.value(QStringLiteral("content"))},
-            {"optionA", row.value(QStringLiteral("option_a"), row.value(QStringLiteral("optionA")))},
-            {"optionB", row.value(QStringLiteral("option_b"), row.value(QStringLiteral("optionB")))},
-            {"optionC", row.value(QStringLiteral("option_c"), row.value(QStringLiteral("optionC")))},
-            {"optionD", row.value(QStringLiteral("option_d"), row.value(QStringLiteral("optionD")))},
+            {"optionA", firstNonBlankValue(row, {QStringLiteral("optionA"), QStringLiteral("option_a"), QStringLiteral("optiona"), QStringLiteral("A"), QStringLiteral("a")})},
+            {"optionB", firstNonBlankValue(row, {QStringLiteral("optionB"), QStringLiteral("option_b"), QStringLiteral("optionb"), QStringLiteral("B"), QStringLiteral("b")})},
+            {"optionC", firstNonBlankValue(row, {QStringLiteral("optionC"), QStringLiteral("option_c"), QStringLiteral("optionc"), QStringLiteral("C"), QStringLiteral("c")})},
+            {"optionD", firstNonBlankValue(row, {QStringLiteral("optionD"), QStringLiteral("option_d"), QStringLiteral("optiond"), QStringLiteral("D"), QStringLiteral("d")})},
             {"wrongAnswer", row.value(QStringLiteral("wrong_answer"), row.value(QStringLiteral("wrongAnswer")))},
             {"answer", row.value(QStringLiteral("standard_answer"), row.value(QStringLiteral("standardAnswer")))},
             {"analysis", row.value(QStringLiteral("analysis"))},
@@ -600,8 +841,12 @@ bool StudentMainWindow::saveWrongQuestionCorrection(int answerId,
 
 bool StudentMainWindow::submitExam(int examId, const QVariantMap &answers)
 {
-    if (examId <= 0 || answers.isEmpty()) {
-        errorMessage = QStringLiteral("请完成答题后再交卷");
+    if (examId <= 0) {
+        errorMessage = QStringLiteral("请选择要提交的考试");
+        return false;
+    }
+    if (studentNo.isEmpty()) {
+        errorMessage = QStringLiteral("当前学生账号缺少学号，无法提交考试");
         return false;
     }
 
@@ -869,6 +1114,26 @@ bool StudentMainWindow::changePassword(const QString &oldPassword, const QString
 
 bool StudentMainWindow::saveSettings(const QVariantMap &settings)
 {
+    if (settings.isEmpty()) {
+        errorMessage = QStringLiteral("设置内容不能为空");
+        return false;
+    }
+    if (studentId > 0) {
+        QUrlQuery query;
+        query.addQueryItem(QStringLiteral("studentId"), QString::number(studentId));
+        const QJsonObject response = requestJson(QStringLiteral("PUT"),
+                                                 QStringLiteral("/student-settings"),
+                                                 QJsonObject::fromVariantMap(settings),
+                                                 query);
+        if (!response.value(QStringLiteral("success")).toBool()) {
+            errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("考试设置保存失败"));
+            return false;
+        }
+        const QVariantMap remoteSettings = responseMap(response);
+        studentSettings = remoteSettings.isEmpty() ? settings : remoteSettings;
+        errorMessage.clear();
+        return true;
+    }
     studentSettings = settings;
     errorMessage.clear();
     return true;
@@ -896,6 +1161,14 @@ void StudentMainWindow::closeWindow()
 
 void StudentMainWindow::logout()
 {
+    if (studentId > 0) {
+        QJsonObject payload;
+        payload.insert(QStringLiteral("userId"), static_cast<qint64>(studentId));
+        payload.insert(QStringLiteral("role"), QStringLiteral("STUDENT"));
+        payload.insert(QStringLiteral("username"), studentNo.isEmpty() ? studentName : studentNo);
+        requestJson(QStringLiteral("POST"), QStringLiteral("/auth/logout"), payload);
+    }
+
     auto *login = new LoginWindow;
     login->setAttribute(Qt::WA_DeleteOnClose);
     login->show();
@@ -921,7 +1194,7 @@ QJsonObject StudentMainWindow::requestJson(const QString &method,
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
-    request.setTransferTimeout(1200);
+    request.setTransferTimeout(6000);
 
     QNetworkAccessManager manager;
     QEventLoop loop;
@@ -944,7 +1217,7 @@ QJsonObject StudentMainWindow::requestJson(const QString &method,
         }
     });
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    timeout.start(1200);
+    timeout.start(6000);
     loop.exec();
     timeout.stop();
 

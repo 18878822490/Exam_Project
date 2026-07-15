@@ -16,6 +16,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QSqlRecord>
+#include <QStringList>
 #include <QTextStream>
 #include <QTimer>
 #include <QUrl>
@@ -33,6 +34,17 @@ QString variantString(const QVariant &value, const QString &fallback = QString()
 {
     const QString text = value.toString().trimmed();
     return text.isEmpty() ? fallback : text;
+}
+
+QVariant firstNonBlankValue(const QVariantMap &row, const QStringList &keys, const QVariant &fallback = {})
+{
+    for (const QString &key : keys) {
+        const QVariant value = row.value(key);
+        if (value.isValid() && !value.toString().trimmed().isEmpty()) {
+            return value;
+        }
+    }
+    return fallback;
 }
 
 QJsonObject requestJson(const QString &method, const QString &path, const QJsonObject &payload = {}, const QUrlQuery &query = {})
@@ -120,6 +132,44 @@ QString sectionTitleForType(const QString &type)
     return isObjectiveQuestion(type)
             ? QStringLiteral("第一部分 客观题")
             : QStringLiteral("第二部分 主观题");
+}
+
+int paperQuestionId(const QVariantMap &question)
+{
+    return question.value(QStringLiteral("questionId"),
+           question.value(QStringLiteral("question_id"),
+           question.value(QStringLiteral("id")))).toInt();
+}
+
+int paperQuestionScore(const QVariantMap &question)
+{
+    return question.value(QStringLiteral("score"),
+           question.value(QStringLiteral("paper_score"),
+           question.value(QStringLiteral("questionScore")))).toInt();
+}
+
+QJsonArray paperQuestionItems(const QVariantList &questions)
+{
+    QJsonArray items;
+    QSet<int> seen;
+    int sortNo = 1;
+    for (const QVariant &value : questions) {
+        const QVariantMap question = value.toMap();
+        const int questionId = paperQuestionId(question);
+        if (questionId <= 0 || seen.contains(questionId)) {
+            continue;
+        }
+        seen.insert(questionId);
+        QJsonObject item;
+        item.insert(QStringLiteral("questionId"), questionId);
+        item.insert(QStringLiteral("sortNo"), sortNo++);
+        const int score = paperQuestionScore(question);
+        if (score > 0) {
+            item.insert(QStringLiteral("score"), score);
+        }
+        items.append(item);
+    }
+    return items;
 }
 }
 
@@ -489,7 +539,7 @@ void TeacherDataRepository::seedData()
             {{"subject", "Java"}, {"type", "单选题"}, {"content", "Java虚拟机的缩写是？"}, {"answer", "JVM"}, {"difficulty", "基础"}},
             {{"subject", "Java"}, {"type", "多选题"}, {"content", "以下属于Java集合框架的是？"}, {"answer", "List;Map;Set"}, {"difficulty", "基础"}},
             {{"subject", "Java"}, {"type", "填空题"}, {"content", "Java源文件扩展名是____。"}, {"answer", ".java"}, {"difficulty", "基础"}},
-            {{"subject", "高数"}, {"type", "高数大题"}, {"content", "求函数f(x)=x^2在[0,2]上的定积分。"}, {"answer", "8/3"}, {"difficulty", "中等"}},
+            {{"subject", "高数"}, {"type", "编程题"}, {"content", "编写程序计算函数f(x)=x^2在[0,2]上的定积分近似值。"}, {"answer", "可使用数值积分方法得到约 8/3。"}, {"difficulty", "中等"}},
             {{"subject", "C++"}, {"type", "代码题"}, {"content", "编写函数判断一个整数是否为素数。"}, {"answer", "trial division"}, {"difficulty", "中等"}},
             {{"subject", "Java"}, {"type", "单选题"}, {"content", "String是否不可变？"}, {"answer", "是"}, {"difficulty", "基础"}},
             {{"subject", "Java"}, {"type", "代码题"}, {"content", "使用Java实现冒泡排序。"}, {"answer", "bubble sort"}, {"difficulty", "中等"}}
@@ -505,7 +555,7 @@ void TeacherDataRepository::seedData()
         const QDateTime start = QDateTime::fromString(QStringLiteral("2026-06-20 09:00"), QStringLiteral("yyyy-MM-dd HH:mm"));
         const QDateTime end = QDateTime::fromString(QStringLiteral("2026-06-20 11:00"), QStringLiteral("yyyy-MM-dd HH:mm"));
         const int paperId = createDraftPaper(QStringLiteral("Java期末考试"), QStringLiteral("Java"), start, end,
-                                             QVariantMap{{"单选题", 2}, {"多选题", 1}, {"填空题", 1}, {"高数大题", 0}, {"代码题", 1}});
+                                             QVariantMap{{"单选题", 2}, {"多选题", 1}, {"填空题", 1}, {"编程题", 1}});
         publishExam(paperId, {QStringLiteral("软工01")}, start, end);
 
         const QList<QStringList> answers = {
@@ -626,6 +676,28 @@ bool TeacherDataRepository::changePassword(const QString &oldPassword, const QSt
     const bool ok = response.value(QStringLiteral("success")).toBool();
     if (!ok) {
         errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("修改密码失败"));
+    } else {
+        errorMessage.clear();
+    }
+    return ok;
+}
+
+bool TeacherDataRepository::logout()
+{
+    if (teacherId <= 0) {
+        return true;
+    }
+
+    QJsonObject payload;
+    payload.insert(QStringLiteral("userId"), QJsonValue::fromVariant(teacherId));
+    payload.insert(QStringLiteral("role"), QStringLiteral("TEACHER"));
+
+    const QJsonObject response = requestJson(QStringLiteral("POST"),
+                                             QStringLiteral("/auth/logout"),
+                                             payload);
+    const bool ok = response.value(QStringLiteral("success")).toBool();
+    if (!ok) {
+        errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("退出登录记录失败"));
     } else {
         errorMessage.clear();
     }
@@ -759,10 +831,10 @@ QVariantList TeacherDataRepository::searchQuestionsAdvanced(const QString &keywo
                                 {"subject", row.value(QStringLiteral("subject"), QStringLiteral("Java"))},
                                 {"type", row.value(QStringLiteral("type"))},
                                 {"content", row.value(QStringLiteral("content"))},
-                                {"optionA", row.value(QStringLiteral("optionA"), row.value(QStringLiteral("option_a")))},
-                                {"optionB", row.value(QStringLiteral("optionB"), row.value(QStringLiteral("option_b")))},
-                                {"optionC", row.value(QStringLiteral("optionC"), row.value(QStringLiteral("option_c")))},
-                                {"optionD", row.value(QStringLiteral("optionD"), row.value(QStringLiteral("option_d")))},
+                                {"optionA", firstNonBlankValue(row, {QStringLiteral("optionA"), QStringLiteral("option_a"), QStringLiteral("optiona"), QStringLiteral("A"), QStringLiteral("a")})},
+                                {"optionB", firstNonBlankValue(row, {QStringLiteral("optionB"), QStringLiteral("option_b"), QStringLiteral("optionb"), QStringLiteral("B"), QStringLiteral("b")})},
+                                {"optionC", firstNonBlankValue(row, {QStringLiteral("optionC"), QStringLiteral("option_c"), QStringLiteral("optionc"), QStringLiteral("C"), QStringLiteral("c")})},
+                                {"optionD", firstNonBlankValue(row, {QStringLiteral("optionD"), QStringLiteral("option_d"), QStringLiteral("optiond"), QStringLiteral("D"), QStringLiteral("d")})},
                                 {"answer", row.value(QStringLiteral("answer"))},
                                 {"analysis", row.value(QStringLiteral("analysis"))},
                                 {"knowledgePoint", row.value(QStringLiteral("knowledgePoint"), row.value(QStringLiteral("knowledge_point")))},
@@ -817,6 +889,159 @@ QVariantMap TeacherDataRepository::getScoreStatistics() const
         {"passRate", summary.value(QStringLiteral("pass_rate"), 0)},
         {"average", summary.value(QStringLiteral("average_score"), 0)}
     };
+}
+
+int TeacherDataRepository::examIdForName(const QString &examName) const
+{
+    const QString target = examName.trimmed();
+    if (target.isEmpty()) {
+        return 0;
+    }
+    const QVariantList exams = getExamList();
+    for (const QVariant &value : exams) {
+        const QVariantMap row = value.toMap();
+        const QString name = row.value(QStringLiteral("name"), row.value(QStringLiteral("title"))).toString().trimmed();
+        if (name == target) {
+            return row.value(QStringLiteral("id")).toInt();
+        }
+    }
+    return 0;
+}
+
+QVariantMap TeacherDataRepository::examForName(const QString &examName) const
+{
+    const QString target = examName.trimmed();
+    if (target.isEmpty()) {
+        return {};
+    }
+    const QVariantList exams = getExamList();
+    for (const QVariant &value : exams) {
+        const QVariantMap row = value.toMap();
+        const QString name = row.value(QStringLiteral("name"), row.value(QStringLiteral("title"))).toString().trimmed();
+        if (name == target) {
+            return row;
+        }
+    }
+    return {};
+}
+
+QVariantMap TeacherDataRepository::getScoreAnalysis(int examId, const QString &className) const
+{
+    if (examId <= 0) {
+        return {};
+    }
+
+    QUrlQuery params;
+    params.addQueryItem(QStringLiteral("examId"), QString::number(examId));
+    if (!className.trimmed().isEmpty()) {
+        params.addQueryItem(QStringLiteral("className"), className.trimmed());
+    }
+
+    QVariantMap analysis = responseMap(requestJson(QStringLiteral("GET"), QStringLiteral("/scores/analysis"), {}, params));
+    if (analysis.isEmpty()) {
+        return {};
+    }
+
+    QVariantList scores;
+    int rank = 1;
+    int excellentCount = 0;
+    for (const QVariant &value : analysis.value(QStringLiteral("scores")).toList()) {
+        QVariantMap row = value.toMap();
+        const double score = row.value(QStringLiteral("score"), row.value(QStringLiteral("total_score"), row.value(QStringLiteral("totalScore"), 0))).toDouble();
+        if (score >= 90) {
+            ++excellentCount;
+        }
+        row.insert(QStringLiteral("rank"), rank++);
+        row.insert(QStringLiteral("score"), score);
+        row.insert(QStringLiteral("totalScore"), score);
+        row.insert(QStringLiteral("studentNo"), row.value(QStringLiteral("studentNo"), row.value(QStringLiteral("student_no"))));
+        row.insert(QStringLiteral("name"), row.value(QStringLiteral("name"), row.value(QStringLiteral("student_name"), row.value(QStringLiteral("studentName")))));
+        row.insert(QStringLiteral("studentName"), row.value(QStringLiteral("studentName"), row.value(QStringLiteral("student_name"), row.value(QStringLiteral("name")))));
+        row.insert(QStringLiteral("className"), row.value(QStringLiteral("className"), row.value(QStringLiteral("class_name"))));
+        scores.append(row);
+    }
+    analysis.insert(QStringLiteral("scores"), scores);
+
+    QVariantMap summary = analysis.value(QStringLiteral("summary")).toMap();
+    summary.insert(QStringLiteral("average"), summary.value(QStringLiteral("average"), summary.value(QStringLiteral("average_score"), 0)));
+    summary.insert(QStringLiteral("highest"), summary.value(QStringLiteral("highest"), summary.value(QStringLiteral("highest_score"), 0)));
+    summary.insert(QStringLiteral("lowest"), summary.value(QStringLiteral("lowest"), summary.value(QStringLiteral("lowest_score"), 0)));
+    summary.insert(QStringLiteral("passRate"), summary.value(QStringLiteral("passRate"), summary.value(QStringLiteral("pass_rate"), 0)));
+    summary.insert(QStringLiteral("studentCount"), summary.value(QStringLiteral("studentCount"), summary.value(QStringLiteral("student_count"), scores.size())));
+    const double excellentRate = scores.isEmpty() ? 0.0 : excellentCount * 100.0 / scores.size();
+    summary.insert(QStringLiteral("excellentRate"), summary.value(QStringLiteral("excellentRate"), summary.value(QStringLiteral("excellent_rate"), excellentRate)));
+    analysis.insert(QStringLiteral("summary"), summary);
+
+    QVariantList questionRows;
+    int index = 1;
+    for (const QVariant &value : analysis.value(QStringLiteral("questionAnalysis")).toList()) {
+        QVariantMap row = value.toMap();
+        const double full = row.value(QStringLiteral("full"), row.value(QStringLiteral("full_score"), 0)).toDouble();
+        const double average = row.value(QStringLiteral("average"), row.value(QStringLiteral("average_score"), 0)).toDouble();
+        row.insert(QStringLiteral("number"), row.value(QStringLiteral("number"), index++));
+        row.insert(QStringLiteral("type"), row.value(QStringLiteral("type")));
+        row.insert(QStringLiteral("full"), full);
+        row.insert(QStringLiteral("average"), average);
+        row.insert(QStringLiteral("low"), row.value(QStringLiteral("low"), row.value(QStringLiteral("low_score"), full > 0 && average < full * 0.6)).toBool());
+        questionRows.append(row);
+    }
+    analysis.insert(QStringLiteral("questionAnalysis"), questionRows);
+
+    return analysis;
+}
+
+QVariantMap TeacherDataRepository::getScoreReport(int examId, const QString &className, const QString &studentNo) const
+{
+    if (examId <= 0) {
+        return {};
+    }
+
+    QUrlQuery params;
+    params.addQueryItem(QStringLiteral("examId"), QString::number(examId));
+    if (!className.trimmed().isEmpty()) {
+        params.addQueryItem(QStringLiteral("className"), className.trimmed());
+    }
+    if (!studentNo.trimmed().isEmpty()) {
+        params.addQueryItem(QStringLiteral("studentNo"), studentNo.trimmed());
+    }
+
+    QVariantMap report = responseMap(requestJson(QStringLiteral("GET"), QStringLiteral("/scores/report"), {}, params));
+    if (report.isEmpty()) {
+        return {};
+    }
+
+    QVariantMap exam;
+    const QVariantList exams = getExamList();
+    for (const QVariant &value : exams) {
+        QVariantMap row = value.toMap();
+        if (row.value(QStringLiteral("id")).toInt() == examId) {
+            exam = row;
+            break;
+        }
+    }
+    report.insert(QStringLiteral("examId"), examId);
+    report.insert(QStringLiteral("examName"), exam.value(QStringLiteral("name"), exam.value(QStringLiteral("title"), QStringLiteral("未命名考试"))));
+    report.insert(QStringLiteral("className"), className);
+    report.insert(QStringLiteral("date"), QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd")));
+    report.insert(QStringLiteral("reviewStatus"),
+                  report.value(QStringLiteral("reviewStatus"), report.value(QStringLiteral("review_status"), QStringLiteral("暂无提交"))));
+    report.insert(QStringLiteral("pendingCount"),
+                  report.value(QStringLiteral("pendingCount"), report.value(QStringLiteral("pending_count"), 0)));
+    report.insert(QStringLiteral("answerCount"),
+                  report.value(QStringLiteral("answerCount"), report.value(QStringLiteral("answer_count"), 0)));
+    report.insert(QStringLiteral("personalScore"),
+                  report.value(QStringLiteral("personalScore"), report.value(QStringLiteral("personal_score"), 0)));
+    report.insert(QStringLiteral("fullScore"),
+                  report.value(QStringLiteral("fullScore"), report.value(QStringLiteral("full_score"), 0)));
+
+    QVariantMap normalized = getScoreAnalysis(examId, className);
+    if (!normalized.isEmpty()) {
+        report.insert(QStringLiteral("summary"), normalized.value(QStringLiteral("summary")));
+        report.insert(QStringLiteral("scores"), normalized.value(QStringLiteral("scores")));
+        report.insert(QStringLiteral("distribution"), normalized.value(QStringLiteral("distribution")));
+        report.insert(QStringLiteral("questionAnalysis"), normalized.value(QStringLiteral("questionAnalysis")));
+    }
+    return report;
 }
 
 QVariantList TeacherDataRepository::getClassScoreTrend(const QString &className, const QString &subject) const
@@ -1086,6 +1311,33 @@ QVariantList TeacherDataRepository::getTodoItems() const
     return list;
 }
 
+QVariantMap TeacherDataRepository::getTeacherSettings() const
+{
+    QVariantMap settings{
+        {QStringLiteral("todoReminders"), true},
+        {QStringLiteral("autoSaveDraft"), true},
+        {QStringLiteral("compactTopBar"), false},
+        {QStringLiteral("publishNoDuplicate"), true},
+        {QStringLiteral("publishSortByChapter"), false},
+        {QStringLiteral("publishShuffleOptions"), true},
+        {QStringLiteral("publishShowAnswers"), false}
+    };
+    if (teacherId <= 0) {
+        return settings;
+    }
+
+    QUrlQuery params;
+    params.addQueryItem(QStringLiteral("teacherId"), QString::number(teacherId));
+    const QVariantMap backendSettings = responseMap(requestJson(QStringLiteral("GET"),
+                                                                QStringLiteral("/teacher-settings"),
+                                                                {},
+                                                                params));
+    for (auto it = backendSettings.constBegin(); it != backendSettings.constEnd(); ++it) {
+        settings.insert(it.key(), it.value());
+    }
+    return settings;
+}
+
 QVariantList TeacherDataRepository::getImportLogs() const
 {
     QVariantList list;
@@ -1258,13 +1510,21 @@ int TeacherDataRepository::createDraftPaperFromQuestions(const QString &name,
                                                          const QDateTime &endTime,
                                                          const QVariantList &questions)
 {
+    return createDraftPaperFromQuestions(name, subject, startTime, endTime, questions, 0);
+}
+
+int TeacherDataRepository::createDraftPaperFromQuestions(const QString &name,
+                                                         const QString &subject,
+                                                         const QDateTime &startTime,
+                                                         const QDateTime &endTime,
+                                                         const QVariantList &questions,
+                                                         int maxTotalScore)
+{
     QJsonArray questionIds;
     QSet<int> seen;
     for (const QVariant &value : questions) {
         const QVariantMap question = value.toMap();
-        const int questionId = question.value(QStringLiteral("id"),
-                              question.value(QStringLiteral("questionId"),
-                              question.value(QStringLiteral("question_id")))).toInt();
+        const int questionId = paperQuestionId(question);
         if (questionId > 0 && !seen.contains(questionId)) {
             questionIds.append(questionId);
             seen.insert(questionId);
@@ -1285,6 +1545,9 @@ int TeacherDataRepository::createDraftPaperFromQuestions(const QString &name,
             : 120;
     payload.insert(QStringLiteral("duration"), duration);
     payload.insert(QStringLiteral("questionIds"), questionIds);
+    if (maxTotalScore > 0) {
+        payload.insert(QStringLiteral("maxTotalScore"), maxTotalScore);
+    }
     if (teacherId > 0) {
         payload.insert(QStringLiteral("createdBy"), QJsonValue::fromVariant(teacherId));
     }
@@ -1295,6 +1558,129 @@ int TeacherDataRepository::createDraftPaperFromQuestions(const QString &name,
         return -1;
     }
     return response.value(QStringLiteral("data")).toObject().value(QStringLiteral("id")).toInt();
+}
+
+bool TeacherDataRepository::addQuestionToPaper(int paperId, const QVariantMap &question, int maxTotalScore)
+{
+    const int questionId = paperQuestionId(question);
+    if (paperId <= 0 || questionId <= 0) {
+        errorMessage = QStringLiteral("请选择草稿和题目");
+        return false;
+    }
+
+    QJsonObject payload;
+    payload.insert(QStringLiteral("questionId"), questionId);
+    const int score = paperQuestionScore(question);
+    if (score > 0) {
+        payload.insert(QStringLiteral("score"), score);
+    }
+    if (maxTotalScore > 0) {
+        payload.insert(QStringLiteral("maxTotalScore"), maxTotalScore);
+    }
+    if (teacherId > 0) {
+        payload.insert(QStringLiteral("userId"), QJsonValue::fromVariant(teacherId));
+    }
+
+    const QJsonObject response = requestJson(QStringLiteral("POST"),
+                                             QStringLiteral("/exams/%1/questions").arg(paperId),
+                                             payload);
+    const bool ok = response.value(QStringLiteral("success")).toBool();
+    if (!ok) {
+        errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("添加题目失败"));
+    } else {
+        errorMessage.clear();
+    }
+    return ok;
+}
+
+bool TeacherDataRepository::removeQuestionFromPaper(int paperId, int questionId)
+{
+    if (paperId <= 0 || questionId <= 0) {
+        errorMessage = QStringLiteral("请选择要移除的题目");
+        return false;
+    }
+
+    QUrlQuery params;
+    if (teacherId > 0) {
+        params.addQueryItem(QStringLiteral("userId"), QString::number(teacherId));
+    }
+    const QJsonObject response = requestJson(QStringLiteral("DELETE"),
+                                             QStringLiteral("/exams/%1/questions/%2").arg(paperId).arg(questionId),
+                                             {},
+                                             params);
+    const bool ok = response.value(QStringLiteral("success")).toBool();
+    if (!ok) {
+        errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("移除题目失败"));
+    } else {
+        errorMessage.clear();
+    }
+    return ok;
+}
+
+bool TeacherDataRepository::reorderPaperQuestions(int paperId, const QVariantList &questions, int maxTotalScore)
+{
+    if (paperId <= 0) {
+        errorMessage = QStringLiteral("请选择要调整的草稿");
+        return false;
+    }
+    const QJsonArray items = paperQuestionItems(questions);
+    if (items.isEmpty()) {
+        errorMessage = QStringLiteral("题目顺序不能为空");
+        return false;
+    }
+
+    QJsonObject payload;
+    payload.insert(QStringLiteral("questions"), items);
+    if (maxTotalScore > 0) {
+        payload.insert(QStringLiteral("maxTotalScore"), maxTotalScore);
+    }
+    if (teacherId > 0) {
+        payload.insert(QStringLiteral("userId"), QJsonValue::fromVariant(teacherId));
+    }
+
+    const QJsonObject response = requestJson(QStringLiteral("PUT"),
+                                             QStringLiteral("/exams/%1/questions/order").arg(paperId),
+                                             payload);
+    const bool ok = response.value(QStringLiteral("success")).toBool();
+    if (!ok) {
+        errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("保存题目顺序失败"));
+    } else {
+        errorMessage.clear();
+    }
+    return ok;
+}
+
+bool TeacherDataRepository::replacePaperQuestions(int paperId, const QVariantList &questions, int maxTotalScore)
+{
+    if (paperId <= 0) {
+        errorMessage = QStringLiteral("请选择要保存的草稿");
+        return false;
+    }
+    const QJsonArray items = paperQuestionItems(questions);
+    if (items.isEmpty()) {
+        errorMessage = QStringLiteral("试卷题目不能为空");
+        return false;
+    }
+
+    QJsonObject payload;
+    payload.insert(QStringLiteral("questions"), items);
+    if (maxTotalScore > 0) {
+        payload.insert(QStringLiteral("maxTotalScore"), maxTotalScore);
+    }
+    if (teacherId > 0) {
+        payload.insert(QStringLiteral("userId"), QJsonValue::fromVariant(teacherId));
+    }
+
+    const QJsonObject response = requestJson(QStringLiteral("PUT"),
+                                             QStringLiteral("/exams/%1/questions").arg(paperId),
+                                             payload);
+    const bool ok = response.value(QStringLiteral("success")).toBool();
+    if (!ok) {
+        errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("保存试卷题目失败"));
+    } else {
+        errorMessage.clear();
+    }
+    return ok;
 }
 
 int TeacherDataRepository::copyExamAsDraft(const QString &examName, const QDateTime &startTime, const QDateTime &endTime)
@@ -1432,12 +1818,66 @@ bool TeacherDataRepository::addTodoItem(const QString &title, const QString &typ
     return ok;
 }
 
+bool TeacherDataRepository::updateTodoStatus(int id, const QString &status)
+{
+    if (teacherId <= 0) {
+        errorMessage = QStringLiteral("教师账号未登录");
+        return false;
+    }
+    if (id <= 0) {
+        errorMessage = QStringLiteral("请选择待办事项");
+        return false;
+    }
+    const QString cleanStatus = status.trimmed();
+    if (cleanStatus.isEmpty()) {
+        errorMessage = QStringLiteral("待办状态不能为空");
+        return false;
+    }
+
+    QJsonObject payload;
+    payload.insert(QStringLiteral("teacherId"), QJsonValue::fromVariant(teacherId));
+    payload.insert(QStringLiteral("status"), cleanStatus);
+
+    const QJsonObject response = requestJson(QStringLiteral("PUT"),
+                                             QStringLiteral("/teacher-todos/%1/status").arg(id),
+                                             payload);
+    const bool ok = response.value(QStringLiteral("success")).toBool();
+    if (!ok) {
+        errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("更新待办状态失败"));
+    } else {
+        errorMessage.clear();
+    }
+    return ok;
+}
+
+QVariantMap TeacherDataRepository::saveTeacherSettings(const QVariantMap &settings)
+{
+    if (teacherId <= 0) {
+        errorMessage = QStringLiteral("教师账号未登录");
+        return {};
+    }
+
+    QUrlQuery params;
+    params.addQueryItem(QStringLiteral("teacherId"), QString::number(teacherId));
+    const QJsonObject response = requestJson(QStringLiteral("PUT"),
+                                             QStringLiteral("/teacher-settings"),
+                                             QJsonObject::fromVariantMap(settings),
+                                             params);
+    if (!response.value(QStringLiteral("success")).toBool()) {
+        errorMessage = response.value(QStringLiteral("message")).toString(QStringLiteral("保存系统设置失败"));
+        return {};
+    }
+    errorMessage.clear();
+    QVariantMap result = responseMap(response);
+    return result.isEmpty() ? getTeacherSettings() : result;
+}
+
 int TeacherDataRepository::scoreForType(const QString &type) const
 {
     if (type == QStringLiteral("单选题")) return 3;
     if (type == QStringLiteral("多选题")) return 5;
     if (type == QStringLiteral("填空题")) return 2;
-    if (type == QStringLiteral("高数大题")) return 10;
+    if (type == QStringLiteral("高数大题")) return 15;
     if (type == QStringLiteral("代码题")) return 15;
     return 3;
 }

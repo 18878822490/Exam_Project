@@ -1,6 +1,8 @@
 package com.exam.exam_platform.service;
 
 import com.exam.exam_platform.dto.CreateExamPaperRequest;
+import com.exam.exam_platform.dto.PaperQuestionOrderRequest;
+import com.exam.exam_platform.dto.PaperQuestionRequest;
 import com.exam.exam_platform.dto.PublishExamRequest;
 import com.exam.exam_platform.entity.Exam;
 import com.exam.exam_platform.entity.GenerateExamRequest;
@@ -107,6 +109,7 @@ public class ExamService {
         }
 
         exam.setTotalScore(totalScore);
+        enforceMaxTotalScore(totalScore, request.getMaxTotalScore());
         examMapper.updateTotalScore(exam.getId(), totalScore);
         operationLogService.record(request.getCreatedBy(), "EXAM_CREATE", "生成试卷：" + title);
         return exam;
@@ -119,10 +122,121 @@ public class ExamService {
         createRequest.setSubject("综合");
         createRequest.setDuration(request.getDuration());
         createRequest.setCreatedBy(request.getCreatedBy());
+        createRequest.setMaxTotalScore(request.getMaxTotalScore());
         createRequest.setDifficulty(request.getDifficulty());
         createRequest.setKnowledgePoint(request.getKnowledgePoint());
         createRequest.setTypeCounts(Map.of("单选题", request.getQuestionCount() == null ? 10 : request.getQuestionCount()));
         return createPaper(createRequest);
+    }
+
+    @Transactional
+    public Exam addQuestionToPaper(Long examId, PaperQuestionRequest request) {
+        Exam exam = findEditablePaper(examId);
+        if (request == null || request.getQuestionId() == null) {
+            throw new IllegalArgumentException("题目ID不能为空");
+        }
+        Question question = requireQuestion(request.getQuestionId());
+        int sortNo = request.getSortNo() == null || request.getSortNo() <= 0
+                ? examMapper.nextQuestionSortNo(examId)
+                : request.getSortNo();
+        int score = resolveQuestionScore(question, request.getScore());
+        Integer existingScore = examMapper.scoreForExamQuestion(examId, question.getId());
+        int nextTotalScore = examMapper.totalScoreForExam(examId) - (existingScore == null ? 0 : existingScore) + score;
+        enforceMaxTotalScore(nextTotalScore, request.getMaxTotalScore());
+        examMapper.upsertExamQuestion(examId, question.getId(), sortNo, score);
+        refreshTotalScore(examId);
+        operationLogService.record(request.getUserId() == null ? exam.getCreatedBy() : request.getUserId(),
+                "EXAM_QUESTION_ADD", "试卷ID：" + examId + " 添加题目ID：" + question.getId());
+        return findById(examId);
+    }
+
+    @Transactional
+    public Exam updatePaperQuestion(Long examId, Long questionId, PaperQuestionRequest request) {
+        Exam exam = findEditablePaper(examId);
+        Question question = requireQuestion(questionId);
+        Integer currentSortNo = examMapper.sortNoForExamQuestion(examId, questionId);
+        if (currentSortNo == null) {
+            throw new IllegalArgumentException("试卷中不存在该题目");
+        }
+        int sortNo = request != null && request.getSortNo() != null && request.getSortNo() > 0
+                ? request.getSortNo()
+                : currentSortNo;
+        int score = resolveQuestionScore(question, request == null ? null : request.getScore());
+        if (!examMapper.updateExamQuestion(examId, questionId, sortNo, score)) {
+            throw new IllegalArgumentException("试卷中不存在该题目");
+        }
+        int totalScore = refreshTotalScore(examId);
+        enforceMaxTotalScore(totalScore, request == null ? null : request.getMaxTotalScore());
+        operationLogService.record(request == null || request.getUserId() == null ? exam.getCreatedBy() : request.getUserId(),
+                "EXAM_QUESTION_UPDATE", "试卷ID：" + examId + " 更新题目ID：" + questionId);
+        return findById(examId);
+    }
+
+    @Transactional
+    public Exam removeQuestionFromPaper(Long examId, Long questionId, Long userId) {
+        Exam exam = findEditablePaper(examId);
+        if (questionId == null) {
+            throw new IllegalArgumentException("题目ID不能为空");
+        }
+        if (!examMapper.deleteExamQuestion(examId, questionId)) {
+            throw new IllegalArgumentException("试卷中不存在该题目");
+        }
+        refreshTotalScore(examId);
+        operationLogService.record(userId == null ? exam.getCreatedBy() : userId,
+                "EXAM_QUESTION_REMOVE", "试卷ID：" + examId + " 移除题目ID：" + questionId);
+        return findById(examId);
+    }
+
+    @Transactional
+    public Exam reorderPaperQuestions(Long examId, PaperQuestionOrderRequest request) {
+        Exam exam = findEditablePaper(examId);
+        List<PaperQuestionOrderRequest.Item> items = normalizePaperItems(request);
+        if (items.isEmpty()) {
+            throw new IllegalArgumentException("题目顺序不能为空");
+        }
+        int sortNo = 1;
+        for (PaperQuestionOrderRequest.Item item : items) {
+            Question question = requireQuestion(item.getQuestionId());
+            int score = resolveQuestionScore(question, item.getScore());
+            int nextSortNo = item.getSortNo() == null || item.getSortNo() <= 0 ? sortNo : item.getSortNo();
+            if (!examMapper.updateExamQuestion(examId, question.getId(), nextSortNo, score)) {
+                throw new IllegalArgumentException("试卷中不存在题目：" + question.getId());
+            }
+            sortNo++;
+        }
+        int totalScore = refreshTotalScore(examId);
+        enforceMaxTotalScore(totalScore, request == null ? null : request.getMaxTotalScore());
+        operationLogService.record(request == null || request.getUserId() == null ? exam.getCreatedBy() : request.getUserId(),
+                "EXAM_QUESTION_REORDER", "试卷ID：" + examId + " 调整题目顺序");
+        return findById(examId);
+    }
+
+    @Transactional
+    public Exam replacePaperQuestions(Long examId, PaperQuestionOrderRequest request) {
+        Exam exam = findEditablePaper(examId);
+        List<PaperQuestionOrderRequest.Item> items = normalizePaperItems(request);
+        if (items.isEmpty()) {
+            throw new IllegalArgumentException("试卷题目不能为空");
+        }
+        int totalScore = 0;
+        for (PaperQuestionOrderRequest.Item item : items) {
+            Question question = requireQuestion(item.getQuestionId());
+            totalScore += resolveQuestionScore(question, item.getScore());
+        }
+        enforceMaxTotalScore(totalScore, request == null ? null : request.getMaxTotalScore());
+        examMapper.deleteExamQuestions(examId);
+        int sortNo = 1;
+        for (PaperQuestionOrderRequest.Item item : items) {
+            Question question = requireQuestion(item.getQuestionId());
+            int score = resolveQuestionScore(question, item.getScore());
+            int nextSortNo = item.getSortNo() == null || item.getSortNo() <= 0 ? sortNo : item.getSortNo();
+            examMapper.upsertExamQuestion(examId, question.getId(), nextSortNo, score);
+            sortNo++;
+        }
+        examMapper.updateTotalScore(examId, totalScore);
+        operationLogService.record(request == null || request.getUserId() == null ? exam.getCreatedBy() : request.getUserId(),
+                "EXAM_QUESTION_REPLACE", "试卷ID：" + examId + " 保存题目列表");
+        return findById(examId);
     }
 
     @Transactional
@@ -145,6 +259,11 @@ public class ExamService {
         Exam exam = findById(request.getExamId());
         if (examMapper.countExamQuestions(exam.getId()) == 0) {
             throw new IllegalArgumentException("试卷中还没有题目，不能发布");
+        }
+        if (request.getStartTime() != null
+                && request.getEndTime() != null
+                && !request.getEndTime().isAfter(request.getStartTime())) {
+            throw new IllegalArgumentException("考试结束时间必须晚于开始时间");
         }
         String status = request.getStatus() == null || request.getStatus().isBlank() ? "已发布" : request.getStatus();
 
@@ -177,6 +296,70 @@ public class ExamService {
 
     public Map<String, Object> dashboardStats(Long teacherId) {
         return examMapper.dashboardStats(teacherId);
+    }
+
+    private Exam findEditablePaper(Long examId) {
+        Exam exam = findById(examId);
+        if (examMapper.hasSubmittedAnswers(examId)) {
+            throw new IllegalArgumentException("已有学生提交答卷，不能再修改试卷题目");
+        }
+        return exam;
+    }
+
+    private Question requireQuestion(Long questionId) {
+        if (questionId == null || questionId <= 0) {
+            throw new IllegalArgumentException("题目ID不能为空");
+        }
+        Question question = questionMapper.findById(questionId);
+        if (question == null) {
+            throw new IllegalArgumentException("题目不存在：" + questionId);
+        }
+        return question;
+    }
+
+    private int resolveQuestionScore(Question question, Integer requestScore) {
+        if (requestScore != null && requestScore > 0) {
+            return requestScore;
+        }
+        return question.getScore() == null || question.getScore() <= 0 ? 1 : question.getScore();
+    }
+
+    private int refreshTotalScore(Long examId) {
+        int totalScore = examMapper.totalScoreForExam(examId);
+        examMapper.updateTotalScore(examId, totalScore);
+        return totalScore;
+    }
+
+    private void enforceMaxTotalScore(int totalScore, Integer maxTotalScore) {
+        if (maxTotalScore != null && maxTotalScore > 0 && totalScore > maxTotalScore) {
+            throw new IllegalArgumentException("试卷总分 " + totalScore + " 已超过设定满分 " + maxTotalScore);
+        }
+    }
+
+    private List<PaperQuestionOrderRequest.Item> normalizePaperItems(PaperQuestionOrderRequest request) {
+        if (request == null) {
+            return List.of();
+        }
+        if (request.getQuestions() != null && !request.getQuestions().isEmpty()) {
+            Map<Long, PaperQuestionOrderRequest.Item> deduped = new LinkedHashMap<>();
+            for (PaperQuestionOrderRequest.Item item : request.getQuestions()) {
+                if (item != null && item.getQuestionId() != null && item.getQuestionId() > 0) {
+                    deduped.putIfAbsent(item.getQuestionId(), item);
+                }
+            }
+            return List.copyOf(deduped.values());
+        }
+        if (request.getQuestionIds() == null || request.getQuestionIds().isEmpty()) {
+            return List.of();
+        }
+        return request.getQuestionIds().stream()
+                .filter(id -> id != null && id > 0)
+                .map(id -> {
+                    PaperQuestionOrderRequest.Item item = new PaperQuestionOrderRequest.Item();
+                    item.setQuestionId(id);
+                    return item;
+                })
+                .toList();
     }
 
     private Map<String, Integer> normalizeTypeCounts(Map<String, Integer> source) {

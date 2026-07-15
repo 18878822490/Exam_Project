@@ -21,8 +21,10 @@ public:
     Q_INVOKABLE void closeWindow();
     Q_INVOKABLE void logout();
     Q_INVOKABLE void startWindowMove();
+    Q_INVOKABLE QVariantMap getSystemOverviewData() const;
     Q_INVOKABLE QVariantMap getStudentManagementData() const;
     Q_INVOKABLE QVariantMap getTeacherManagementData() const;
+    Q_INVOKABLE QVariantMap getOperationLogData() const;
     Q_INVOKABLE QString lastError() const;
 
 private:

@@ -69,6 +69,14 @@ public class ScoreController {
         return ApiResponse.success("查询成功", scoreService.listReviewExams(teacherId));
     }
 
+    @GetMapping("/review/workbench")
+    public ApiResponse<Map<String, Object>> reviewWorkbench(@RequestParam(required = false) Long teacherId,
+                                                            @RequestParam(required = false) Long examId,
+                                                            @RequestParam(required = false) String studentNo,
+                                                            @RequestParam(required = false) String status) {
+        return ApiResponse.success("查询成功", scoreService.reviewWorkbench(teacherId, examId, studentNo, status));
+    }
+
     @GetMapping("/review/exams/{examId}/students")
     public ApiResponse<List<Map<String, Object>>> reviewStudents(@PathVariable Long examId,
                                                                  @RequestParam(required = false) String status) {
@@ -107,6 +115,15 @@ public class ScoreController {
         return ApiResponse.success("查询成功", scoreService.classAverageTrend(className, subject, limit));
     }
 
+    @GetMapping("/class-analysis")
+    public ApiResponse<Map<String, Object>> classAnalysis(@RequestParam(required = false) Long teacherId,
+                                                          @RequestParam(required = false) Long examId,
+                                                          @RequestParam(required = false) String className,
+                                                          @RequestParam(required = false) String subject,
+                                                          @RequestParam(required = false) Integer limit) {
+        return ApiResponse.success("查询成功", scoreService.classAnalysis(teacherId, examId, className, subject, limit));
+    }
+
     @PostMapping("/review")
     public ApiResponse<Void> review(@RequestBody ReviewScoreRequest request) {
         try {
@@ -133,6 +150,18 @@ public class ScoreController {
                                                    @RequestParam(required = false) String studentNo) {
         try {
             return ApiResponse.success("查询成功", scoreService.report(examId, className, studentNo));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
+    @GetMapping("/print-report")
+    public ApiResponse<Map<String, Object>> printReport(@RequestParam Long examId,
+                                                        @RequestParam(required = false) String className,
+                                                        @RequestParam(required = false) String reportType,
+                                                        @RequestParam(required = false) List<String> studentNos) {
+        try {
+            return ApiResponse.success("查询成功", scoreService.printReport(examId, className, reportType, studentNos));
         } catch (IllegalArgumentException exception) {
             return ApiResponse.fail(exception.getMessage());
         }

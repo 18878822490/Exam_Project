@@ -2,14 +2,18 @@ package com.exam.exam_platform.controller;
 
 import com.exam.exam_platform.common.ApiResponse;
 import com.exam.exam_platform.dto.CreateExamPaperRequest;
+import com.exam.exam_platform.dto.PaperQuestionOrderRequest;
+import com.exam.exam_platform.dto.PaperQuestionRequest;
 import com.exam.exam_platform.dto.PublishExamRequest;
 import com.exam.exam_platform.entity.Exam;
 import com.exam.exam_platform.entity.GenerateExamRequest;
 import com.exam.exam_platform.service.ExamService;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,6 +51,55 @@ public class ExamController {
     public ApiResponse<List<Map<String, Object>>> preview(@PathVariable Long id) {
         try {
             return ApiResponse.success("查询成功", examService.preview(id));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
+    @PostMapping("/{id}/questions")
+    public ApiResponse<Exam> addQuestion(@PathVariable Long id, @RequestBody PaperQuestionRequest request) {
+        try {
+            return ApiResponse.success("题目已加入试卷", examService.addQuestionToPaper(id, request));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/questions/{questionId}")
+    public ApiResponse<Exam> updateQuestion(@PathVariable Long id,
+                                            @PathVariable Long questionId,
+                                            @RequestBody PaperQuestionRequest request) {
+        try {
+            return ApiResponse.success("试卷题目已更新", examService.updatePaperQuestion(id, questionId, request));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}/questions/{questionId}")
+    public ApiResponse<Exam> removeQuestion(@PathVariable Long id,
+                                            @PathVariable Long questionId,
+                                            @RequestParam(required = false) Long userId) {
+        try {
+            return ApiResponse.success("题目已移出试卷", examService.removeQuestionFromPaper(id, questionId, userId));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/questions/order")
+    public ApiResponse<Exam> reorderQuestions(@PathVariable Long id, @RequestBody PaperQuestionOrderRequest request) {
+        try {
+            return ApiResponse.success("题目顺序已保存", examService.reorderPaperQuestions(id, request));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/questions")
+    public ApiResponse<Exam> replaceQuestions(@PathVariable Long id, @RequestBody PaperQuestionOrderRequest request) {
+        try {
+            return ApiResponse.success("试卷题目已保存", examService.replacePaperQuestions(id, request));
         } catch (IllegalArgumentException exception) {
             return ApiResponse.fail(exception.getMessage());
         }

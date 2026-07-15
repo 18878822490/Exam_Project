@@ -33,8 +33,10 @@ Rectangle {
     property int tableHeaderHeight: Math.round(62 * contentScale)
     property int tableRowHeight: Math.round(70 * contentScale)
     property int cardRadius: Math.round(12 * contentScale)
+    property var overviewData: ({})
     property var studentManagementData: ({})
     property var teacherManagementData: ({})
+    property var operationLogData: ({})
 
     function formatCount(value) {
         var text = String(value === undefined || value === null ? "0" : value)
@@ -77,16 +79,32 @@ Rectangle {
     }
 
     function updateOverviewStatCards() {
+        var examCount = overviewData.examCount === undefined ? "0" : overviewData.examCount
+        var examDelta = overviewData.examDelta === undefined ? "0" : overviewData.examDelta
+        var questionCount = overviewData.questionCount === undefined ? "0" : overviewData.questionCount
+        var questionDelta = overviewData.questionDelta === undefined ? "0" : overviewData.questionDelta
+        var todayReference = overviewData.todayReferenceCount === undefined ? "0" : overviewData.todayReferenceCount
+        var pending = overviewData.pendingCount === undefined ? "0" : overviewData.pendingCount
         statCards = [
             {"title": "学生总数", "value": metricValue(studentManagementData.stats, "学生总数", "0", true), "delta": metricValue(studentManagementData.stats, "今日新增", "0", false), "icon": "users", "from": "#64a8ff", "to": "#245df0"},
             {"title": "教师总数", "value": metricValue(teacherManagementData.stats, "教师总数", "0", true), "delta": metricValue(teacherManagementData.stats, "今日新增", "0", false), "icon": "teacher", "from": "#35d48a", "to": "#09aa57"},
-            {"title": "考试总数", "value": "128", "delta": "8", "icon": "exam", "from": "#8b7cff", "to": "#4f46e5"},
-            {"title": "试卷总数", "value": "256", "delta": "12", "icon": "paper", "from": "#ff9a37", "to": "#f36b16"},
-            {"title": "今日参考人数", "value": "568", "delta": "45", "icon": "today", "from": "#62a8ff", "to": "#2364e8"}
+            {"title": "考试总数", "value": root.formatCount(examCount), "delta": String(examDelta), "icon": "exam", "from": "#8b7cff", "to": "#4f46e5"},
+            {"title": "题库数量", "value": root.formatCount(questionCount), "delta": String(questionDelta), "icon": "paper", "from": "#ff9a37", "to": "#f36b16"},
+            {"title": "待批改数量", "value": root.formatCount(pending), "delta": String(todayReference), "icon": "today", "from": "#62a8ff", "to": "#2364e8"}
         ]
     }
 
     function refreshAdminData() {
+        var systemData = adminApi.getSystemOverviewData()
+        if (systemData && systemData.loaded) {
+            overviewData = systemData
+            if (systemData.recentExams && systemData.recentExams.length > 0) {
+                recentExams = systemData.recentExams
+            }
+            if (systemData.logs && systemData.logs.length > 0) {
+                logs = systemData.logs
+            }
+        }
         var studentData = adminApi.getStudentManagementData()
         if (studentData && studentData.loaded) {
             studentManagementData = studentData
@@ -94,6 +112,13 @@ Rectangle {
         var teacherData = adminApi.getTeacherManagementData()
         if (teacherData && teacherData.loaded) {
             teacherManagementData = teacherData
+        }
+        var logData = adminApi.getOperationLogData()
+        if (logData && logData.loaded) {
+            operationLogData = logData
+            if (logData.logs && logData.logs.length > 0) {
+                logs = logData.logs
+            }
         }
         updateOverviewStatCards()
     }
@@ -103,7 +128,7 @@ Rectangle {
         keyword = ""
         innerScrollActive = false
         contentScroll.contentY = 0
-        if (name === "系统概览" || name === "学生管理" || name === "教师管理") {
+        if (name === "系统概览" || name === "学生管理" || name === "教师管理" || name === "操作日志") {
             refreshAdminData()
         }
     }
@@ -591,6 +616,12 @@ Rectangle {
         }
         if (page === "教师管理") {
             map["教师管理"] = applyManagementData(map["教师管理"], teacherManagementData)
+        }
+        if (page === "操作日志") {
+            map["操作日志"] = applyManagementData(map["操作日志"], operationLogData)
+            if (operationLogData && operationLogData.detailRows && operationLogData.detailRows.length > 0) {
+                map["操作日志"].detailRows = operationLogData.detailRows
+            }
         }
         return map[page] || map["考试管理"]
     }

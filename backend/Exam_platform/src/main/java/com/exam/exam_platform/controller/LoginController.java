@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin
@@ -35,6 +37,16 @@ public class LoginController {
     public ApiResponse<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         try {
             return ApiResponse.success("注册完成", userService.register(request));
+        } catch (IllegalArgumentException exception) {
+            return ApiResponse.fail(exception.getMessage());
+        }
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(@RequestBody Map<String, Object> payload) {
+        try {
+            userService.logout(payload);
+            return ApiResponse.success("退出登录已记录", null);
         } catch (IllegalArgumentException exception) {
             return ApiResponse.fail(exception.getMessage());
         }

@@ -18,11 +18,13 @@ Rectangle {
     property int shellVMargin: narrowShell ? 16 : (compactShell ? 22 : 30)
     property int pageGap: narrowShell ? 14 : 22
     property int normalNavHeight: narrowShell ? 96 : (compactShell ? 120 : 136)
+    property bool innerScrollActive: false
     property bool navHidden: false
     property bool classDetailMode: false
     property string toastText: ""
     property string selectedClassName: ""
     property int activePaperId: 0
+    property bool editingSavedPaper: false
     property int selectedQuestionId: -1
     property int publishQuestionIndex: 0
     property int reviewExamIndex: 0
@@ -35,12 +37,13 @@ Rectangle {
     property bool classExamDetailMode: false
     property string todoDraftType: "批改试卷"
     property date nowTime: new Date()
-    property string publishDraftName: "Java期末考试"
+    property string publishDraftName: ""
     property string publishDraftSubject: "Java"
-    property string publishDraftStart: "2026-06-20 09:00"
-    property string publishDraftEnd: "2026-06-20 11:00"
+    property string publishDraftStart: ""
+    property string publishDraftEnd: ""
     property int publishTargetScore: 100
     property var selectedClassExam: ({})
+    property var classExamScores: []
     property var profile: ({})
     property var dashboard: ({})
     property var classes: []
@@ -53,11 +56,13 @@ Rectangle {
     property var scoreStats: ({})
     property var pendingReviews: []
     property var studentAnswers: []
+    property var reviewExams: []
     property var reviewAnswerDetails: []
     property var paperQuestions: []
     property var selectedPublishClasses: []
     property var selectedPaperQuestions: []
     property var todoItems: []
+    property var teacherSettings: ({})
     property var menuItems: [
         {"title": "首页", "page": 0},
         {"title": "题库管理", "page": 1},
@@ -70,18 +75,21 @@ Rectangle {
         "教学数据、考试进度与待办提醒",
         "左侧浏览题目，右侧查看题目详情、答案与解析",
         "配置试卷、筛选题目、查看并发布考试",
-        "选择试卷和学生，仅批改高数大题与编程题",
+        "选择考试与学生，逐题批改编程题并保存评分",
         "按班级、考试和时间查看成绩趋势、分布、排名与薄弱题",
         "管理账号资料、安全密码与系统偏好"
     ]
 
     Component.onCompleted: {
+        ensurePublishDraftDefaults()
         refreshAll()
         animationKey += 1
     }
 
     function refreshAll() {
         profile = teacherApi.getTeacherProfile()
+        teacherSettings = teacherApi.getTeacherSettings()
+        navHidden = settingEnabled("compactTopBar", false)
         dashboard = teacherApi.getDashboardStats()
         classes = teacherApi.getTeacherClasses()
         allStudents = collectAllStudents()
@@ -91,29 +99,23 @@ Rectangle {
         scoreStats = teacherApi.getScoreStatistics()
         pendingReviews = teacherApi.getPendingReviews()
         studentAnswers = teacherApi.getStudentAnswers()
+        reviewExams = teacherApi.getReviewExams()
         todoItems = teacherApi.getTodoItems()
 
         if (selectedClassName === "" && classes.length > 0) {
             selectedClassName = classes[0].name
         }
         classStudents = selectedClassName.length > 0 ? teacherApi.getClassStudents(selectedClassName) : []
-        if (activePaperId <= 0 && exams.length > 0) {
-            activePaperId = Number(exams[0].id)
+        var reviewRows = reviewExamRows()
+        if (activePaperId <= 0 && reviewRows.length > 0) {
+            activePaperId = Number(reviewRows[0].id || 0)
         }
         paperQuestions = activePaperId > 0 ? teacherApi.getPaperQuestions(activePaperId) : []
-        reviewStudents = reviewPaperSelected && activePaperId > 0 ? teacherApi.getStudentAnswersForPaper(activePaperId) : allStudents
+        reviewStudents = reviewPaperSelected && activePaperId > 0 ? teacherApi.getReviewStudents(activePaperId) : allStudents
         reviewAnswerDetails = []
     }
 
     function switchPage(page) {
-        if (page === 3) {
-            teacherApi.openMarkWorkbench()
-            return
-        }
-        if (page === 4) {
-            teacherApi.openScoreAnalysisWorkbench()
-            return
-        }
         if (page === currentPage) {
             animationKey += 1
             return
@@ -130,7 +132,7 @@ Rectangle {
         if (page === 1) return questionBankPageComponent
         if (page === 2) return publishExamPageComponent
         if (page === 3) return reviewPageComponent
-        if (page === 4) return classPageComponent
+        if (page === 4) return scoreAnalysisPageComponent
         if (page === 5) return profileCenterPageComponent
         return dashboardPageComponent
     }
@@ -138,6 +140,19 @@ Rectangle {
     function showToast(text) {
         toastText = text
         toastTimer.restart()
+    }
+
+    function ensurePublishDraftDefaults() {
+        if (publishDraftStart.length > 0 && publishDraftEnd.length > 0) {
+            return
+        }
+        var start = new Date(nowTime.getTime() + 24 * 60 * 60 * 1000)
+        start.setMinutes(0)
+        start.setSeconds(0)
+        start.setMilliseconds(0)
+        var end = new Date(start.getTime() + 120 * 60 * 1000)
+        publishDraftStart = formatDateTime(start)
+        publishDraftEnd = formatDateTime(end)
     }
 
     function pad2(value) {
@@ -155,6 +170,118 @@ Rectangle {
     function formatDateTime(date) {
         return date.getFullYear() + "-" + pad2(date.getMonth() + 1) + "-" + pad2(date.getDate())
                 + " " + pad2(date.getHours()) + ":" + pad2(date.getMinutes())
+    }
+
+    function prettyCode(value) {
+        var raw = String(value || "")
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .replace(/\\n/g, "\n")
+            .replace(/\t/g, "    ")
+            .replace(/\{\s*(?=\S)/g, "{\n")
+            .replace(/\}\s*(?=(public|private|protected|class|static|if|for|while|switch|return|else|catch|finally)\b)/g, "}\n")
+            .replace(/;\s*(?=(public|private|protected|class|static|if|for|while|switch|return|[A-Za-z_][A-Za-z0-9_<>\[\]]*\s+[A-Za-z_]))/g, ";\n")
+            .replace(/<\s+>/g, "<>")
+            .replace(/<\s+/g, "<")
+            .replace(/\s+>/g, ">")
+            .replace(/\s*,\s*/g, ", ")
+            .trim()
+        if (raw.length === 0) return ""
+
+        function spaces(count) {
+            var s = ""
+            for (var i = 0; i < count; ++i) s += "    "
+            return s
+        }
+        function trimRight(text) {
+            return text.replace(/[ \t]+$/g, "")
+        }
+        function currentLine(text) {
+            var index = text.lastIndexOf("\n")
+            return index < 0 ? text : text.slice(index + 1)
+        }
+        function nextWord(text, start) {
+            var rest = text.slice(start).replace(/^\s+/g, "")
+            var match = rest.match(/^[A-Za-z_]+/)
+            return match ? match[0] : ""
+        }
+        var out = ""
+        var indent = 0
+        var parenDepth = 0
+        var inString = false
+        var quote = ""
+        var escape = false
+        function newLine() {
+            out = trimRight(out)
+            if (out.length > 0 && out.charAt(out.length - 1) !== "\n") out += "\n"
+            out += spaces(indent)
+        }
+        for (var i = 0; i < raw.length; ++i) {
+            var ch = raw.charAt(i)
+            if (inString) {
+                out += ch
+                if (escape) {
+                    escape = false
+                } else if (ch === "\\") {
+                    escape = true
+                } else if (ch === quote) {
+                    inString = false
+                }
+                continue
+            }
+            if (ch === "\"" || ch === "'") {
+                inString = true
+                quote = ch
+                out += ch
+                continue
+            }
+            if (ch === "(" || ch === "[") {
+                parenDepth += 1
+                out += ch
+                continue
+            }
+            if (ch === ")" || ch === "]") {
+                parenDepth = Math.max(0, parenDepth - 1)
+                out += ch
+                continue
+            }
+            if (ch === "{") {
+                out = trimRight(out)
+                if (out.length > 0 && out.charAt(out.length - 1) !== " ") out += " "
+                out += "{"
+                indent += 1
+                newLine()
+                continue
+            }
+            if (ch === "}") {
+                if (currentLine(out).trim().length > 0) newLine()
+                indent = Math.max(0, indent - 1)
+                out = trimRight(out)
+                if (out.length > 0 && out.charAt(out.length - 1) !== "\n") out += "\n"
+                out += spaces(indent) + "}"
+                var word = nextWord(raw, i + 1)
+                if (word === "else" || word === "catch" || word === "finally" || word === "while") {
+                    out += " "
+                } else {
+                    newLine()
+                }
+                continue
+            }
+            if (ch === ";" && parenDepth === 0) {
+                out += ";"
+                newLine()
+                continue
+            }
+            if (/\s/.test(ch)) {
+                if (out.length > 0 && out.charAt(out.length - 1) !== " " && out.charAt(out.length - 1) !== "\n") out += " "
+                continue
+            }
+            if (currentLine(out).length === 0) out += spaces(indent)
+            out += ch
+        }
+        return out.split("\n").map(function(line) { return trimRight(line) }).filter(function(line, index, arr) {
+            return line.trim().length > 0 || (index > 0 && index < arr.length - 1 && arr[index - 1].trim().length > 0)
+        }).join("\n").trim()
     }
 
     function defaultTodoTime() {
@@ -207,6 +334,53 @@ Rectangle {
     function nextTodo() {
         var rows = sortedTodoItems()
         return rows.length > 0 ? rows[0] : ({})
+    }
+
+    function settingEnabled(key, fallbackValue) {
+        if (!teacherSettings || teacherSettings[key] === undefined || teacherSettings[key] === null) {
+            return fallbackValue
+        }
+        var value = teacherSettings[key]
+        if (typeof value === "boolean") {
+            return value
+        }
+        if (typeof value === "number") {
+            return value !== 0
+        }
+        var text = String(value).toLowerCase()
+        return text === "true" || text === "1" || text === "on" || text === "yes" || text === "开启" || text === "是"
+    }
+
+    function saveTeacherSetting(key, value) {
+        var next = {}
+        for (var existingKey in teacherSettings) {
+            next[existingKey] = teacherSettings[existingKey]
+        }
+        next[key] = value
+        var saved = teacherApi.saveTeacherSettings(next)
+        if (saved && Object.keys(saved).length > 0) {
+            teacherSettings = saved
+            if (key === "compactTopBar") {
+                navHidden = value
+            }
+            showToast("设置已保存")
+        } else {
+            showToast("设置保存失败：" + teacherApi.lastError())
+        }
+    }
+
+    function changeTodoStatus(todoId, status) {
+        var id = Number(todoId || 0)
+        if (id <= 0) {
+            showToast("未找到待办ID")
+            return
+        }
+        if (teacherApi.updateTodoStatus(id, status)) {
+            todoItems = teacherApi.getTodoItems()
+            showToast(status === "DELETED" ? "待办已删除" : "待办已完成")
+        } else {
+            showToast("待办更新失败：" + teacherApi.lastError())
+        }
     }
 
     function todoCountdown(item) {
@@ -321,6 +495,61 @@ Rectangle {
         publishDraftEnd = endText || "2026-06-20 11:00"
     }
 
+    function paperQuestionId(question) {
+        return Number(question && (question.id || question.questionId || question.question_id) || 0)
+    }
+
+    function syncSavedPaperQuestions(silent) {
+        if (!editingSavedPaper || activePaperId <= 0) {
+            return true
+        }
+        if (selectedPaperQuestions.length === 0) {
+            showToast("试卷至少保留一道题")
+            return false
+        }
+        if (paperTotalScore() > paperTargetScore()) {
+            showToast("当前试卷总分超过设定满分，不能保存")
+            return false
+        }
+        var ok = teacherApi.replacePaperQuestions(activePaperId, selectedPaperQuestions, paperTargetScore())
+        if (!ok) {
+            showToast("试卷同步失败：" + teacherApi.lastError())
+            return false
+        }
+        paperQuestions = teacherApi.getPaperQuestions(activePaperId)
+        exams = teacherApi.getExamList()
+        if (!silent) {
+            showToast("试卷修改已同步")
+        }
+        return true
+    }
+
+    function ensureDraftReady(name, subject, startText, endText) {
+        updatePublishDraft(name, subject, startText, endText)
+        if (selectedPaperQuestions.length === 0) {
+            showToast("请先添加或生成题目")
+            return -1
+        }
+        if (paperTotalScore() > paperTargetScore()) {
+            showToast("当前试卷总分超过设定满分，不能继续")
+            return -1
+        }
+        if (editingSavedPaper && activePaperId > 0) {
+            return syncSavedPaperQuestions(true) ? activePaperId : -1
+        }
+        var paperId = teacherApi.createDraftPaperFromQuestionsWithLimit(publishDraftName, publishDraftSubject, publishDraftStart, publishDraftEnd, selectedPaperQuestions, paperTargetScore())
+        if (paperId > 0) {
+            activePaperId = paperId
+            editingSavedPaper = true
+            paperQuestions = teacherApi.getPaperQuestions(activePaperId)
+            exams = teacherApi.getExamList()
+            dashboard = teacherApi.getDashboardStats()
+            return paperId
+        }
+        showToast("草稿保存失败：" + teacherApi.lastError())
+        return -1
+    }
+
     function movePaperQuestion(index, direction) {
         var target = index + direction
         if (target < 0 || target >= selectedPaperQuestions.length) {
@@ -328,17 +557,39 @@ Rectangle {
             return
         }
         var next = selectedPaperQuestions.slice()
+        var previous = selectedPaperQuestions.slice()
         var item = next[index]
         next[index] = next[target]
         next[target] = item
         selectedPaperQuestions = next
+        if (editingSavedPaper && activePaperId > 0) {
+            var ok = teacherApi.reorderPaperQuestions(activePaperId, selectedPaperQuestions, paperTargetScore())
+            if (!ok) {
+                selectedPaperQuestions = previous
+                showToast("顺序保存失败：" + teacherApi.lastError())
+                return
+            }
+            paperQuestions = teacherApi.getPaperQuestions(activePaperId)
+        }
     }
 
     function removePaperQuestion(index) {
         if (index < 0 || index >= selectedPaperQuestions.length) return
+        var removed = selectedPaperQuestions[index]
+        if (editingSavedPaper && activePaperId > 0) {
+            var questionId = paperQuestionId(removed)
+            if (questionId <= 0 || !teacherApi.removeQuestionFromPaper(activePaperId, questionId)) {
+                showToast("移除失败：" + teacherApi.lastError())
+                return
+            }
+        }
         var next = selectedPaperQuestions.slice()
         next.splice(index, 1)
         selectedPaperQuestions = next
+        if (editingSavedPaper && activePaperId > 0) {
+            paperQuestions = teacherApi.getPaperQuestions(activePaperId)
+            exams = teacherApi.getExamList()
+        }
         showToast("已移出试卷")
     }
 
@@ -350,6 +601,8 @@ Rectangle {
         var currentScore = 0
         var cleanDifficulty = cleanFilterText(difficulty)
         var cleanKnowledge = String(knowledgePoint || "").trim()
+        var preventDuplicate = settingEnabled("publishNoDuplicate", true)
+        var sortByChapter = settingEnabled("publishSortByChapter", false)
         var missing = []
         var blockedByScore = 0
         for (var i = 0; i < typeNames.length; ++i) {
@@ -357,12 +610,18 @@ Rectangle {
             var need = Number(counts[typeName] || 0)
             if (need <= 0) continue
             var rows = searchQuestionPool("", subject, typeName, cleanDifficulty, cleanKnowledge)
+            if (sortByChapter) {
+                rows.sort(function(a, b) {
+                    return String(a.knowledgePoint || a.knowledge_point || a.content || "")
+                            .localeCompare(String(b.knowledgePoint || b.knowledge_point || b.content || ""))
+                })
+            }
             var picked = 0
             var available = rows ? rows.length : 0
             for (var j = 0; j < rows.length && picked < need; ++j) {
                 var q = rows[j]
                 var id = String(q.id || q.questionId || "")
-                if (id.length > 0 && used[id]) continue
+                if (preventDuplicate && id.length > 0 && used[id]) continue
                 if (id.length > 0) used[id] = true
                 var score = questionScoreValue(q)
                 if (currentScore + score > targetScore) {
@@ -379,6 +638,7 @@ Rectangle {
             }
         }
         selectedPaperQuestions = generated
+        editingSavedPaper = false
         if (generated.length > 0) {
             publishPaperMode = true
             animationKey += 1
@@ -395,22 +655,11 @@ Rectangle {
     }
 
     function saveCurrentDraft(name, subject, startText, endText) {
-        updatePublishDraft(name, subject, startText, endText)
-        if (selectedPaperQuestions.length === 0) {
-            showToast("请先添加或生成题目")
-            return -1
-        }
-        if (paperTotalScore() > paperTargetScore()) {
-            showToast("当前试卷总分超过设定满分，不能保存草稿")
-            return -1
-        }
-        var paperId = teacherApi.createDraftPaperFromQuestions(publishDraftName, publishDraftSubject, publishDraftStart, publishDraftEnd, selectedPaperQuestions)
+        var paperId = ensureDraftReady(name, subject, startText, endText)
         if (paperId > 0) {
-            activePaperId = paperId
             refreshAll()
+            paperQuestions = teacherApi.getPaperQuestions(activePaperId)
             showToast("草稿已保存，首页草稿列表已更新")
-        } else {
-            showToast("草稿保存失败：" + teacherApi.lastError())
         }
         return paperId
     }
@@ -420,11 +669,127 @@ Rectangle {
         activePaperId = Number(exam.id || 0)
         reviewPaperSelected = activePaperId > 0
         paperQuestions = activePaperId > 0 ? teacherApi.getPaperQuestions(activePaperId) : []
-        reviewStudents = activePaperId > 0 ? teacherApi.getStudentAnswersForPaper(activePaperId) : allStudents
+        reviewStudents = activePaperId > 0 ? teacherApi.getReviewStudents(activePaperId) : allStudents
+        if (reviewStudents.length === 0 && activePaperId > 0) {
+            reviewStudents = teacherApi.getStudentAnswersForPaper(activePaperId)
+        }
         reviewAnswerDetails = []
         reviewStudentIndex = 0
         reviewQuestionIndex = 0
         reviewWorkMode = false
+    }
+
+    function currentReviewExam() {
+        var rows = reviewExamRows()
+        if (rows.length === 0) return ({})
+        var safeIndex = Math.max(0, Math.min(reviewExamIndex, rows.length - 1))
+        return rows[safeIndex]
+    }
+
+    function reviewExamRows() {
+        var rows = reviewExams.length > 0 ? reviewExams.slice() : orderedExams()
+        rows.sort(function(a, b) {
+            return String(b.date || b.startTime || "").localeCompare(String(a.date || a.startTime || ""))
+        })
+        return rows
+    }
+
+    function reviewSubmittedCount() {
+        var exam = currentReviewExam()
+        return Number(exam.submittedCount || exam.submitted_count || reviewStudents.length || 0)
+    }
+
+    function reviewCompletedCount() {
+        var exam = currentReviewExam()
+        var direct = Number(exam.completedCount || exam.completed_count || 0)
+        if (direct > 0) return direct
+        var count = 0
+        for (var i = 0; i < reviewStudents.length; ++i) {
+            var status = String(reviewStudents[i].status || reviewStudents[i].reviewStatus || "")
+            var score = String(reviewStudents[i].score || "")
+            if (status === "已批改" || (score.length > 0 && score !== "--")) count += 1
+        }
+        return count
+    }
+
+    function reviewPendingCount() {
+        var exam = currentReviewExam()
+        var direct = Number(exam.pendingStudentCount || exam.pending_student_count || 0)
+        if (direct > 0) return direct
+        return Math.max(0, reviewSubmittedCount() - reviewCompletedCount())
+    }
+
+    function reviewProgressPercent() {
+        var total = Math.max(1, reviewSubmittedCount())
+        return Math.round(reviewCompletedCount() * 1000 / total) / 10
+    }
+
+    function reviewAverageText() {
+        var exam = currentReviewExam()
+        var direct = Number(exam.average || exam.averageScore || exam.average_score || 0)
+        if (direct > 0) return String(Math.round(direct * 10) / 10)
+        var total = 0
+        var count = 0
+        for (var i = 0; i < reviewStudents.length; ++i) {
+            var value = Number(reviewStudents[i].rawScore || reviewStudents[i].score)
+            if (!isNaN(value) && value > 0) {
+                total += value
+                count += 1
+            }
+        }
+        return count > 0 ? String(Math.round(total * 10 / count) / 10) : "--"
+    }
+
+    function currentReviewStudent() {
+        if (reviewStudents.length === 0) return ({})
+        return reviewStudents[Math.max(0, Math.min(reviewStudentIndex, reviewStudents.length - 1))]
+    }
+
+    function manualReviewRows() {
+        var rows = []
+        for (var i = 0; i < reviewAnswerDetails.length; ++i) {
+            var row = reviewAnswerDetails[i]
+            var type = normalizeType(row.type)
+            var autoScored = row.autoScored === true || String(row.status || "") === "自动评分"
+            if (!autoScored && type === "编程题") rows.push(row)
+        }
+        if (rows.length === 0) {
+            for (var j = 0; j < paperQuestions.length; ++j) {
+                if (normalizeType(paperQuestions[j].type) === "编程题") rows.push(paperQuestions[j])
+            }
+        }
+        return rows
+    }
+
+    function currentManualReviewAnswer() {
+        var rows = manualReviewRows()
+        if (rows.length === 0) return ({})
+        return rows[Math.max(0, Math.min(reviewQuestionIndex, rows.length - 1))]
+    }
+
+    function currentReviewAnswerId() {
+        var row = currentManualReviewAnswer()
+        return Number(row.answerId || row.id || 0)
+    }
+
+    function currentReviewMaxScore() {
+        var row = currentManualReviewAnswer()
+        return Number(row.maxScore || row.questionScore || row.scoreMax || row.paperScore || row.score || 10) || 10
+    }
+
+    function currentReviewQuestionText() {
+        var row = currentManualReviewAnswer()
+        return String(row.question || row.content || questionText(row) || "暂无题目")
+    }
+
+    function currentReviewStudentAnswerText() {
+        var row = currentManualReviewAnswer()
+        return String(row.studentAnswer || row.answerText || row.answer || "暂无答题内容")
+    }
+
+    function currentReviewStandardAnswerText() {
+        var row = currentManualReviewAnswer()
+        return String(row.standardAnswer || row.standard_answer || row.referenceAnswer || "暂无参考答案")
     }
 
     function selectedReviewAnswer() {
@@ -444,8 +809,11 @@ Rectangle {
         reviewQuestionIndex = 0
         var student = reviewStudents.length > index ? reviewStudents[index] : ({})
         reviewAnswerDetails = activePaperId > 0 && String(student.studentNo || "").length > 0
-                ? teacherApi.getStudentAnswersForStudent(activePaperId, String(student.studentNo))
+                ? teacherApi.getReviewStudentAnswers(activePaperId, String(student.studentNo))
                 : []
+        if (reviewAnswerDetails.length === 0 && activePaperId > 0 && String(student.studentNo || "").length > 0) {
+            reviewAnswerDetails = teacherApi.getStudentAnswersForStudent(activePaperId, String(student.studentNo))
+        }
         reviewWorkMode = true
         animationKey += 1
     }
@@ -463,8 +831,129 @@ Rectangle {
 
     function openClassExam(exam) {
         selectedClassExam = exam
+        classExamScores = Number(exam.id || 0) > 0 ? teacherApi.getStudentAnswersForPaper(Number(exam.id)) : []
         classExamDetailMode = true
         animationKey += 1
+    }
+
+    function scoreNumber(row) {
+        var raw = row ? (row.score !== undefined && row.score !== null ? row.score : (row.totalScore || row.rawScore)) : ""
+        var text = String(raw || "").trim()
+        if (text.length === 0 || text === "--") {
+            return -1
+        }
+        var value = Number(text)
+        return isNaN(value) ? -1 : value
+    }
+
+    function scoreText(row) {
+        var value = scoreNumber(row)
+        return value >= 0 ? String(Math.round(value * 10) / 10) : "--"
+    }
+
+    function validClassExamScores() {
+        var rows = []
+        for (var i = 0; i < classExamScores.length; ++i) {
+            if (scoreNumber(classExamScores[i]) >= 0) {
+                rows.push(classExamScores[i])
+            }
+        }
+        return rows
+    }
+
+    function classExamAverage() {
+        var rows = validClassExamScores()
+        if (rows.length === 0) return "--"
+        var total = 0
+        for (var i = 0; i < rows.length; ++i) total += scoreNumber(rows[i])
+        return String(Math.round(total * 10 / rows.length) / 10)
+    }
+
+    function classExamHighest() {
+        var rows = validClassExamScores()
+        if (rows.length === 0) return "--"
+        var maxScore = 0
+        for (var i = 0; i < rows.length; ++i) maxScore = Math.max(maxScore, scoreNumber(rows[i]))
+        return String(Math.round(maxScore * 10) / 10)
+    }
+
+    function classExamLowest() {
+        var rows = validClassExamScores()
+        if (rows.length === 0) return "--"
+        var minScore = 101
+        for (var i = 0; i < rows.length; ++i) minScore = Math.min(minScore, scoreNumber(rows[i]))
+        return String(Math.round(minScore * 10) / 10)
+    }
+
+    function scoreBandCounts() {
+        var counts = [0, 0, 0, 0, 0]
+        for (var i = 0; i < classExamScores.length; ++i) {
+            var score = scoreNumber(classExamScores[i])
+            if (score < 0) continue
+            if (score < 60) counts[0] += 1
+            else if (score < 70) counts[1] += 1
+            else if (score < 80) counts[2] += 1
+            else if (score < 90) counts[3] += 1
+            else counts[4] += 1
+        }
+        return counts
+    }
+
+    function scoreAnalysisExamOptions() {
+        var rows = examsForClass(selectedClassName)
+        return rows.length > 0 ? rows : orderedExams()
+    }
+
+    function ensureScoreAnalysisData() {
+        if (selectedClassName.length === 0 && classes.length > 0) {
+            selectedClassName = classes[0].name
+        }
+        var rows = scoreAnalysisExamOptions()
+        if ((!selectedClassExam || Number(selectedClassExam.id || 0) <= 0) && rows.length > 0) {
+            selectedClassExam = rows[0]
+        }
+        if (Number(selectedClassExam.id || 0) > 0) {
+            classExamScores = teacherApi.getStudentAnswersForPaper(Number(selectedClassExam.id || 0))
+        }
+    }
+
+    function selectScoreAnalysisData(className, examIndex) {
+        selectedClassName = className || selectedClassName
+        classStudents = selectedClassName.length > 0 ? teacherApi.getClassStudents(selectedClassName) : []
+        var rows = scoreAnalysisExamOptions()
+        if (rows.length > 0) {
+            var idx = Math.max(0, Math.min(Number(examIndex || 0), rows.length - 1))
+            selectedClassExam = rows[idx]
+            classExamScores = teacherApi.getStudentAnswersForPaper(Number(selectedClassExam.id || 0))
+        } else {
+            selectedClassExam = ({})
+            classExamScores = []
+        }
+        animationKey += 1
+    }
+
+    function classExamExcellentRate() {
+        var rows = validClassExamScores()
+        if (rows.length === 0) return "--"
+        var count = 0
+        for (var i = 0; i < rows.length; ++i) {
+            if (scoreNumber(rows[i]) >= 90) count += 1
+        }
+        return String(Math.round(count * 1000 / rows.length) / 10) + "%"
+    }
+
+    function scoreAnalysisRankingRows() {
+        var rows = validClassExamScores()
+        rows.sort(function(a, b) { return scoreNumber(b) - scoreNumber(a) })
+        return rows
+    }
+
+    function scoreAnalysisQuestionRows() {
+        var rows = teacherApi.getQuestionAnalysis()
+        rows.sort(function(a, b) {
+            return Number(a.average || a.averageScore || a.average_score || 0) - Number(b.average || b.averageScore || b.average_score || 0)
+        })
+        return rows.slice(0, 8)
     }
 
     function questionTypeScore(type) {
@@ -472,7 +961,6 @@ Rectangle {
         if (type === "多选题") return 5
         if (type === "判断题") return 3
         if (type === "填空题") return 2
-        if (type === "高数大题") return 10
         if (type === "编程题" || type === "代码题") return 15
         return 3
     }
@@ -510,20 +998,16 @@ Rectangle {
     }
 
     function orderedExams() {
-        var list = exams.length > 0 ? exams.slice() : [
-            {"id": 1, "name": "Java期末考试", "subject": "Java", "status": "已发布", "date": "2026-06-20"}
-        ]
+        var list = exams.length > 0 ? exams.slice() : []
         list.sort(function(a, b) {
-            var aj = String(a.name || "").indexOf("Java期末") >= 0 ? -1 : 0
-            var bj = String(b.name || "").indexOf("Java期末") >= 0 ? -1 : 0
-            if (aj !== bj) return aj - bj
             return String(b.date || b.startTime || "").localeCompare(String(a.date || a.startTime || ""))
         })
         return list
     }
 
     function examDate(exam) {
-        return String(exam.date || exam.startTime || exam.createdTime || "2026-06-20").slice(0, 16)
+        var text = String(exam.date || exam.startTime || exam.createdTime || "")
+        return text.length > 0 ? text.slice(0, 16) : "--"
     }
 
     function normalizeType(type) {
@@ -534,7 +1018,7 @@ Rectangle {
         if (lower === "single" || lower === "singlechoice" || text === "单选" || text === "选择题") return "单选题"
         if (lower === "multiple" || lower === "multiplechoice" || lower === "multi" || text === "多选") return "多选题"
         if (lower === "blank" || lower === "fill" || text === "填空") return "填空题"
-        if (lower === "math" || text === "高数题") return "高数大题"
+        if (lower === "math" || text === "高数题" || text === "高数大题" || text === "数学大题") return "编程题"
         return text
     }
 
@@ -566,7 +1050,7 @@ Rectangle {
     function isKnownQuestionType(type) {
         var value = normalizeType(String(type || ""))
         return value === "单选题" || value === "多选题" || value === "判断题" || value === "填空题"
-                || value === "高数大题" || value === "编程题"
+                || value === "编程题"
     }
 
     function questionText(question) {
@@ -600,15 +1084,32 @@ Rectangle {
                 return text
             }
         }
+        var label = keys.indexOf("optionA") >= 0 ? "A"
+                  : keys.indexOf("optionB") >= 0 ? "B"
+                  : keys.indexOf("optionC") >= 0 ? "C"
+                  : keys.indexOf("optionD") >= 0 ? "D" : ""
+        var options = question.options || question.choices
+        if (label.length > 0 && options) {
+            var direct = cleanQuestionOption(options[label] || options[label.toLowerCase()])
+            if (direct.length > 0) return direct
+            if (Array.isArray(options)) {
+                var idx = "ABCD".indexOf(label)
+                if (idx >= 0 && idx < options.length) {
+                    var item = options[idx]
+                    var itemText = cleanQuestionOption(item && typeof item === "object" ? (item.text || item.content || item.value || item.label) : item)
+                    if (itemText.length > 0 && itemText !== label) return itemText
+                }
+            }
+        }
         return ""
     }
 
     function questionOptions(question) {
         var defs = [
-            {"label": "A", "keys": ["optionA", "option_a", "A", "a"]},
-            {"label": "B", "keys": ["optionB", "option_b", "B", "b"]},
-            {"label": "C", "keys": ["optionC", "option_c", "C", "c"]},
-            {"label": "D", "keys": ["optionD", "option_d", "D", "d"]}
+            {"label": "A", "keys": ["optionA", "option_a", "optiona", "choiceA", "choice_a", "answerA", "answer_a", "选项A", "A", "a"]},
+            {"label": "B", "keys": ["optionB", "option_b", "optionb", "choiceB", "choice_b", "answerB", "answer_b", "选项B", "B", "b"]},
+            {"label": "C", "keys": ["optionC", "option_c", "optionc", "choiceC", "choice_c", "answerC", "answer_c", "选项C", "C", "c"]},
+            {"label": "D", "keys": ["optionD", "option_d", "optiond", "choiceD", "choice_d", "answerD", "answer_d", "选项D", "D", "d"]}
         ]
         var rows = []
         for (var i = 0; i < defs.length; ++i) {
@@ -621,9 +1122,6 @@ Rectangle {
     }
 
     function typeOptions(subject) {
-        if (subject === "高数") {
-            return ["单选题", "多选题", "判断题", "填空题", "高数大题"]
-        }
         return ["单选题", "多选题", "判断题", "填空题", "编程题"]
     }
 
@@ -717,7 +1215,7 @@ Rectangle {
         var subjective = []
         for (var i = 0; i < paperQuestions.length; ++i) {
             var type = normalizeType(paperQuestions[i].type)
-            if (type === "高数大题" || type === "编程题") {
+            if (type === "编程题") {
                 subjective.push(paperQuestions[i])
             }
         }
@@ -728,7 +1226,7 @@ Rectangle {
         var count = 0
         for (var i = 0; i < paperQuestions.length; ++i) {
             var type = normalizeType(paperQuestions[i].type)
-            if (type === "高数大题" || type === "编程题") count += 1
+            if (type === "编程题") count += 1
         }
         return count
     }
@@ -806,7 +1304,7 @@ Rectangle {
                 Layout.fillWidth: true
                 AppField { id: addQuestionId; Layout.fillWidth: true; placeholderText: "ID"; readOnly: true }
                 AppCombo { id: addQuestionSubject; Layout.fillWidth: true; model: ["Java", "C++", "高数", "数据结构", "数据库"] }
-                AppCombo { id: addQuestionType; Layout.fillWidth: true; model: ["单选题", "多选题", "填空题", "高数大题", "编程题"] }
+                AppCombo { id: addQuestionType; Layout.fillWidth: true; model: ["单选题", "多选题", "判断题", "填空题", "编程题"] }
             }
             Rectangle {
                 Layout.fillWidth: true
@@ -831,15 +1329,60 @@ Rectangle {
                 color: "#111827"
                 background: Rectangle { radius: 16; color: "#ffffff"; border.color: "#dbe7f6" }
             }
-            TextArea {
-                id: addQuestionAnswer
+            Rectangle {
+                id: addQuestionAnswerFrame
+                property bool codeMode: addQuestionType.currentText === "编程题"
                 Layout.fillWidth: true
-                Layout.preferredHeight: 92
-                placeholderText: "答案"
-                wrapMode: TextArea.Wrap
-                font.pixelSize: 14
-                color: "#111827"
-                background: Rectangle { radius: 16; color: "#ffffff"; border.color: "#dbe7f6" }
+                Layout.preferredHeight: codeMode ? 220 : 104
+                radius: 16
+                color: codeMode ? "#0f172a" : "#ffffff"
+                border.color: codeMode ? "#1e293b" : "#dbe7f6"
+                clip: true
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 0
+                    Rectangle {
+                        visible: addQuestionAnswerFrame.codeMode
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: visible ? 40 : 0
+                        color: "#111827"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 14
+                            anchors.rightMargin: 14
+                            Text { text: "answer.java"; color: "#cbd5e1"; font.pixelSize: 13; font.bold: true; Layout.fillWidth: true }
+                            Text { text: "编程答案区"; color: "#60a5fa"; font.pixelSize: 13; font.bold: true }
+                        }
+                    }
+                    ScrollView {
+                        id: addAnswerScroll
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        contentWidth: availableWidth
+                        clip: true
+                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                        HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
+                        TextArea {
+                            id: addQuestionAnswer
+                            width: Math.max(0, addAnswerScroll.availableWidth)
+                            height: Math.max(addAnswerScroll.availableHeight, implicitHeight + 22)
+                            placeholderText: addQuestionAnswerFrame.codeMode ? "在这里填写参考代码答案..." : "答案"
+                            placeholderTextColor: addQuestionAnswerFrame.codeMode ? "#64748b" : "#94a3b8"
+                            wrapMode: TextArea.Wrap
+                            font.family: addQuestionAnswerFrame.codeMode ? "Consolas" : ""
+                            font.pixelSize: addQuestionAnswerFrame.codeMode ? 15 : 14
+                            color: addQuestionAnswerFrame.codeMode ? "#e5e7eb" : "#111827"
+                            selectedTextColor: "#ffffff"
+                            selectionColor: "#2563eb"
+                            leftPadding: 14
+                            rightPadding: 14
+                            topPadding: 12
+                            bottomPadding: 12
+                            background: Rectangle { color: "transparent" }
+                        }
+                    }
+                }
             }
             TextArea {
                 id: addQuestionAnalysis
@@ -1008,6 +1551,7 @@ Rectangle {
     Component { id: publishExamPageComponent; PublishExamPage {} }
     Component { id: reviewPageComponent; ReviewPage {} }
     Component { id: classPageComponent; ClassPage {} }
+    Component { id: scoreAnalysisPageComponent; ScoreAnalysisPage {} }
     Component { id: profileCenterPageComponent; ProfileCenterPage {} }
 
     ColumnLayout {
@@ -1183,7 +1727,7 @@ Rectangle {
             contentWidth: width
             contentHeight: body.height * root.contentScale + 4
             clip: true
-            interactive: contentHeight > height
+            interactive: !root.innerScrollActive && contentHeight > height
             boundsBehavior: Flickable.DragOverBounds
             boundsMovement: Flickable.FollowBoundsBehavior
             maximumFlickVelocity: 11200
@@ -1710,7 +2254,7 @@ Rectangle {
                 font.bold: true
             }
             Rectangle {
-                visible: root.todoItems.length > 0
+                visible: root.settingEnabled("todoReminders", true) && root.todoItems.length > 0
                 width: Math.max(26, badgeText.implicitWidth + 12)
                 height: 26
                 radius: 13
@@ -1768,10 +2312,12 @@ Rectangle {
                 RowLayout {
                     Layout.fillWidth: true
                     Text { text: "通知提醒"; color: "#111827"; font.pixelSize: 30; font.bold: true; Layout.fillWidth: true }
-                    Text { text: root.todoItems.length + " 条"; color: "#ef4444"; font.pixelSize: 21; font.bold: true }
+                    Text { text: root.settingEnabled("todoReminders", true) ? (root.todoItems.length + " 条") : "已关闭"; color: root.settingEnabled("todoReminders", true) ? "#ef4444" : "#64748b"; font.pixelSize: 21; font.bold: true }
                 }
                 Repeater {
-                    model: root.todoItems.length > 0 ? root.sortedTodoItems().slice(0, 4) : [{"title":"暂无待办提醒", "type":"系统通知", "time":"--"}]
+                    model: !root.settingEnabled("todoReminders", true)
+                           ? [{"title":"待办提醒已关闭", "type":"系统设置", "time":"可在个人中心重新开启"}]
+                           : (root.todoItems.length > 0 ? root.sortedTodoItems().slice(0, 4) : [{"title":"暂无待办提醒", "type":"系统通知", "time":"--"}])
                     delegate: Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 86
@@ -2085,14 +2631,17 @@ Rectangle {
                         spacing: 18
                         Text { text: "系统设置"; color: "#111827"; font.pixelSize: 30; font.bold: true }
                         Text { Layout.fillWidth: true; text: "调整提醒、草稿保存和顶部栏显示方式，减少发布考试与批改试卷时的重复操作。"; color: "#64748b"; font.pixelSize: 18; wrapMode: Text.WordWrap }
-                        SettingSwitch { Layout.fillWidth: true; label: "待办提醒"; description: "有考试发布、批改任务时提醒"; checked: true }
-                        SettingSwitch { Layout.fillWidth: true; label: "自动保存草稿"; description: "发布考试时保留当前试卷配置"; checked: true }
-                        SettingSwitch { Layout.fillWidth: true; label: "精简顶部栏"; description: "滚动页面时自动收起顶部空间"; checked: !root.navHidden; onToggled: root.navHidden = !checked }
+                        SettingSwitch { Layout.fillWidth: true; label: "待办提醒"; description: "有考试发布、批改任务时提醒"; checked: root.settingEnabled("todoReminders", true); onToggled: root.saveTeacherSetting("todoReminders", checked) }
+                        SettingSwitch { Layout.fillWidth: true; label: "自动保存草稿"; description: "发布考试时保留当前试卷配置"; checked: root.settingEnabled("autoSaveDraft", true); onToggled: root.saveTeacherSetting("autoSaveDraft", checked) }
+                        SettingSwitch { Layout.fillWidth: true; label: "精简顶部栏"; description: "滚动页面时自动收起顶部空间"; checked: root.settingEnabled("compactTopBar", false); onToggled: root.saveTeacherSetting("compactTopBar", checked) }
                         Item { Layout.fillHeight: true }
                         SoftButton {
                             Layout.fillWidth: true
                             text: "清理本地缓存"
-                            onClicked: root.showToast("缓存已清理")
+                            onClicked: {
+                                root.importLogs = []
+                                root.showToast("本地缓存已清理")
+                            }
                         }
                     }
                 }
@@ -2535,10 +3084,17 @@ Rectangle {
         property string title: ""
         property int hoverIndex: -1
         property var points: []
+        property string className: root.selectedClassName
         property string subjectName: root.profile.subject || ""
+        property bool showClassPicker: true
+        onClassNameChanged: Qt.callLater(reloadTrend)
+        onSubjectNameChanged: Qt.callLater(reloadTrend)
         function reloadTrend() {
+            if (typeof chartCanvas === "undefined") {
+                return
+            }
             hoverIndex = -1
-            points = teacherApi.getClassScoreTrend(classCombo.currentText, subjectName)
+            points = teacherApi.getClassScoreTrend(className && className.length > 0 ? className : classCombo.currentText, subjectName)
             chartCanvas.requestPaint()
         }
         function chartX(i) {
@@ -2557,13 +3113,15 @@ Rectangle {
                     Layout.fillWidth: true
                     spacing: 4
                     Text { text: chartCard.title; color: "#111827"; font.pixelSize: 25; font.bold: true }
-                    Text { text: classCombo.currentText + (chartCard.subjectName.length > 0 ? (" · " + chartCard.subjectName) : "") + " 班级均分"; color: "#8a8f99"; font.pixelSize: 14 }
+                    Text { text: (chartCard.className && chartCard.className.length > 0 ? chartCard.className : classCombo.currentText) + (chartCard.subjectName.length > 0 ? (" · " + chartCard.subjectName) : "") + " 班级均分"; color: "#8a8f99"; font.pixelSize: 14 }
                 }
                 AppCombo {
                     id: classCombo
+                    visible: chartCard.showClassPicker
                     Layout.preferredWidth: 170
                     model: root.classes.length > 0 ? root.classes.map(function(c) { return c.name }) : ["软件工程01"]
                     onCurrentTextChanged: {
+                        if (chartCard.showClassPicker) chartCard.className = currentText
                         chartCard.reloadTrend()
                     }
                 }
@@ -2714,13 +3272,14 @@ Rectangle {
                 model: root.sortedTodoItems().slice(0, 3)
                 delegate: Rectangle {
                     width: ListView.view.width
-                    height: 58
+                    height: 64
                     radius: 15
-                    color: "#fff7ed"
-                    border.color: "#fed7aa"
+                    color: String(modelData.status || "") === "已完成" ? "#f0fdf4" : "#fff7ed"
+                    border.color: String(modelData.status || "") === "已完成" ? "#bbf7d0" : "#fed7aa"
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 11
+                        spacing: 10
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 3
@@ -2728,6 +3287,38 @@ Rectangle {
                             Text { text: modelData.type || "批改试卷"; color: "#f97316"; font.pixelSize: 12; font.bold: true }
                         }
                         Text { text: modelData.time || ""; color: "#64748b"; font.pixelSize: 12; font.bold: true }
+                        Rectangle {
+                            visible: Number(modelData.id || 0) > 0 && String(modelData.status || "") !== "已完成"
+                            Layout.preferredWidth: 46
+                            Layout.preferredHeight: 32
+                            radius: 10
+                            color: finishTodoMouse.containsMouse ? "#dcfce7" : "#f0fdf4"
+                            border.color: "#86efac"
+                            Text { anchors.centerIn: parent; text: "完成"; color: "#16a34a"; font.pixelSize: 12; font.bold: true }
+                            MouseArea {
+                                id: finishTodoMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.changeTodoStatus(modelData.id, "DONE")
+                            }
+                        }
+                        Rectangle {
+                            visible: Number(modelData.id || 0) > 0
+                            Layout.preferredWidth: 40
+                            Layout.preferredHeight: 32
+                            radius: 10
+                            color: deleteTodoMouse.containsMouse ? "#fee2e2" : "#fff1f2"
+                            border.color: "#fecdd3"
+                            Text { anchors.centerIn: parent; text: "删"; color: "#e11d48"; font.pixelSize: 12; font.bold: true }
+                            MouseArea {
+                                id: deleteTodoMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.changeTodoStatus(modelData.id, "DELETED")
+                            }
+                        }
                     }
                 }
             }
@@ -2799,7 +3390,7 @@ Rectangle {
                 AppCombo {
                     id: bankType
                     width: root.narrowShell ? (parent.width - 14) / 2 : 168
-                    model: ["题型：全部", "单选题", "多选题", "填空题", "高数大题", "编程题"]
+                    model: ["题型：全部", "单选题", "多选题", "判断题", "填空题", "编程题"]
                     onActivated: reloadQuestionBank(false)
                 }
                 AppCombo {
@@ -2898,6 +3489,7 @@ Rectangle {
     component QuestionDetailCard: Card {
         id: detail
         property var question: ({})
+        property bool codeQuestion: root.normalizeType(root.questionTypeText(question)) === "编程题"
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 26
@@ -2908,6 +3500,7 @@ Rectangle {
                 Text { text: root.questionTypeText(detail.question); color: "#2563eb"; font.pixelSize: 18; font.bold: true }
             }
             ScrollView {
+                id: answerBodyScroll
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
@@ -2917,8 +3510,10 @@ Rectangle {
                     spacing: 16
                     DetailBlock { title: "题目"; text: root.questionText(detail.question) || "请选择左侧题目" }
                     OptionGrid { Layout.fillWidth: true; question: detail.question }
-                    DetailBlock { title: "答案"; text: detail.question.answer || "--"; accent: true }
-                    DetailBlock { title: "解析"; text: detail.question.analysis || "暂无解析"; large: true }
+                    DetailBlock { visible: !detail.codeQuestion; Layout.preferredHeight: visible ? 96 : 0; title: "答案"; text: detail.question.answer || "--"; accent: true }
+                    CodeDetailBlock { visible: detail.codeQuestion; Layout.preferredHeight: visible ? 260 : 0; title: "答案"; text: detail.question.answer || "--"; fileName: "standard_answer.java" }
+                    DetailBlock { visible: !detail.codeQuestion; Layout.preferredHeight: visible ? (root.narrowShell ? 230 : 210) : 0; title: "解析"; text: detail.question.analysis || "暂无解析"; large: true }
+                    CodeDetailBlock { visible: detail.codeQuestion; Layout.preferredHeight: visible ? 220 : 0; title: "解析"; text: detail.question.analysis || "暂无解析"; fileName: "analysis.md"; soft: true }
                 }
             }
         }
@@ -3020,6 +3615,78 @@ Rectangle {
                     font.bold: detailBlock.accent
                     lineHeight: detailBlock.large ? 1.2 : 1.12
                     wrapMode: Text.WrapAnywhere
+                }
+            }
+        }
+    }
+
+    component CodeDetailBlock: Rectangle {
+        id: codeBlock
+        property string title: ""
+        property string text: ""
+        property string fileName: "answer.java"
+        property bool soft: false
+        property bool formatCode: !soft
+        Layout.fillWidth: true
+        radius: 18
+        color: soft ? "#f8fbff" : "#0f172a"
+        border.color: soft ? "#dbe7f6" : "#1e293b"
+        clip: true
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 0
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 42
+                color: soft ? "#eef6ff" : "#111827"
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
+                    spacing: 10
+                    Text { text: codeBlock.title; color: soft ? "#2563eb" : "#60a5fa"; font.pixelSize: 15; font.bold: true }
+                    Text { Layout.fillWidth: true; text: codeBlock.fileName; color: soft ? "#64748b" : "#cbd5e1"; font.pixelSize: 13; horizontalAlignment: Text.AlignRight; elide: Text.ElideRight }
+                }
+            }
+            ScrollView {
+                id: codeDetailScroll
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                contentWidth: availableWidth
+                ScrollBar.horizontal: ScrollBar {
+                    policy: ScrollBar.AlwaysOff
+                }
+                ScrollBar.vertical: ScrollBar {
+                    id: codeDetailVerticalBar
+                    policy: codeText.implicitHeight > codeDetailScroll.availableHeight ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                    parent: codeDetailScroll
+                    anchors.top: codeDetailScroll.top
+                    anchors.right: codeDetailScroll.right
+                    anchors.bottom: codeDetailScroll.bottom
+                    width: 10
+                    contentItem: Rectangle {
+                        radius: 5
+                        color: codeDetailVerticalBar.pressed ? "#111827" : (codeDetailVerticalBar.hovered ? "#374151" : "#4b5563")
+                    }
+                    background: Rectangle {
+                        radius: 5
+                        color: "#0b1220"
+                        opacity: 0.74
+                    }
+                }
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
+                Text {
+                    id: codeText
+                    width: Math.max(0, codeDetailScroll.availableWidth)
+                    text: codeBlock.text.length > 0 ? (codeBlock.formatCode ? root.prettyCode(codeBlock.text) : codeBlock.text) : "--"
+                    color: soft ? "#334155" : "#e5e7eb"
+                    font.family: soft ? "" : "Consolas"
+                    font.pixelSize: soft ? 16 : 15
+                    lineHeight: 1.18
+                    wrapMode: Text.WrapAnywhere
+                    padding: 16
+                    rightPadding: 30
                 }
             }
         }
@@ -3194,15 +3861,25 @@ Rectangle {
                 }
             }
         }
-        Slider {
+        Item {
             id: ratioSlider
             Layout.fillWidth: true
-            from: 0
-            to: 50
-            stepSize: 1
-            snapMode: Slider.SnapAlways
-            onPressedChanged: {
-                if (!pressed) ratioRow.edited()
+            Layout.preferredHeight: 58
+            property real from: 0
+            property real to: 50
+            property real value: 0
+            property real visualPosition: Math.max(0, Math.min(1, (value - from) / Math.max(1, to - from)))
+            property real leftPadding: 0
+            property real topPadding: 0
+            property real availableWidth: width
+            property real availableHeight: height
+            function setValueFromX(px) {
+                var ratio = Math.max(0, Math.min(1, px / Math.max(1, width)))
+                value = Math.round(from + ratio * (to - from))
+            }
+            HoverHandler {
+                id: ratioHover
+                onHoveredChanged: root.innerScrollActive = hovered || sliderMouse.pressed
             }
             NumberAnimation {
                 id: ratioEnter
@@ -3211,10 +3888,10 @@ Rectangle {
                 duration: 520
                 easing.type: Easing.OutCubic
             }
-            background: Rectangle {
-                x: ratioSlider.leftPadding
-                y: ratioSlider.topPadding + ratioSlider.availableHeight / 2 - height / 2
-                width: ratioSlider.availableWidth
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
                 height: 10
                 radius: 5
                 color: "#edf0f6"
@@ -3225,15 +3902,51 @@ Rectangle {
                     color: ratioRow.barColor
                 }
             }
-            handle: Rectangle {
-                x: ratioSlider.leftPadding + ratioSlider.visualPosition * (ratioSlider.availableWidth - width)
-                y: ratioSlider.topPadding + ratioSlider.availableHeight / 2 - height / 2
-                width: 20
-                height: 20
-                radius: 10
+            Rectangle {
+                id: ratioHandle
+                x: Math.max(0, Math.min(parent.width - width, ratioSlider.visualPosition * (parent.width - width)))
+                anchors.verticalCenter: parent.verticalCenter
+                width: 24
+                height: 24
+                radius: 12
                 color: "#ffffff"
                 border.color: ratioRow.barColor
                 border.width: 3
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 8
+                    height: 8
+                    radius: 4
+                    color: ratioRow.barColor
+                    opacity: sliderMouse.pressed ? 1 : 0.45
+                }
+            }
+            MouseArea {
+                id: sliderMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                acceptedButtons: Qt.LeftButton
+                preventStealing: true
+                cursorShape: Qt.PointingHandCursor
+                onPressed: function(mouse) {
+                    mouse.accepted = true
+                    root.innerScrollActive = true
+                    ratioEnter.stop()
+                    ratioSlider.setValueFromX(mouse.x)
+                    ratioRow.edited()
+                }
+                onPositionChanged: function(mouse) {
+                    if (pressed) {
+                        ratioSlider.setValueFromX(mouse.x)
+                        ratioRow.edited()
+                    }
+                }
+                onReleased: function(mouse) {
+                    mouse.accepted = true
+                    root.innerScrollActive = ratioHover.hovered
+                    ratioRow.edited()
+                }
+                onCanceled: root.innerScrollActive = ratioHover.hovered
             }
         }
         Rectangle {
@@ -3294,7 +4007,7 @@ Rectangle {
             if (row === multiRatio) return "多选题"
             if (row === judgeRatio) return "判断题"
             if (row === blankRatio) return "填空题"
-            return config.subject === "高数" ? "高数大题" : "编程题"
+            return "编程题"
         }
         function ratioRows() {
             return [singleRatio, multiRatio, judgeRatio, blankRatio, appRatio]
@@ -3310,7 +4023,7 @@ Rectangle {
         function limitedCounts(rawCounts) {
             var result = ({})
             var total = 0
-            var order = ["单选题", "多选题", "判断题", "填空题", config.subject === "高数" ? "高数大题" : "编程题"]
+            var order = ["单选题", "多选题", "判断题", "填空题", "编程题"]
             for (var i = 0; i < order.length; ++i) {
                 var typeName = order[i]
                 var score = root.questionTypeScore(typeName)
@@ -3323,7 +4036,7 @@ Rectangle {
             return result
         }
         function ratioCounts() {
-            var typeName = config.subject === "高数" ? "高数大题" : "编程题"
+            var typeName = "编程题"
             var raw = {
                 "单选题": Math.round(singleRatio.value),
                 "多选题": Math.round(multiRatio.value),
@@ -3407,7 +4120,7 @@ Rectangle {
                 visible: config.activeTab === 0
                 spacing: 12
                 Text { text: "基础配置"; color: "#111827"; font.pixelSize: 22; font.bold: true }
-                AppField { id: paperNameField; Layout.fillWidth: true; placeholderText: "试卷名称，例如：Java期末考试"; text: "Java期末考试" }
+                AppField { id: paperNameField; Layout.fillWidth: true; placeholderText: "试卷名称，例如：Java期末考试"; text: root.publishDraftName }
                 AppCombo { id: subjectCombo; Layout.fillWidth: true; model: ["Java", "C++", "高数", "数据结构", "数据库"] }
                 RowLayout {
                     Layout.fillWidth: true
@@ -3524,7 +4237,7 @@ Rectangle {
                 SmartRatioRow { id: multiRatio; label: "多选题"; barColor: "#6d5dfc"; targetValue: 5; onEdited: config.enforceRatioLimit(multiRatio) }
                 SmartRatioRow { id: judgeRatio; label: "判断题"; barColor: "#f59e0b"; targetValue: 4; onEdited: config.enforceRatioLimit(judgeRatio) }
                 SmartRatioRow { id: blankRatio; label: "填空题"; barColor: "#a855f7"; targetValue: 3; onEdited: config.enforceRatioLimit(blankRatio) }
-                SmartRatioRow { id: appRatio; label: config.subject === "高数" ? "高数大题" : "编程题"; barColor: "#ef4444"; targetValue: 1; onEdited: config.enforceRatioLimit(appRatio) }
+                SmartRatioRow { id: appRatio; label: "编程题"; barColor: "#ef4444"; targetValue: 1; onEdited: config.enforceRatioLimit(appRatio) }
                 Item { Layout.fillHeight: true }
                 SuccessButton {
                     Layout.fillWidth: true
@@ -3544,10 +4257,10 @@ Rectangle {
                 Text { text: "高级规则"; color: "#111827"; font.pixelSize: 22; font.bold: true }
                 AppCombo { id: difficultyCombo; Layout.fillWidth: true; model: ["全部难度", "基础", "中等", "困难"] }
                 AppField { id: knowledgePointField; Layout.fillWidth: true; placeholderText: "知识点筛选，例如：数组、函数、导数" }
-                SettingSwitch { Layout.fillWidth: true; label: "禁止重复题目"; description: "同一试卷内不重复抽取相同题目"; checked: true }
-                SettingSwitch { Layout.fillWidth: true; label: "按章节顺序排列"; description: "按知识点章节整理题目顺序"; checked: false }
-                SettingSwitch { Layout.fillWidth: true; label: "随机打乱选项"; description: "客观题发布前自动打乱选项"; checked: true }
-                SettingSwitch { Layout.fillWidth: true; label: "显示参考答案"; description: "查看试卷时展示参考答案"; checked: false }
+                SettingSwitch { Layout.fillWidth: true; label: "禁止重复题目"; description: "同一试卷内不重复抽取相同题目"; checked: root.settingEnabled("publishNoDuplicate", true); onToggled: root.saveTeacherSetting("publishNoDuplicate", checked) }
+                SettingSwitch { Layout.fillWidth: true; label: "按章节顺序排列"; description: "按知识点章节整理题目顺序"; checked: root.settingEnabled("publishSortByChapter", false); onToggled: root.saveTeacherSetting("publishSortByChapter", checked) }
+                SettingSwitch { Layout.fillWidth: true; label: "随机打乱选项"; description: "客观题发布前自动打乱选项"; checked: root.settingEnabled("publishShuffleOptions", true); onToggled: root.saveTeacherSetting("publishShuffleOptions", checked) }
+                SettingSwitch { Layout.fillWidth: true; label: "显示参考答案"; description: "查看试卷时展示参考答案"; checked: root.settingEnabled("publishShowAnswers", false); onToggled: root.saveTeacherSetting("publishShowAnswers", checked) }
                 Item { Layout.fillHeight: true }
                 RowLayout {
                     Layout.fillWidth: true
@@ -3556,7 +4269,7 @@ Rectangle {
                         text: "一键生成试卷"
                         onClicked: {
                             root.updatePublishDraft(config.paperName, config.subject, config.startText, config.endText)
-                            root.smartGeneratePaper(config.subject, config.limitedCounts({"单选题": 12, "多选题": 6, "填空题": 5, "编程题": 2, "高数大题": 2}), config.selectedDifficulty, config.selectedKnowledgePoint)
+                            root.smartGeneratePaper(config.subject, config.limitedCounts({"单选题": 12, "多选题": 6, "判断题": 4, "填空题": 5, "编程题": 2}), config.selectedDifficulty, config.selectedKnowledgePoint)
                         }
                     }
                     SoftButton {
@@ -3564,6 +4277,8 @@ Rectangle {
                         text: "清空"
                         onClicked: {
                             root.selectedPaperQuestions = []
+                            root.editingSavedPaper = false
+                            root.activePaperId = 0
                             root.showToast("已清空试卷")
                         }
                     }
@@ -3648,6 +4363,7 @@ Rectangle {
                             flickDeceleration: 3200
                             reuseItems: true
                             cacheBuffer: height * 2
+                            HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
                             ScrollBar.vertical: ScrollBar {
                                 policy: copyPaperList.contentHeight > copyPaperList.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
                                 width: 12
@@ -3701,6 +4417,7 @@ Rectangle {
                                         var id = teacherApi.copyExamAsDraftById(Number(modelData.id || 0), sourceName + " 副本")
                                         if (id > 0) {
                                             root.activePaperId = id
+                                            root.editingSavedPaper = true
                                             root.refreshAll()
                                             root.selectedPaperQuestions = teacherApi.getPaperQuestions(id)
                                             root.updatePublishDraft(sourceName + " 副本", modelData.subject || config.subject, startBox.value, endBox.value)
@@ -3967,6 +4684,7 @@ Rectangle {
         property var backendRows: []
         property var rows: backendLoaded ? backendRows : root.questionsFor(subject, typeName, searchText, difficulty, knowledgePoint)
         property var currentQuestion: rows.length > 0 ? rows[Math.min(root.publishQuestionIndex, rows.length - 1)] : ({})
+        property bool codeQuestion: root.normalizeType(root.questionTypeText(currentQuestion)) === "编程题"
         property string emptyText: backendLoaded
                                    ? ("后端题库中没有匹配「" + subject + " · " + typeName + "」的题目，请检查科目、题型、难度或知识点筛选。")
                                    : "正在读取题库..."
@@ -4007,8 +4725,10 @@ Rectangle {
                 }
             }
             DetailBlock { title: "题目"; text: root.questionText(qcard.currentQuestion) || qcard.emptyText; Layout.preferredHeight: 150 }
-            DetailBlock { title: "答案"; text: qcard.currentQuestion.answer || "--"; accent: true }
-            DetailBlock { title: "解析"; text: qcard.currentQuestion.analysis || "暂无解析"; large: true }
+            DetailBlock { visible: !qcard.codeQuestion; Layout.preferredHeight: visible ? 96 : 0; title: "答案"; text: qcard.currentQuestion.answer || "--"; accent: true }
+            CodeDetailBlock { visible: qcard.codeQuestion; Layout.preferredHeight: visible ? 230 : 0; title: "答案"; text: qcard.currentQuestion.answer || "--"; fileName: "standard_answer.java" }
+            DetailBlock { visible: !qcard.codeQuestion; Layout.preferredHeight: visible ? 190 : 0; title: "解析"; text: qcard.currentQuestion.analysis || "暂无解析"; large: true }
+            CodeDetailBlock { visible: qcard.codeQuestion; Layout.preferredHeight: visible ? 190 : 0; title: "解析"; text: qcard.currentQuestion.analysis || "暂无解析"; fileName: "analysis.md"; soft: true }
             RowLayout {
                 Layout.fillWidth: true
                 SoftButton {
@@ -4059,9 +4779,9 @@ Rectangle {
                         return
                     }
                     var q = qcard.currentQuestion
-                    var qid = String(q.id || q.questionId || "")
+                    var qid = String(root.paperQuestionId(q))
                     for (var i = 0; i < root.selectedPaperQuestions.length; ++i) {
-                        if (String(root.selectedPaperQuestions[i].id || root.selectedPaperQuestions[i].questionId || "") === qid) {
+                        if (String(root.paperQuestionId(root.selectedPaperQuestions[i])) === qid) {
                             root.showToast("该题已在试卷中")
                             return
                         }
@@ -4072,6 +4792,17 @@ Rectangle {
                         return
                     }
                     q.score = score
+                    if (root.editingSavedPaper && root.activePaperId > 0) {
+                        if (!teacherApi.addQuestionToPaper(root.activePaperId, q, root.paperTargetScore())) {
+                            root.showToast("添加失败：" + teacherApi.lastError())
+                            return
+                        }
+                        root.selectedPaperQuestions = teacherApi.getPaperQuestions(root.activePaperId)
+                        root.paperQuestions = root.selectedPaperQuestions
+                        root.exams = teacherApi.getExamList()
+                        root.showToast("已添加到草稿，后端已同步")
+                        return
+                    }
                     root.selectedPaperQuestions = root.selectedPaperQuestions.concat([q])
                     root.showToast("已添加到试卷，当前总分 " + root.paperTotalScore() + "/" + root.paperTargetScore())
                 }
@@ -4131,6 +4862,7 @@ Rectangle {
                 boundsMovement: Flickable.FollowBoundsBehavior
                 maximumFlickVelocity: 9800
                 flickDeceleration: 3600
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
                 Column {
                     id: paperColumn
                     width: parent.width
@@ -4147,7 +4879,7 @@ Rectangle {
                         model: root.selectedPaperQuestions
                         Rectangle {
                             width: parent.width
-                            height: Math.max(76, questionLine.implicitHeight + answerLine.implicitHeight + 32)
+                            height: Math.max(76, questionLine.implicitHeight + (answerLine.visible ? answerLine.implicitHeight : 0) + 32)
                             radius: 16
                             color: "#ffffff"
                             border.color: "#e5edf6"
@@ -4168,7 +4900,7 @@ Rectangle {
                                     }
                                     Text {
                                         id: answerLine
-                                        visible: preview.editable
+                                        visible: preview.editable && root.settingEnabled("publishShowAnswers", false)
                                         Layout.fillWidth: true
                                         text: "参考答案：" + (modelData.answer || "--")
                                         color: "#64748b"
@@ -4207,9 +4939,10 @@ Rectangle {
                         root.showToast("当前试卷总分超过设定满分，不能发布")
                         return
                     }
-                    var paperId = teacherApi.createDraftPaperFromQuestions(preview.titleText, preview.subject, preview.startText, preview.endText, root.selectedPaperQuestions)
+                    var paperId = root.ensureDraftReady(preview.titleText, preview.subject, preview.startText, preview.endText)
                     if (paperId > 0 && teacherApi.publishExam(paperId, root.selectedPublishClasses, preview.startText, preview.endText)) {
                         root.activePaperId = paperId
+                        root.editingSavedPaper = false
                         root.refreshAll()
                         root.showToast("考试已发布")
                     } else {
@@ -4221,50 +4954,485 @@ Rectangle {
     }
 
     component ReviewPage: PageShell {
-        Loader {
-            width: parent.width
-            sourceComponent: root.reviewWorkMode ? reviewWorkComponent : reviewPickComponent
+        Component.onCompleted: {
+            var rows = root.reviewExamRows()
+            if (!root.reviewPaperSelected && rows.length > 0) {
+                root.selectReviewExam(rows[0], 0)
+            }
         }
 
-        Component {
-            id: reviewPickComponent
-            Column {
-                width: parent.width
-                spacing: 20
-                SectionTitle {}
-                GridLayout {
-                    width: parent.width
-                    columns: parent.width > 1180 ? 5 : 1
-                    columnSpacing: root.narrowShell ? 12 : 18
-                    rowSpacing: root.narrowShell ? 12 : 18
-                    ReviewExamList { Layout.fillWidth: true; Layout.columnSpan: parent.width > 1180 ? 2 : 1; Layout.preferredHeight: root.narrowShell ? 520 : 620 }
-                    ReviewStudentList { Layout.fillWidth: true; Layout.columnSpan: parent.width > 1180 ? 3 : 1; Layout.preferredHeight: root.narrowShell ? 560 : 620 }
+        SectionTitle { width: parent.width; title: "批改试卷"; subtitle: "选择考试与学生，只展示需要教师评分的编程题" }
+
+        Card {
+            width: parent.width
+            height: root.narrowShell ? 356 : 222
+            enterDelay: 0
+            enterDirection: -1
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: root.narrowShell ? 20 : 26
+                spacing: 14
+
+                RowLayout {
+                    visible: !root.narrowShell
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 22
+
+                    ColumnLayout {
+                        Layout.preferredWidth: Math.max(300, Math.min(380, parent.width * 0.23))
+                        Layout.maximumWidth: 400
+                        Layout.fillHeight: true
+                        spacing: 9
+                        Text { text: root.currentReviewExam().name || root.currentReviewExam().title || "请选择考试"; color: "#111827"; font.pixelSize: 28; font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
+                        Text { text: "课程：" + (root.currentReviewExam().subject || root.currentReviewExam().course || "--"); color: "#64748b"; font.pixelSize: 15; Layout.fillWidth: true; elide: Text.ElideRight }
+                        Text { text: "考试时间：" + root.examDate(root.currentReviewExam()); color: "#64748b"; font.pixelSize: 15; Layout.fillWidth: true; elide: Text.ElideRight }
+                        AppCombo {
+                            id: reviewExamCombo
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 52
+                            model: root.reviewExamRows().map(function(e) { return e.name || e.title || "未命名考试" })
+                            currentIndex: Math.max(0, root.reviewExamIndex)
+                            onActivated: function(index) {
+                                var rows = root.reviewExamRows()
+                                if (index >= 0 && index < rows.length) root.selectReviewExam(rows[index], index)
+                            }
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.minimumWidth: 260
+                        spacing: 13
+                        Text { text: "批改进度"; color: "#111827"; font.pixelSize: 22; font.bold: true }
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 14
+                            radius: 7
+                            color: "#e7edf7"
+                            Rectangle {
+                                width: parent.width * Math.max(0, Math.min(1, root.reviewProgressPercent() / 100))
+                                height: parent.height
+                                radius: 7
+                                color: "#2563eb"
+                                Behavior on width { NumberAnimation { duration: 520; easing.type: Easing.OutCubic } }
+                            }
+                        }
+                        Text { Layout.fillWidth: true; text: "已完成 " + root.reviewCompletedCount() + " / " + root.reviewSubmittedCount(); color: "#2563eb"; font.pixelSize: 25; font.bold: true; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "待批改 " + root.reviewPendingCount() + " 人"; color: "#64748b"; font.pixelSize: 16; font.bold: true; elide: Text.ElideRight }
+                    }
+
+                    RowLayout {
+                        Layout.preferredWidth: Math.max(540, Math.min(620, parent.width * 0.42))
+                        Layout.maximumWidth: 660
+                        Layout.fillHeight: true
+                        spacing: 12
+                        ReviewStatPill { Layout.fillWidth: true; label: "总分"; value: String(root.currentReviewExam().totalScore || 100); accent: "#2563eb" }
+                        ReviewStatPill { Layout.fillWidth: true; label: "平均分"; value: root.reviewAverageText(); accent: "#16a34a" }
+                        ReviewStatPill { Layout.fillWidth: true; label: "提交"; value: String(root.reviewSubmittedCount()); accent: "#8b5cf6" }
+                        ReviewStatPill { Layout.fillWidth: true; label: "待批"; value: String(root.reviewPendingCount()); accent: "#f97316" }
+                    }
+                }
+
+                ColumnLayout {
+                    visible: root.narrowShell
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 12
+                    Text { text: root.currentReviewExam().name || root.currentReviewExam().title || "请选择考试"; color: "#111827"; font.pixelSize: 26; font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
+                    Text { text: "课程：" + (root.currentReviewExam().subject || root.currentReviewExam().course || "--") + "    考试时间：" + root.examDate(root.currentReviewExam()); color: "#64748b"; font.pixelSize: 15; Layout.fillWidth: true; elide: Text.ElideRight }
+                    AppCombo {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 52
+                        model: root.reviewExamRows().map(function(e) { return e.name || e.title || "未命名考试" })
+                        currentIndex: Math.max(0, root.reviewExamIndex)
+                        onActivated: function(index) {
+                            var rows = root.reviewExamRows()
+                            if (index >= 0 && index < rows.length) root.selectReviewExam(rows[index], index)
+                        }
+                    }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 12
+                        radius: 6
+                        color: "#e7edf7"
+                        Rectangle {
+                            width: parent.width * Math.max(0, Math.min(1, root.reviewProgressPercent() / 100))
+                            height: parent.height
+                            radius: 6
+                            color: "#2563eb"
+                            Behavior on width { NumberAnimation { duration: 520; easing.type: Easing.OutCubic } }
+                        }
+                    }
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columns: 2
+                        columnSpacing: 10
+                        rowSpacing: 10
+                        ReviewStatPill { Layout.fillWidth: true; label: "总分"; value: String(root.currentReviewExam().totalScore || 100); accent: "#2563eb" }
+                        ReviewStatPill { Layout.fillWidth: true; label: "平均分"; value: root.reviewAverageText(); accent: "#16a34a" }
+                        ReviewStatPill { Layout.fillWidth: true; label: "提交"; value: String(root.reviewSubmittedCount()); accent: "#8b5cf6" }
+                        ReviewStatPill { Layout.fillWidth: true; label: "待批"; value: String(root.reviewPendingCount()); accent: "#f97316" }
+                    }
                 }
             }
         }
 
-        Component {
-            id: reviewWorkComponent
-            Column {
+        RowLayout {
+            id: reviewDesktopRow
+            width: parent.width
+            visible: !root.compactShell
+            spacing: 18
+            property real availableWidth: Math.max(1, width - spacing * 2)
+            property real leftTarget: Math.max(190, Math.min(270, availableWidth * 0.16))
+            property real rightTarget: Math.max(230, Math.min(330, availableWidth * 0.20))
+            ReviewStudentPanel {
+                Layout.preferredWidth: reviewDesktopRow.leftTarget
+                Layout.maximumWidth: reviewDesktopRow.leftTarget
+                Layout.fillHeight: true
+                Layout.preferredHeight: 720
+                enterDelay: 80
+                enterDirection: -1
+            }
+            ReviewAnswerPanel {
+                Layout.preferredWidth: Math.max(560, reviewDesktopRow.availableWidth - reviewDesktopRow.leftTarget - reviewDesktopRow.rightTarget)
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: 720
+                enterDelay: 140
+                enterDirection: 1
+            }
+            ReviewScorePanel {
+                Layout.preferredWidth: reviewDesktopRow.rightTarget
+                Layout.maximumWidth: reviewDesktopRow.rightTarget
+                Layout.fillHeight: true
+                Layout.preferredHeight: 720
+                enterDelay: 200
+                enterDirection: 1
+            }
+        }
+
+        ColumnLayout {
+            width: parent.width
+            visible: root.compactShell
+            spacing: 12
+            ReviewStudentPanel {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 520
+                enterDelay: 80
+                enterDirection: -1
+            }
+            ReviewAnswerPanel {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 660
+                enterDelay: 140
+                enterDirection: 1
+            }
+            ReviewScorePanel {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 560
+                enterDelay: 200
+                enterDirection: 1
+            }
+        }
+    }
+
+    component ReviewStatPill: Rectangle {
+        id: pill
+        property string label: ""
+        property string value: ""
+        property color accent: "#2563eb"
+        implicitWidth: root.narrowShell ? 138 : 132
+        Layout.minimumWidth: root.narrowShell ? 120 : 128
+        Layout.preferredWidth: root.narrowShell ? 150 : 142
+        Layout.preferredHeight: root.narrowShell ? 70 : 96
+        radius: 20
+        color: "#ffffff"
+        border.color: Qt.rgba(pill.accent.r, pill.accent.g, pill.accent.b, 0.22)
+        border.width: 1
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: 5
+            radius: 3
+            color: pill.accent
+        }
+        Column {
+            anchors.fill: parent
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            anchors.topMargin: root.narrowShell ? 12 : 18
+            anchors.bottomMargin: 12
+            spacing: root.narrowShell ? 3 : 6
+            Text {
                 width: parent.width
-                spacing: 20
-                Card {
-                    width: parent.width
-                    height: root.narrowShell ? 128 : 96
-                    RowLayout {
+                text: pill.value
+                color: pill.accent
+                font.pixelSize: root.narrowShell ? 24 : 33
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+            }
+            Text {
+                width: parent.width
+                text: pill.label
+                color: "#64748b"
+                font.pixelSize: root.narrowShell ? 13 : 15
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+            }
+        }
+    }
+
+    component ReviewStudentPanel: Card {
+        id: studentPanel
+        function studentRows() {
+            var result = []
+            for (var i = 0; i < root.reviewStudents.length; ++i) {
+                var row = root.reviewStudents[i]
+                var copy = {}
+                for (var key in row) copy[key] = row[key]
+                copy.sourceIndex = i
+                result.push(copy)
+            }
+            return result
+        }
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 22
+            spacing: 14
+            Text { text: "学生列表"; color: "#111827"; font.pixelSize: 24; font.bold: true }
+            ListView {
+                id: markStudentList
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                spacing: 10
+                model: studentPanel.studentRows()
+                boundsBehavior: Flickable.StopAtBounds
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
+                ScrollBar.vertical: ScrollBar { policy: markStudentList.contentHeight > markStudentList.height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+                delegate: Rectangle {
+                    width: ListView.view.width - (markStudentList.contentHeight > markStudentList.height ? 16 : 0)
+                    height: 94
+                    radius: 18
+                    property int realIndex: Number(modelData.sourceIndex !== undefined ? modelData.sourceIndex : index)
+                    color: root.reviewStudentIndex === realIndex ? "#eef6ff" : "#ffffff"
+                    border.width: root.reviewStudentIndex === realIndex ? 2 : 1
+                    border.color: root.reviewStudentIndex === realIndex ? "#3b82f6" : "#e5edf6"
+                    Behavior on border.color { ColorAnimation { duration: 180 } }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.beginReviewStudent(realIndex) }
+                    ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 22
-                        spacing: 14
-                        SoftButton { Layout.preferredWidth: 96; text: "返回"; onClicked: root.reviewWorkMode = false }
-                        ColumnLayout {
+                        anchors.margins: 14
+                        spacing: 6
+                        RowLayout {
                             Layout.fillWidth: true
-                            spacing: 4
-                            Text { text: "批改试卷"; color: "#111827"; font.pixelSize: 26; font.bold: true }
-                            Text { text: (root.selectedReviewAnswer().studentName || "--") + " · " + (root.selectedReviewAnswer().studentNo || ""); color: "#64748b"; font.pixelSize: 14 }
+                            Text { text: modelData.studentName || modelData.name || "--"; color: "#111827"; font.pixelSize: 17; font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
+                            Rectangle {
+                                Layout.preferredWidth: 68
+                                Layout.preferredHeight: 28
+                                radius: 15
+                                color: String(modelData.status || "") === "已批改" ? "#dcfce7" : (String(modelData.status || "") === "批改中" ? "#dbeafe" : "#fff7ed")
+                                Text { anchors.centerIn: parent; text: String(modelData.status || "待批改"); color: String(modelData.status || "") === "已批改" ? "#16a34a" : (String(modelData.status || "") === "批改中" ? "#2563eb" : "#f97316"); font.pixelSize: 12; font.bold: true }
+                            }
+                        }
+                        Text { Layout.fillWidth: true; text: "学号：" + (modelData.studentNo || modelData.username || "--"); color: "#64748b"; font.pixelSize: 13; font.bold: true; elide: Text.ElideRight }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Text { text: "待批 " + String(modelData.pendingCount || 0) + " 题"; color: "#f97316"; font.pixelSize: 13; font.bold: true; Layout.fillWidth: true }
+                            Text { text: String(modelData.score || "--") === "--" ? "--" : (String(modelData.score) + " 分"); color: "#2563eb"; font.pixelSize: 16; font.bold: true }
                         }
                     }
                 }
-                ReviewWorkArea { width: parent.width; height: root.narrowShell ? 900 : 660; enterDelay: 80 }
+            }
+        }
+    }
+
+    component ReviewAnswerPanel: Card {
+        id: answerPanel
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 24
+            spacing: 16
+            RowLayout {
+                Layout.fillWidth: true
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    Text { text: (root.currentReviewStudent().studentName || root.currentReviewStudent().name || "--") + " 的答卷"; color: "#111827"; font.pixelSize: 28; font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
+                    Text { text: "仅显示需要教师评分的编程题 · " + (root.reviewQuestionIndex + 1) + " / " + Math.max(1, root.manualReviewRows().length); color: "#64748b"; font.pixelSize: 16; font.bold: true }
+                }
+                Rectangle {
+                    Layout.preferredWidth: 134
+                    Layout.preferredHeight: 38
+                    radius: 19
+                    color: "#fff7ed"
+                    Text { anchors.centerIn: parent; text: "等待教师评分"; color: "#f97316"; font.pixelSize: 15; font.bold: true }
+                }
+            }
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: "#eef2f7" }
+            Flickable {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                contentWidth: width
+                contentHeight: answerColumn.height
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
+                ScrollBar.vertical: ScrollBar { policy: contentHeight > height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+                ColumnLayout {
+                    id: answerColumn
+                    width: parent.width
+                    spacing: 16
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 92
+                        radius: 18
+                        color: "#eff6ff"
+                        border.color: "#bfdbfe"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 18
+                            spacing: 14
+                            Rectangle { Layout.preferredWidth: 48; Layout.preferredHeight: 48; radius: 16; color: "#2563eb"; Text { anchors.centerIn: parent; text: String(root.currentManualReviewAnswer().number || root.reviewQuestionIndex + 1); color: "#ffffff"; font.pixelSize: 20; font.bold: true } }
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+                                Text { text: "当前题目"; color: "#1d4ed8"; font.pixelSize: 16; font.bold: true }
+                                Text { text: "满分 " + root.currentReviewMaxScore() + " 分 · 知识点：" + (root.currentManualReviewAnswer().knowledgePoint || "--"); color: "#475569"; font.pixelSize: 15; Layout.fillWidth: true; elide: Text.ElideRight }
+                            }
+                        }
+                    }
+                    ReviewAnswerBlock { title: "题目"; text: root.currentReviewQuestionText(); accent: "#2563eb" }
+                    ReviewAnswerBlock { title: "学生答案"; text: root.currentReviewStudentAnswerText(); accent: "#f97316"; codeStyle: true }
+                    ReviewAnswerBlock { title: "标准答案"; text: root.currentReviewStandardAnswerText(); accent: "#16a34a"; codeStyle: true }
+                    ReviewAnswerBlock { title: "解析"; text: root.currentManualReviewAnswer().analysis || "暂无解析"; accent: "#8b5cf6" }
+                }
+            }
+        }
+    }
+
+    component ReviewAnswerBlock: Rectangle {
+        id: block
+        property string title: ""
+        property string text: ""
+        property color accent: "#2563eb"
+        property bool codeStyle: false
+        Layout.fillWidth: true
+        Layout.preferredHeight: block.codeStyle
+                                ? 260
+                                : Math.max(118, Math.min(root.narrowShell ? 300 : 260, contentText.implicitHeight + 72))
+        radius: 20
+        color: block.codeStyle ? "#0f172a" : "#ffffff"
+        border.color: block.codeStyle ? "#1e293b" : "#e5edf6"
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 18
+            spacing: 10
+            RowLayout {
+                Layout.fillWidth: true
+                Rectangle { Layout.preferredWidth: 5; Layout.preferredHeight: 24; radius: 3; color: block.accent }
+                Text { text: block.title; color: block.codeStyle ? "#e5e7eb" : "#111827"; font.pixelSize: 20; font.bold: true }
+            }
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                contentWidth: availableWidth
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: contentText.implicitHeight > availableHeight ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
+                Text {
+                    id: contentText
+                    width: Math.max(0, answerBodyScroll.availableWidth)
+                    text: block.text.length > 0 ? (block.codeStyle ? root.prettyCode(block.text) : block.text) : "--"
+                    color: block.codeStyle ? "#dbeafe" : "#475569"
+                    font.family: block.codeStyle ? "Consolas" : ""
+                    font.pixelSize: block.codeStyle ? 16 : 17
+                    lineHeight: block.codeStyle ? 1.15 : 1.12
+                    wrapMode: Text.WrapAnywhere
+                }
+            }
+        }
+    }
+
+    component ReviewScorePanel: Card {
+        id: scorePanel
+        property int maxScore: root.currentReviewMaxScore()
+        property int currentAnswerId: root.currentReviewAnswerId()
+        function saveCurrentScore(showMessage) {
+            var answerId = root.currentReviewAnswerId()
+            var value = Number(manualScoreInput.text)
+            if (answerId <= 0) {
+                if (showMessage) root.showToast("当前题目没有答卷记录，无法保存")
+                return false
+            }
+            if (isNaN(value) || value < 0 || value > scorePanel.maxScore) {
+                if (showMessage) root.showToast("请输入 0-" + scorePanel.maxScore + " 的分数")
+                return false
+            }
+            if (teacherApi.saveReviewScore(answerId, value, "")) {
+                saveSuccessBadge.opacity = 1
+                saveBadgeTimer.restart()
+                var student = root.currentReviewStudent()
+                root.reviewAnswerDetails = teacherApi.getReviewStudentAnswers(root.activePaperId, String(student.studentNo || ""))
+                root.reviewStudents = teacherApi.getReviewStudents(root.activePaperId)
+                if (showMessage) root.showToast("评分已保存")
+                return true
+            }
+            if (showMessage) root.showToast("保存失败：" + teacherApi.lastError())
+            return false
+        }
+        onCurrentAnswerIdChanged: {
+            manualScoreInput.text = String(root.currentManualReviewAnswer().score || "")
+        }
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 22
+            spacing: 18
+            Text { text: "评分区域"; color: "#111827"; font.pixelSize: 24; font.bold: true }
+            Text { text: "当前题目：第 " + String(root.currentManualReviewAnswer().number || root.reviewQuestionIndex + 1) + " 题"; color: "#64748b"; font.pixelSize: 16; font.bold: true }
+            Text { text: "满分：" + scorePanel.maxScore + " 分"; color: "#2563eb"; font.pixelSize: 18; font.bold: true }
+            TextField {
+                id: manualScoreInput
+                Layout.fillWidth: true
+                Layout.preferredHeight: 56
+                text: String(root.currentManualReviewAnswer().score || "")
+                placeholderText: "输入得分 /" + scorePanel.maxScore
+                font.pixelSize: 20
+                horizontalAlignment: TextInput.AlignHCenter
+                verticalAlignment: TextInput.AlignVCenter
+                validator: DoubleValidator { bottom: 0; top: scorePanel.maxScore; decimals: 1 }
+                background: Rectangle { radius: 18; color: "#f8fbff"; border.color: manualScoreInput.activeFocus ? "#2563eb" : "#dbe7f6"; border.width: manualScoreInput.activeFocus ? 2 : 1 }
+                onEditingFinished: scorePanel.saveCurrentScore(false)
+                onAccepted: scorePanel.saveCurrentScore(true)
+            }
+            Rectangle {
+                id: saveSuccessBadge
+                Layout.fillWidth: true
+                Layout.preferredHeight: 42
+                radius: 18
+                color: "#dcfce7"
+                opacity: 0
+                Text { anchors.centerIn: parent; text: "✓ 评分已自动保存"; color: "#16a34a"; font.pixelSize: 16; font.bold: true }
+                Behavior on opacity { NumberAnimation { duration: 180 } }
+                Timer { id: saveBadgeTimer; interval: 1300; onTriggered: saveSuccessBadge.opacity = 0 }
+            }
+            Item { Layout.fillHeight: true }
+            PrimaryButton {
+                Layout.fillWidth: true
+                text: "保存评分"
+                onClicked: scorePanel.saveCurrentScore(true)
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+                SoftButton { Layout.fillWidth: true; text: "上一题"; enabled: root.reviewQuestionIndex > 0; onClicked: root.reviewQuestionIndex -= 1 }
+                PrimaryButton { Layout.fillWidth: true; text: "下一题"; enabled: root.reviewQuestionIndex < root.manualReviewRows().length - 1; onClicked: root.reviewQuestionIndex += 1 }
             }
         }
     }
@@ -4289,6 +5457,7 @@ Rectangle {
                 reuseItems: true
                 cacheBuffer: height * 2
                 model: root.orderedExams()
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
                 ScrollBar.vertical: ScrollBar {
                     policy: reviewExamList.contentHeight > reviewExamList.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
                     width: 12
@@ -4318,6 +5487,15 @@ Rectangle {
                         Text { text: modelData.subject || ""; color: "#2563eb"; font.pixelSize: 13; font.bold: true; Layout.preferredWidth: 70; horizontalAlignment: Text.AlignRight }
                     }
                 }
+            }
+            Text {
+                visible: root.orderedExams().length === 0
+                Layout.fillWidth: true
+                text: "暂无真实试卷，请先在发布考试中保存草稿或发布考试"
+                color: "#94a3b8"
+                font.pixelSize: 15
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
             }
         }
     }
@@ -4357,7 +5535,8 @@ Rectangle {
                 pixelAligned: false
                 reuseItems: true
                 cacheBuffer: height * 2
-                model: root.reviewStudents.length > 0 ? root.reviewStudents : [{"studentName":"学生1","studentNo":"20250101","score":"--","status":"待批改"}]
+                model: root.reviewStudents
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
                 ScrollBar.vertical: ScrollBar {
                     policy: reviewStudentList.contentHeight > reviewStudentList.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
                     width: 12
@@ -4399,6 +5578,15 @@ Rectangle {
                     }
                 }
             }
+            Text {
+                visible: root.reviewStudents.length === 0
+                Layout.fillWidth: true
+                text: root.reviewPaperSelected ? "这场考试暂无学生答卷" : "暂无学生，请先确认班级学生已接入数据库"
+                color: "#94a3b8"
+                font.pixelSize: 15
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+            }
         }
     }
 
@@ -4406,6 +5594,7 @@ Rectangle {
         id: reviewArea
         property var question: root.selectedReviewQuestion()
         property var answer: root.selectedReviewAnswer()
+        property bool codeQuestion: root.normalizeType(root.questionTypeText(question)) === "编程题"
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 24
@@ -4421,17 +5610,53 @@ Rectangle {
                 columns: parent.width > 980 ? 2 : 1
                 columnSpacing: root.narrowShell ? 14 : 22
                 rowSpacing: root.narrowShell ? 14 : 22
-                DetailBlock {
+                ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    title: "学生答题情况"
-                    text: root.questionText(reviewArea.question) + "\n\n学生答案：" + (reviewArea.answer.answer || "暂无答题内容")
+                    spacing: 12
+                    DetailBlock {
+                        visible: reviewArea.codeQuestion
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: visible ? 126 : 0
+                        title: "题目"
+                        text: root.questionText(reviewArea.question)
+                    }
+                    DetailBlock {
+                        visible: !reviewArea.codeQuestion
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        title: "学生答题情况"
+                        text: root.questionText(reviewArea.question) + "\n\n学生答案：" + (reviewArea.answer.answer || "暂无答题内容")
+                    }
+                    CodeDetailBlock {
+                        visible: reviewArea.codeQuestion
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        title: "学生答案"
+                        text: reviewArea.answer.answer || "暂无答题内容"
+                        fileName: "student_answer.java"
+                    }
                 }
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     spacing: 16
-                    DetailBlock { Layout.fillWidth: true; Layout.preferredHeight: 230; title: "参考答案"; text: reviewArea.question.answer || "--"; accent: true }
+                    DetailBlock {
+                        visible: !reviewArea.codeQuestion
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: visible ? 230 : 0
+                        title: "参考答案"
+                        text: reviewArea.question.answer || "--"
+                        accent: true
+                    }
+                    CodeDetailBlock {
+                        visible: reviewArea.codeQuestion
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: visible ? 230 : 0
+                        title: "参考答案"
+                        text: reviewArea.question.answer || "--"
+                        fileName: "standard_answer.java"
+                    }
                     AppField { id: scoreInput; Layout.fillWidth: true; placeholderText: "输入本题得分，满分 " + (reviewArea.question.score || 10) }
                     TextArea {
                         id: commentInput
@@ -4479,6 +5704,243 @@ Rectangle {
             modal: true
             standardButtons: Dialog.Ok
             Text { text: "该同学已经批改完成"; color: "#111827"; font.pixelSize: 16; padding: 24 }
+        }
+    }
+
+    component ScoreAnalysisPage: PageShell {
+        Component.onCompleted: root.ensureScoreAnalysisData()
+        SectionTitle { width: parent.width }
+
+        Card {
+            width: parent.width
+            height: root.narrowShell ? 236 : 116
+            enterDelay: 0
+            enterDirection: -1
+            Flow {
+                anchors.fill: parent
+                anchors.margins: root.narrowShell ? 18 : 22
+                spacing: 14
+                AppCombo {
+                    id: analysisClassCombo
+                    width: root.narrowShell ? parent.width : 210
+                    model: root.classes.length > 0 ? root.classes.map(function(c) { return c.name }) : ["软件工程01"]
+                    currentIndex: Math.max(0, model.indexOf(root.selectedClassName))
+                }
+                AppCombo {
+                    id: analysisExamCombo
+                    width: root.narrowShell ? parent.width : 280
+                    model: root.scoreAnalysisExamOptions().map(function(e) { return e.name || e.title || "未命名考试" })
+                }
+                AppCombo {
+                    id: analysisTimeCombo
+                    width: root.narrowShell ? (parent.width - 14) / 2 : 170
+                    model: ["近7次考试", "本学期", "本月", "全部时间"]
+                }
+                PrimaryButton {
+                    width: root.narrowShell ? (parent.width - 14) / 2 : 132
+                    text: "查询"
+                    onClicked: {
+                        root.selectScoreAnalysisData(analysisClassCombo.currentText, analysisExamCombo.currentIndex)
+                        scoreTrend.reloadTrend()
+                    }
+                }
+                SoftButton {
+                    width: root.narrowShell ? parent.width : 132
+                    text: "打印报表"
+                    onClicked: teacherApi.openScorePrintWorkbench()
+                }
+            }
+        }
+
+        GridLayout {
+            width: parent.width
+            columns: parent.width > 1080 ? 4 : (parent.width > 620 ? 2 : 1)
+            columnSpacing: root.narrowShell ? 12 : 18
+            rowSpacing: root.narrowShell ? 12 : 18
+            ScoreSummaryTile { Layout.fillWidth: true; title: "平均分"; value: root.classExamAverage(); accent: "#2563eb"; enterDelay: 40; enterDirection: -1 }
+            ScoreSummaryTile { Layout.fillWidth: true; title: "最高分"; value: root.classExamHighest(); accent: "#16a34a"; enterDelay: 90; enterDirection: -1 }
+            ScoreSummaryTile { Layout.fillWidth: true; title: "最低分"; value: root.classExamLowest(); accent: "#f59e0b"; enterDelay: 140; enterDirection: 1 }
+            ScoreSummaryTile { Layout.fillWidth: true; title: "优秀率"; value: root.classExamExcellentRate(); accent: "#8b5cf6"; enterDelay: 190; enterDirection: 1 }
+        }
+
+        GridLayout {
+            width: parent.width
+            columns: parent.width > 1120 ? 3 : 1
+            columnSpacing: root.narrowShell ? 12 : 18
+            rowSpacing: root.narrowShell ? 12 : 18
+            LineChartCard {
+                id: scoreTrend
+                Layout.fillWidth: true
+                Layout.columnSpan: parent.width > 1120 ? 2 : 1
+                Layout.preferredHeight: root.narrowShell ? 340 : 390
+                title: "班级成绩趋势"
+                className: root.selectedClassName
+                subjectName: root.selectedClassExam.subject || root.profile.subject || ""
+                showClassPicker: false
+                enterDelay: 80
+                enterDirection: -1
+            }
+            ScoreDistributionBars {
+                Layout.fillWidth: true
+                Layout.preferredHeight: root.narrowShell ? 340 : 390
+                enterDelay: 140
+                enterDirection: 1
+            }
+        }
+
+        GridLayout {
+            width: parent.width
+            columns: parent.width > 1120 ? 2 : 1
+            columnSpacing: root.narrowShell ? 12 : 18
+            rowSpacing: root.narrowShell ? 12 : 18
+            ScoreRankList { Layout.fillWidth: true; Layout.preferredHeight: root.narrowShell ? 420 : 480; enterDelay: 180; enterDirection: -1 }
+            ScoreQuestionAnalysisList { Layout.fillWidth: true; Layout.preferredHeight: root.narrowShell ? 420 : 480; enterDelay: 240; enterDirection: 1 }
+        }
+    }
+
+    component ScoreSummaryTile: Card {
+        id: summaryTile
+        property string title: ""
+        property string value: "--"
+        property color accent: "#2563eb"
+        height: 132
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 22
+            spacing: 8
+            Text { text: summaryTile.title; color: "#64748b"; font.pixelSize: 15; font.bold: true }
+            Text { text: summaryTile.value; color: summaryTile.accent; font.pixelSize: 34; font.bold: true }
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 5; radius: 3; color: Qt.rgba(summaryTile.accent.r, summaryTile.accent.g, summaryTile.accent.b, 0.16)
+                Rectangle { width: parent.width * 0.72; height: parent.height; radius: 3; color: summaryTile.accent }
+            }
+        }
+    }
+
+    component ScoreDistributionBars: Card {
+        id: distCard
+        property var labels: ["60以下", "60-69", "70-79", "80-89", "90+"]
+        property var colors: ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e", "#16a34a"]
+        property var counts: root.scoreBandCounts()
+        function maxCount() {
+            var maxValue = 1
+            for (var i = 0; i < counts.length; ++i) maxValue = Math.max(maxValue, Number(counts[i] || 0))
+            return maxValue
+        }
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 24
+            spacing: 14
+            Text { text: "成绩分布"; color: "#111827"; font.pixelSize: 24; font.bold: true }
+            Repeater {
+                model: distCard.labels
+                delegate: RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    Text { text: modelData; color: "#64748b"; font.pixelSize: 14; font.bold: true; Layout.preferredWidth: 68 }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 18
+                        radius: 9
+                        color: "#edf2f8"
+                        Rectangle {
+                            width: parent.width * Number(distCard.counts[index] || 0) / distCard.maxCount()
+                            height: parent.height
+                            radius: 9
+                            color: distCard.colors[index]
+                            Behavior on width { NumberAnimation { duration: 520; easing.type: Easing.OutCubic } }
+                        }
+                    }
+                    Text { text: String(distCard.counts[index] || 0) + "人"; color: distCard.colors[index]; font.pixelSize: 14; font.bold: true; Layout.preferredWidth: 48; horizontalAlignment: Text.AlignRight }
+                }
+            }
+            Item { Layout.fillHeight: true }
+        }
+    }
+
+    component ScoreRankList: Card {
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 24
+            spacing: 12
+            RowLayout {
+                Layout.fillWidth: true
+                Text { text: "学生排名"; color: "#111827"; font.pixelSize: 24; font.bold: true; Layout.fillWidth: true }
+                Text { text: root.selectedClassExam.name || root.selectedClassExam.title || "当前考试"; color: "#64748b"; font.pixelSize: 13; font.bold: true }
+            }
+            ListView {
+                id: scoreRankList
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                spacing: 10
+                model: root.scoreAnalysisRankingRows()
+                boundsBehavior: Flickable.StopAtBounds
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
+                ScrollBar.vertical: ScrollBar { policy: scoreRankList.contentHeight > scoreRankList.height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+                delegate: Rectangle {
+                    width: ListView.view.width - (scoreRankList.contentHeight > scoreRankList.height ? 16 : 0)
+                    height: 58
+                    radius: 16
+                    color: index < 3 ? "#eff6ff" : "#ffffff"
+                    border.color: index < 3 ? "#bfdbfe" : "#e5edf6"
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 12
+                        Text { text: String(index + 1); color: "#2563eb"; font.pixelSize: 20; font.bold: true; Layout.preferredWidth: 38; horizontalAlignment: Text.AlignHCenter }
+                        Text { text: modelData.studentName || modelData.name || "--"; color: "#111827"; font.pixelSize: 15; font.bold: true; Layout.fillWidth: true; elide: Text.ElideRight }
+                        Text { visible: !root.narrowShell; text: modelData.studentNo || modelData.username || ""; color: "#64748b"; font.pixelSize: 13; Layout.preferredWidth: 132 }
+                        Text { text: root.scoreText(modelData) + " 分"; color: "#16a34a"; font.pixelSize: 17; font.bold: true; Layout.preferredWidth: 78; horizontalAlignment: Text.AlignRight }
+                    }
+                }
+            }
+        }
+    }
+
+    component ScoreQuestionAnalysisList: Card {
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 24
+            spacing: 12
+            Text { text: "题目得分分析"; color: "#111827"; font.pixelSize: 24; font.bold: true }
+            Text { text: "按平均得分从低到高，帮助定位薄弱题。"; color: "#64748b"; font.pixelSize: 14 }
+            ListView {
+                id: weakQuestionList
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                spacing: 10
+                model: root.scoreAnalysisQuestionRows()
+                boundsBehavior: Flickable.StopAtBounds
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
+                ScrollBar.vertical: ScrollBar { policy: weakQuestionList.contentHeight > weakQuestionList.height ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+                delegate: Rectangle {
+                    width: ListView.view.width - (weakQuestionList.contentHeight > weakQuestionList.height ? 16 : 0)
+                    height: 70
+                    radius: 16
+                    color: "#ffffff"
+                    border.color: "#e5edf6"
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 12
+                        Rectangle {
+                            Layout.preferredWidth: 44
+                            Layout.preferredHeight: 44
+                            radius: 14
+                            color: "#fff7ed"
+                            Text { anchors.centerIn: parent; text: String(modelData.number || modelData.index || index + 1); color: "#f97316"; font.pixelSize: 16; font.bold: true }
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+                            Text { text: modelData.type || "题目"; color: "#111827"; font.pixelSize: 15; font.bold: true }
+                            Text { text: "平均得分 " + (modelData.average || modelData.averageScore || modelData.average_score || 0) + " / " + (modelData.full || modelData.fullScore || modelData.full_score || "--"); color: "#64748b"; font.pixelSize: 13 }
+                        }
+                        Text { text: Number(modelData.low || modelData.low_score || 0) ? "薄弱" : "正常"; color: Number(modelData.low || modelData.low_score || 0) ? "#ef4444" : "#16a34a"; font.pixelSize: 14; font.bold: true; Layout.preferredWidth: 54; horizontalAlignment: Text.AlignRight }
+                    }
+                }
+            }
         }
     }
 
@@ -4618,9 +6080,9 @@ Rectangle {
                             Text { Layout.fillWidth: true; text: root.selectedClassExam.name || "考试概况"; color: "#111827"; font.pixelSize: root.narrowShell ? 22 : 26; font.bold: true; elide: Text.ElideRight }
                             Text { Layout.fillWidth: true; text: root.selectedClassName + " · " + root.examDate(root.selectedClassExam); color: "#64748b"; font.pixelSize: 14; elide: Text.ElideRight }
                         }
-                        MetricMini { width: root.narrowShell ? (parent.width - 36) / 3 : 84; height: 58; label: "平均分"; value: root.selectedClassExam.average || root.scoreStats.average || 86.5 }
-                        MetricMini { width: root.narrowShell ? (parent.width - 36) / 3 : 84; height: 58; label: "最高分"; value: 98 }
-                        MetricMini { width: root.narrowShell ? (parent.width - 36) / 3 : 84; height: 58; label: "最低分"; value: 54 }
+                        MetricMini { width: root.narrowShell ? (parent.width - 36) / 3 : 84; height: 58; label: "平均分"; value: root.classExamAverage() }
+                        MetricMini { width: root.narrowShell ? (parent.width - 36) / 3 : 84; height: 58; label: "最高分"; value: root.classExamHighest() }
+                        MetricMini { width: root.narrowShell ? (parent.width - 36) / 3 : 84; height: 58; label: "最低分"; value: root.classExamLowest() }
                     }
                 }
                 GridLayout {
@@ -4655,6 +6117,7 @@ Rectangle {
                 reuseItems: true
                 cacheBuffer: height * 2
                 model: root.examsForClass(root.selectedClassName)
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
                 delegate: Rectangle {
                     width: ListView.view.width - (classExamList.contentHeight > classExamList.height ? 18 : 0)
                     height: 68
@@ -4705,6 +6168,7 @@ Rectangle {
                 reuseItems: true
                 cacheBuffer: height * 2
                 model: root.classStudents
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
                 delegate: Rectangle {
                     width: ListView.view.width - (rosterList.contentHeight > rosterList.height ? 18 : 0)
                     height: 52
@@ -4723,24 +6187,38 @@ Rectangle {
     }
 
     component PieCard: Card {
+        id: pieCard
+        property var values: root.scoreBandCounts()
+        property var labels: ["<60", "60-69", "70-79", "80-89", "90+"]
+        onValuesChanged: pieCanvas.requestPaint()
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 24
             Text { text: "分数区间分布"; color: "#111827"; font.pixelSize: 22; font.bold: true }
             Canvas {
+                id: pieCanvas
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Component.onCompleted: requestPaint()
                 onPaint: {
                     var ctx = getContext("2d")
                     ctx.clearRect(0,0,width,height)
-                    var colors = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"]
-                    var values = [42, 36, 16, 6]
-                    var total = 100
+                    var colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e", "#16a34a"]
+                    var values = pieCard.values
+                    var total = 0
+                    for (var i = 0; i < values.length; ++i) total += Number(values[i] || 0)
+                    if (total <= 0) {
+                        ctx.fillStyle = "#94a3b8"
+                        ctx.font = "18px sans-serif"
+                        ctx.textAlign = "center"
+                        ctx.fillText("暂无成绩数据", width / 2, height / 2)
+                        return
+                    }
                     var start = -Math.PI / 2
                     var cx = width / 2
-                    var cy = height / 2
+                    var cy = height / 2 - 12
                     var r = Math.min(width, height) * 0.33
-                    for (var i = 0; i < values.length; ++i) {
+                    for (i = 0; i < values.length; ++i) {
                         var end = start + Math.PI * 2 * values[i] / total
                         ctx.beginPath()
                         ctx.moveTo(cx, cy)
@@ -4754,6 +6232,26 @@ Rectangle {
                     ctx.beginPath()
                     ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2)
                     ctx.fill()
+                }
+            }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 8
+                Repeater {
+                    model: pieCard.labels
+                    Rectangle {
+                        width: 86
+                        height: 28
+                        radius: 10
+                        color: "#f8fbff"
+                        border.color: "#e5edf6"
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Rectangle { width: 9; height: 9; radius: 4; color: ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e", "#16a34a"][index] }
+                            Text { text: modelData + " " + String(pieCard.values[index] || 0); color: "#64748b"; font.pixelSize: 12; font.bold: true }
+                        }
+                    }
                 }
             }
         }
@@ -4785,7 +6283,8 @@ Rectangle {
                 pixelAligned: false
                 reuseItems: true
                 cacheBuffer: height * 2
-                model: root.classStudents
+                model: root.classExamScores
+                HoverHandler { onHoveredChanged: root.innerScrollActive = hovered }
                 ScrollBar.vertical: ScrollBar {
                     policy: classStudentScoreList.contentHeight > classStudentScoreList.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
                     width: 12
@@ -4801,11 +6300,19 @@ Rectangle {
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 10
-                        Text { text: modelData.name || "--"; color: "#111827"; font.pixelSize: 13; font.bold: true; Layout.fillWidth: true }
+                        Text { text: modelData.studentName || modelData.name || "--"; color: "#111827"; font.pixelSize: 13; font.bold: true; Layout.fillWidth: true }
                         Text { visible: !root.narrowShell; text: modelData.studentNo || modelData.username || ""; color: "#64748b"; font.pixelSize: 13; Layout.preferredWidth: 130 }
-                        Text { text: String(80 + (index * 3) % 18); color: "#2563eb"; font.pixelSize: 15; font.bold: true; Layout.preferredWidth: 70 }
+                        Text { text: root.scoreText(modelData); color: "#2563eb"; font.pixelSize: 15; font.bold: true; Layout.preferredWidth: 70 }
                     }
                 }
+            }
+            Text {
+                visible: root.classExamScores.length === 0
+                Layout.fillWidth: true
+                text: "这场考试暂无提交记录"
+                color: "#94a3b8"
+                font.pixelSize: 15
+                horizontalAlignment: Text.AlignHCenter
             }
         }
     }

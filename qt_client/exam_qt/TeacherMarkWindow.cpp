@@ -69,32 +69,6 @@ void slideIn(QWidget *widget, const QPoint &offset, int delayMs)
     });
 }
 
-QVariantMap question(int number,
-                     const QString &section,
-                     const QString &type,
-                     const QString &text,
-                     const QString &studentAnswer,
-                     const QString &standardAnswer,
-                     double maxScore,
-                     double score,
-                     bool autoScored,
-                     bool graded,
-                     const QString &comment = QString())
-{
-    return QVariantMap{
-        {QStringLiteral("number"), number},
-        {QStringLiteral("section"), section},
-        {QStringLiteral("type"), type},
-        {QStringLiteral("question"), text},
-        {QStringLiteral("studentAnswer"), studentAnswer},
-        {QStringLiteral("standardAnswer"), standardAnswer},
-        {QStringLiteral("maxScore"), maxScore},
-        {QStringLiteral("score"), score},
-        {QStringLiteral("autoScored"), autoScored},
-        {QStringLiteral("graded"), graded},
-        {QStringLiteral("comment"), comment}
-    };
-}
 }
 
 TeacherMarkWindow::TeacherMarkWindow(QWidget *parent)
@@ -109,12 +83,12 @@ TeacherMarkWindow::TeacherMarkWindow(QWidget *parent)
     , backendDataLoaded(false)
     , syncingExamCombo(false)
     , currentStudentIndex(0)
-    , currentQuestionIndex(4)
+    , currentQuestionIndex(0)
 {
     setObjectName(QStringLiteral("TeacherMarkWindow"));
     buildUi();
     applyStyle();
-    seedMockData();
+    clearData();
     refreshAll();
 }
 
@@ -127,13 +101,11 @@ void TeacherMarkWindow::loadExam(int examId)
 {
     if (repository != nullptr) {
         loadBackendExam(examId);
-        if (backendDataLoaded) {
-            refreshAll();
-            return;
-        }
+        refreshAll();
+        return;
     }
 
-    seedMockData();
+    clearData();
     refreshAll();
 }
 
@@ -634,72 +606,28 @@ void TeacherMarkWindow::applyStyle()
     )"));
 }
 
-void TeacherMarkWindow::seedMockData()
+void TeacherMarkWindow::clearData()
 {
     backendDataLoaded = false;
-    currentExamId = 1;
+    currentExamId = 0;
     currentStudentIndex = 0;
-    currentQuestionIndex = 4;
+    currentQuestionIndex = 0;
+    reviewExams.clear();
+    students.clear();
     answersByStudent.clear();
-
-    reviewExams = QVariantList{
-        QVariantMap{{QStringLiteral("id"), 1}, {QStringLiteral("title"), QStringLiteral("Java期末考试")}, {QStringLiteral("course"), QStringLiteral("Java程序设计")}},
-        QVariantMap{{QStringLiteral("id"), 2}, {QStringLiteral("title"), QStringLiteral("数据结构阶段测验")}, {QStringLiteral("course"), QStringLiteral("数据结构")}}
-    };
     examInfo = QVariantMap{
-        {QStringLiteral("title"), QStringLiteral("Java期末考试")},
-        {QStringLiteral("course"), QStringLiteral("Java程序设计")},
-        {QStringLiteral("date"), QStringLiteral("2026-06-20")},
-        {QStringLiteral("totalScore"), 100}
+        {QStringLiteral("title"), QStringLiteral("暂无可批改考试")},
+        {QStringLiteral("course"), QStringLiteral("等待学生提交")},
+        {QStringLiteral("date"), QStringLiteral("--")},
+        {QStringLiteral("totalScore"), 0},
+        {QStringLiteral("average"), 0}
     };
     refreshExamSelector();
-
-    students = QVariantList{
-        QVariantMap{{QStringLiteral("name"), QStringLiteral("张三")}, {QStringLiteral("studentNo"), QStringLiteral("SE01001")}, {QStringLiteral("status"), QStringLiteral("待批改")}, {QStringLiteral("score"), QStringLiteral("--")}},
-        QVariantMap{{QStringLiteral("name"), QStringLiteral("李思涵")}, {QStringLiteral("studentNo"), QStringLiteral("SE01002")}, {QStringLiteral("status"), QStringLiteral("已批改")}, {QStringLiteral("score"), QStringLiteral("86")}},
-        QVariantMap{{QStringLiteral("name"), QStringLiteral("王明")}, {QStringLiteral("studentNo"), QStringLiteral("SE01003")}, {QStringLiteral("status"), QStringLiteral("批改中")}, {QStringLiteral("score"), QStringLiteral("72")}},
-        QVariantMap{{QStringLiteral("name"), QStringLiteral("陈雨薇")}, {QStringLiteral("studentNo"), QStringLiteral("SE01004")}, {QStringLiteral("status"), QStringLiteral("待批改")}, {QStringLiteral("score"), QStringLiteral("--")}},
-        QVariantMap{{QStringLiteral("name"), QStringLiteral("赵一鸣")}, {QStringLiteral("studentNo"), QStringLiteral("SE01005")}, {QStringLiteral("status"), QStringLiteral("已批改")}, {QStringLiteral("score"), QStringLiteral("91")}}
-    };
-
-    const QVariantList baseAnswers{
-        question(1, QStringLiteral("第一部分 选择题"), QStringLiteral("单选题"), QStringLiteral("Java中用于创建对象的关键字是？"), QStringLiteral("new"), QStringLiteral("new"), 6, 6, true, true),
-        question(2, QStringLiteral("第一部分 选择题"), QStringLiteral("单选题"), QStringLiteral("Java中String类的核心特性是？"), QStringLiteral("不可变"), QStringLiteral("不可变对象"), 6, 6, true, true),
-        question(3, QStringLiteral("第一部分 选择题"), QStringLiteral("多选题"), QStringLiteral("下列属于面向对象核心特性的有？"), QStringLiteral("封装、继承、多态"), QStringLiteral("封装、继承、多态"), 8, 8, true, true),
-        question(4, QStringLiteral("第一部分 选择题"), QStringLiteral("判断题"), QStringLiteral("接口中可以定义抽象方法。"), QStringLiteral("正确"), QStringLiteral("正确"), 10, 10, true, true),
-        question(5, QStringLiteral("第二部分 主观题"), QStringLiteral("简答题"), QStringLiteral("题目：求函数极值，并说明关键步骤。"), QStringLiteral("先求导，令导数为0，判断单调性后得到极值。"), QStringLiteral("求导，解驻点，再结合二阶导数或单调性判断极大值与极小值。"), 10, 0, false, false),
-        question(6, QStringLiteral("第二部分 主观题"), QStringLiteral("编程题"), QStringLiteral("编程题：编写一个方法统计数组中偶数的个数。"), QStringLiteral("int countEven(int[] a){ int c=0; for(int n:a){ if(n%2==0)c++; } return c; }"), QStringLiteral("遍历数组，对每个元素取模判断是否为偶数，满足条件则计数加一并返回。"), 20, 0, false, false),
-        question(7, QStringLiteral("第二部分 主观题"), QStringLiteral("分析题"), QStringLiteral("说明HashMap查询效率较高的原因。"), QStringLiteral("HashMap用哈希表保存数据，可以通过key快速定位。"), QStringLiteral("HashMap通过哈希函数将key映射到桶，平均情况下可接近O(1)访问，冲突时通过链表或红黑树处理。"), 40, 0, false, false)
-    };
-
-    for (const QVariant &value : students) {
-        const QVariantMap student = value.toMap();
-        QVariantList answers = baseAnswers;
-        if (student.value(QStringLiteral("status")).toString() == QStringLiteral("已批改")) {
-            for (int i = 0; i < answers.size(); ++i) {
-                QVariantMap row = answers.at(i).toMap();
-                if (!row.value(QStringLiteral("autoScored")).toBool()) {
-                    row.insert(QStringLiteral("score"), qMin(row.value(QStringLiteral("maxScore")).toDouble(), 8.0 + i * 2.0));
-                    row.insert(QStringLiteral("graded"), true);
-                    row.insert(QStringLiteral("comment"), QStringLiteral("思路清晰，关键点基本完整。"));
-                    answers[i] = row;
-                }
-            }
-        } else if (student.value(QStringLiteral("status")).toString() == QStringLiteral("批改中")) {
-            QVariantMap row = answers.at(4).toMap();
-            row.insert(QStringLiteral("score"), 7);
-            row.insert(QStringLiteral("graded"), true);
-            row.insert(QStringLiteral("comment"), QStringLiteral("计算过程正确，最后一步存在错误。"));
-            answers[4] = row;
-        }
-        answersByStudent.insert(student.value(QStringLiteral("studentNo")).toString(), answers);
-    }
 }
 
 void TeacherMarkWindow::loadBackendExam(int examId)
 {
-    backendDataLoaded = false;
-    answersByStudent.clear();
+    clearData();
 
     reviewExams = repository->getReviewExams();
     if (reviewExams.isEmpty()) {
