@@ -1122,7 +1122,7 @@ Rectangle {
     }
 
     function typeOptions(subject) {
-        return ["单选题", "多选题", "判断题", "填空题", "编程题"]
+        return ["单选题", "填空题", "编程题"]
     }
 
     function questionsFor(subject, type, keyword, difficulty, knowledgePoint) {
@@ -1304,7 +1304,7 @@ Rectangle {
                 Layout.fillWidth: true
                 AppField { id: addQuestionId; Layout.fillWidth: true; placeholderText: "ID"; readOnly: true }
                 AppCombo { id: addQuestionSubject; Layout.fillWidth: true; model: ["Java", "C++", "高数", "数据结构", "数据库"] }
-                AppCombo { id: addQuestionType; Layout.fillWidth: true; model: ["单选题", "多选题", "判断题", "填空题", "编程题"] }
+                AppCombo { id: addQuestionType; Layout.fillWidth: true; model: ["单选题", "填空题", "编程题"] }
             }
             Rectangle {
                 Layout.fillWidth: true
@@ -3390,7 +3390,7 @@ Rectangle {
                 AppCombo {
                     id: bankType
                     width: root.narrowShell ? (parent.width - 14) / 2 : 168
-                    model: ["题型：全部", "单选题", "多选题", "判断题", "填空题", "编程题"]
+                    model: ["题型：全部", "单选题", "填空题", "编程题"]
                     onActivated: reloadQuestionBank(false)
                 }
                 AppCombo {
@@ -3996,21 +3996,17 @@ Rectangle {
         property bool ratioClamping: false
         function playRatioRows() {
             singleRatio.playToTarget()
-            multiRatio.playToTarget()
-            judgeRatio.playToTarget()
             blankRatio.playToTarget()
             appRatio.playToTarget()
             Qt.callLater(function() { config.enforceAllRatioLimits() })
         }
         function ratioTypeFor(row) {
             if (row === singleRatio) return "单选题"
-            if (row === multiRatio) return "多选题"
-            if (row === judgeRatio) return "判断题"
             if (row === blankRatio) return "填空题"
             return "编程题"
         }
         function ratioRows() {
-            return [singleRatio, multiRatio, judgeRatio, blankRatio, appRatio]
+            return [singleRatio, blankRatio, appRatio]
         }
         function ratioPlanScore() {
             var total = 0
@@ -4023,7 +4019,7 @@ Rectangle {
         function limitedCounts(rawCounts) {
             var result = ({})
             var total = 0
-            var order = ["单选题", "多选题", "判断题", "填空题", "编程题"]
+            var order = ["单选题", "填空题", "编程题"]
             for (var i = 0; i < order.length; ++i) {
                 var typeName = order[i]
                 var score = root.questionTypeScore(typeName)
@@ -4039,8 +4035,6 @@ Rectangle {
             var typeName = "编程题"
             var raw = {
                 "单选题": Math.round(singleRatio.value),
-                "多选题": Math.round(multiRatio.value),
-                "判断题": Math.round(judgeRatio.value),
                 "填空题": Math.round(blankRatio.value)
             }
             raw[typeName] = Math.round(appRatio.value)
@@ -4174,6 +4168,7 @@ Rectangle {
 
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.topMargin: 14
                 visible: config.activeTab === 0
                 spacing: 10
                 Text { text: "发布班级"; color: "#111827"; font.pixelSize: 18; font.bold: true }
@@ -4234,11 +4229,8 @@ Rectangle {
                     }
                 }
                 SmartRatioRow { id: singleRatio; label: "单选题"; barColor: "#3b82f6"; targetValue: 12; onEdited: config.enforceRatioLimit(singleRatio) }
-                SmartRatioRow { id: multiRatio; label: "多选题"; barColor: "#6d5dfc"; targetValue: 5; onEdited: config.enforceRatioLimit(multiRatio) }
-                SmartRatioRow { id: judgeRatio; label: "判断题"; barColor: "#f59e0b"; targetValue: 4; onEdited: config.enforceRatioLimit(judgeRatio) }
                 SmartRatioRow { id: blankRatio; label: "填空题"; barColor: "#a855f7"; targetValue: 3; onEdited: config.enforceRatioLimit(blankRatio) }
                 SmartRatioRow { id: appRatio; label: "编程题"; barColor: "#ef4444"; targetValue: 1; onEdited: config.enforceRatioLimit(appRatio) }
-                Item { Layout.fillHeight: true }
                 SuccessButton {
                     Layout.fillWidth: true
                     text: "一键生成试卷"
@@ -4261,7 +4253,6 @@ Rectangle {
                 SettingSwitch { Layout.fillWidth: true; label: "按章节顺序排列"; description: "按知识点章节整理题目顺序"; checked: root.settingEnabled("publishSortByChapter", false); onToggled: root.saveTeacherSetting("publishSortByChapter", checked) }
                 SettingSwitch { Layout.fillWidth: true; label: "随机打乱选项"; description: "客观题发布前自动打乱选项"; checked: root.settingEnabled("publishShuffleOptions", true); onToggled: root.saveTeacherSetting("publishShuffleOptions", checked) }
                 SettingSwitch { Layout.fillWidth: true; label: "显示参考答案"; description: "查看试卷时展示参考答案"; checked: root.settingEnabled("publishShowAnswers", false); onToggled: root.saveTeacherSetting("publishShowAnswers", checked) }
-                Item { Layout.fillHeight: true }
                 RowLayout {
                     Layout.fillWidth: true
                     SuccessButton {
@@ -4269,7 +4260,7 @@ Rectangle {
                         text: "一键生成试卷"
                         onClicked: {
                             root.updatePublishDraft(config.paperName, config.subject, config.startText, config.endText)
-                            root.smartGeneratePaper(config.subject, config.limitedCounts({"单选题": 12, "多选题": 6, "判断题": 4, "填空题": 5, "编程题": 2}), config.selectedDifficulty, config.selectedKnowledgePoint)
+                            root.smartGeneratePaper(config.subject, config.limitedCounts({"单选题": 12, "填空题": 5, "编程题": 2}), config.selectedDifficulty, config.selectedKnowledgePoint)
                         }
                     }
                     SoftButton {
@@ -4285,10 +4276,9 @@ Rectangle {
                 }
             }
 
-            Item { Layout.fillHeight: true }
-
             Flow {
                 Layout.fillWidth: true
+                Layout.topMargin: 8
                 spacing: 10
                 SoftButton {
                     width: root.narrowShell ? parent.width : (parent.width - 20) / 3

@@ -258,12 +258,22 @@ public class ScoreService {
     }
 
     public Map<String, Object> report(Long examId, String className, String studentNo) {
-        Map<String, Object> report = analysis(examId, className);
+        String normalizedStudentNo = studentNo == null || studentNo.isBlank() ? null : studentNo.trim();
+        Map<String, Object> personalScore = normalizedStudentNo == null
+                ? Map.of()
+                : scoreMapper.personalScore(examId, normalizedStudentNo);
+        String effectiveClassName = className;
+        if ((effectiveClassName == null || effectiveClassName.isBlank()) && !personalScore.isEmpty()) {
+            Object personalClassName = personalScore.get("class_name");
+            if (personalClassName != null && !String.valueOf(personalClassName).isBlank()) {
+                effectiveClassName = String.valueOf(personalClassName);
+            }
+        }
+
+        Map<String, Object> report = analysis(examId, effectiveClassName);
         report.put("examId", examId);
-        report.put("className", className);
-        if (studentNo != null && !studentNo.isBlank()) {
-            String normalizedStudentNo = studentNo.trim();
-            Map<String, Object> personalScore = scoreMapper.personalScore(examId, normalizedStudentNo);
+        report.put("className", effectiveClassName);
+        if (normalizedStudentNo != null) {
             Map<String, Object> reviewSummary = scoreMapper.studentReviewSummary(examId, normalizedStudentNo);
             report.put("studentNo", normalizedStudentNo);
             report.put("personal", personalScore);

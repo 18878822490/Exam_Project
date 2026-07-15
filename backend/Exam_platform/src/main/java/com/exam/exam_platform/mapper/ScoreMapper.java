@@ -22,7 +22,7 @@ public class ScoreMapper {
                     question_id BIGINT NOT NULL,
                     student_id BIGINT,
                     student_name VARCHAR(64),
-                    student_no VARCHAR(32) NOT NULL,
+                    student_no VARCHAR(64) NOT NULL,
                     class_name VARCHAR(64),
                     answer TEXT,
                     score DECIMAL(6,2),
@@ -35,6 +35,7 @@ public class ScoreMapper {
                     INDEX idx_student_answers_status (review_status)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """);
+        ensureVarcharLength("student_answers", "student_no", 64, true);
         ensureColumn("student_answers", "class_name", "VARCHAR(64)");
         ensureColumn("student_answers", "reviewed_time", "DATETIME");
         ensureColumn("student_answers", "correction_answer", "TEXT");
@@ -48,7 +49,7 @@ public class ScoreMapper {
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     exam_id BIGINT NOT NULL,
                     student_id BIGINT,
-                    student_no VARCHAR(32) NOT NULL,
+                    student_no VARCHAR(64) NOT NULL,
                     student_name VARCHAR(64),
                     class_name VARCHAR(64),
                     total_score DECIMAL(6,2) NOT NULL DEFAULT 0,
@@ -58,6 +59,7 @@ public class ScoreMapper {
                     INDEX idx_scores_class (class_name)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """);
+        ensureVarcharLength("scores", "student_no", 64, true);
     }
 
     public List<Map<String, Object>> listExamAnswerKeys(Long examId) {
@@ -919,6 +921,22 @@ public class ScoreMapper {
                 """, Integer.class, tableName, columnName);
         if (count == null || count == 0) {
             jdbcTemplate.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + definition);
+        }
+    }
+
+    private void ensureVarcharLength(String tableName, String columnName, int minLength, boolean notNull) {
+        Integer currentLength = jdbcTemplate.queryForObject("""
+                SELECT CHARACTER_MAXIMUM_LENGTH
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = ?
+                  AND column_name = ?
+                """, Integer.class, tableName, columnName);
+        if (currentLength != null && currentLength < minLength) {
+            jdbcTemplate.execute("ALTER TABLE " + tableName
+                    + " MODIFY COLUMN " + columnName
+                    + " VARCHAR(" + minLength + ")"
+                    + (notNull ? " NOT NULL" : ""));
         }
     }
 }

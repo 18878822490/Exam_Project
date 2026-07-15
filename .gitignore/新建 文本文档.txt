@@ -1,0 +1,25 @@
+# Qt 编译生成的目录
+build*/
+*/build*/
+qtcharts-build/
+exam_qt/build/
+
+# 编译生成的二进制/临时文件
+*.debug
+*.exe
+*.dll
+*.so
+*.a
+*.lib
+*.obj
+*.o
+*. moc
+*. ui
+*. qrc
+
+# 其他临时文件
+.vscode/
+.idea/
+*.user
+*.log
+Thumbs.db

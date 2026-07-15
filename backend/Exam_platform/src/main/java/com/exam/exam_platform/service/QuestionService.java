@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -31,6 +33,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 @Service
 public class QuestionService {
@@ -104,13 +112,18 @@ public class QuestionService {
         if (answer.isBlank()) {
             throw new IllegalArgumentException("答案不能为空");
         }
+        Question question = questionMapper.findById(request.getQuestionId());
+        if (question == null) {
+            throw new IllegalArgumentException("题目不存在");
+        }
+        boolean correct = resolvePracticeCorrectness(question, answer, request.getCorrect());
         boolean saved = questionMapper.recordPracticeAnswer(
                 request.getStudentId(),
                 request.getStudentName(),
                 request.getStudentNo().trim(),
                 request.getQuestionId(),
                 answer,
-                Boolean.TRUE.equals(request.getCorrect()),
+                correct,
                 request.getPracticeMode()
         );
         if (!saved) {
@@ -204,11 +217,28 @@ public class QuestionService {
         return logImport(userId, "CSV", file.getOriginalFilename(), total, success, failed, status, message);
     }
 
+    @Transactional
     public QuestionImportResult reserveExcelImport(MultipartFile file, Long userId) {
         String fileName = file == null ? "" : file.getOriginalFilename();
-        operationLogService.record(userId, "QUESTION_IMPORT_EXCEL_RESERVED", "保留Excel导入：" + fileName);
-        return logImport(userId, "Excel", fileName, 0, 0, 0, "待接入",
-                "Excel文件由Qt前端QXlsx解析后，请调用 /api/questions/import/excel/parsed 批量入库。");
+        if (file == null || file.isEmpty()) {
+            return logImport(userId, "Excel", fileName, 0, 0, 0, "失败", "上传文件为空");
+        }
+        if (!fileName.toLowerCase(Locale.ROOT).endsWith(".xlsx")) {
+            return logImport(userId, "Excel", fileName, 0, 0, 1, "失败",
+                    "后端原生导入暂只支持 .xlsx，请将 .xls 另存为 .xlsx 后再导入。");
+        }
+
+        try {
+            List<Question> questions = parseXlsxQuestions(file, userId);
+            if (questions.isEmpty()) {
+                return logImport(userId, "Excel", fileName, 0, 0, 0, "失败",
+                        "Excel未识别到题目。请确认表头包含：科目、题型、题目内容、标准答案。");
+            }
+            return importQuestionList("Excel", fileName, userId, questions);
+        } catch (RuntimeException | IOException exception) {
+            operationLogService.record(userId, "QUESTION_IMPORT_EXCEL_FAILED", "Excel导入失败：" + fileName);
+            return logImport(userId, "Excel", fileName, 0, 0, 1, "失败", exception.getMessage());
+        }
     }
 
     @Transactional
@@ -217,17 +247,24 @@ public class QuestionService {
             return logImport(null, "Excel", "", 0, 0, 0, "失败", "题目列表为空");
         }
 
-        String importType = defaultIfBlank(request.getImportType(), "Excel");
-        String fileName = defaultIfBlank(request.getFileName(), "");
-        Long userId = request.getUserId();
-        int total = request.getQuestions().size();
+        return importQuestionList(defaultIfBlank(request.getImportType(), "Excel"),
+                defaultIfBlank(request.getFileName(), ""),
+                request.getUserId(),
+                request.getQuestions());
+    }
+
+    private QuestionImportResult importQuestionList(String importType,
+                                                    String fileName,
+                                                    Long userId,
+                                                    List<Question> questions) {
+        int total = questions.size();
         int success = 0;
         int failed = 0;
         int skipped = 0;
         List<String> errors = new ArrayList<>();
 
-        for (int i = 0; i < request.getQuestions().size(); i++) {
-            Question question = request.getQuestions().get(i);
+        for (int i = 0; i < questions.size(); i++) {
+            Question question = questions.get(i);
             try {
                 if (question.getCreatedBy() == null) {
                     question.setCreatedBy(userId);
@@ -390,6 +427,69 @@ public class QuestionService {
         return true;
     }
 
+    private boolean resolvePracticeCorrectness(Question question, String answer, Boolean clientCorrect) {
+        String type = normalizeQuestionType(question.getType());
+        if (isObjectiveType(type)) {
+            return sameAnswer(answer, question.getAnswer(), type);
+        }
+        return Boolean.TRUE.equals(clientCorrect);
+    }
+
+    private boolean isObjectiveType(String type) {
+        return "单选题".equals(type)
+                || "多选题".equals(type)
+                || "判断题".equals(type)
+                || "填空题".equals(type);
+    }
+
+    private boolean sameAnswer(String left, String right, String type) {
+        if ("单选题".equals(type) || "多选题".equals(type)) {
+            return normalizeChoiceAnswer(left).equals(normalizeChoiceAnswer(right));
+        }
+        if ("判断题".equals(type)) {
+            return normalizeJudgementAnswer(left).equals(normalizeJudgementAnswer(right));
+        }
+        return normalizeAnswer(left).equals(normalizeAnswer(right));
+    }
+
+    private String normalizeChoiceAnswer(String value) {
+        String cleaned = normalizeAnswer(value)
+                .replace(",", "")
+                .replace(";", "")
+                .replace("、", "")
+                .replace("|", "")
+                .replace(".", "")
+                .replace("．", "");
+        StringBuilder normalized = new StringBuilder();
+        for (char option = 'A'; option <= 'Z'; option++) {
+            if (cleaned.indexOf(option) >= 0) {
+                normalized.append(option);
+            }
+        }
+        return normalized.length() == 0 ? cleaned : normalized.toString();
+    }
+
+    private String normalizeJudgementAnswer(String value) {
+        String cleaned = normalizeAnswer(value)
+                .replace(".", "")
+                .replace("．", "");
+        return switch (cleaned) {
+            case "TRUE", "T", "YES", "Y", "对", "正确", "√", "✓" -> "TRUE";
+            case "FALSE", "F", "NO", "N", "错", "错误", "×", "✕", "X" -> "FALSE";
+            default -> cleaned;
+        };
+    }
+
+    private String normalizeAnswer(String value) {
+        return value == null
+                ? ""
+                : value.trim()
+                .replace("，", ",")
+                .replace("；", ";")
+                .replace(" ", "")
+                .toUpperCase(Locale.ROOT);
+    }
+
     private String importResultMessage(String successMessage, List<String> errors, int skipped) {
         List<String> parts = new ArrayList<>();
         if (errors == null || errors.isEmpty()) {
@@ -413,6 +513,174 @@ public class QuestionService {
                                            String message) {
         Long logId = questionMapper.insertImportLog(userId, type, fileName, total, success, failed, status, message);
         return new QuestionImportResult(logId, type, fileName, total, success, failed, status, message);
+    }
+
+    private List<Question> parseXlsxQuestions(MultipartFile file, Long userId) throws IOException {
+        Map<String, byte[]> entries = readZipEntries(file);
+        byte[] sheetBytes = firstWorksheet(entries);
+        if (sheetBytes == null) {
+            throw new IllegalArgumentException("Excel工作表为空或格式不正确");
+        }
+
+        List<String> sharedStrings = parseSharedStrings(entries.get("xl/sharedStrings.xml"));
+        List<List<String>> rows = parseSheetRows(sheetBytes, sharedStrings);
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, Integer> header = null;
+        int headerRowIndex = -1;
+        int scanLimit = Math.min(rows.size(), 10);
+        for (int i = 0; i < scanLimit; i++) {
+            List<String> row = rows.get(i);
+            if (looksLikeHeader(row)) {
+                header = buildHeader(row);
+                headerRowIndex = i;
+                break;
+            }
+        }
+
+        List<Question> questions = new ArrayList<>();
+        for (int i = headerRowIndex >= 0 ? headerRowIndex + 1 : 0; i < rows.size(); i++) {
+            List<String> row = rows.get(i);
+            if (row.stream().allMatch(value -> value == null || value.isBlank())) {
+                continue;
+            }
+            Question question = header == null
+                    ? questionFromDefaultColumns(row, userId)
+                    : questionFromHeader(row, header, userId);
+            if (question.getType() != null && !question.getType().isBlank()
+                    && question.getContent() != null && !question.getContent().isBlank()) {
+                questions.add(question);
+            }
+        }
+        return questions;
+    }
+
+    private Map<String, byte[]> readZipEntries(MultipartFile file) throws IOException {
+        Map<String, byte[]> entries = new HashMap<>();
+        try (ZipInputStream zipInputStream = new ZipInputStream(file.getInputStream())) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                String name = entry.getName();
+                if (!name.startsWith("xl/")) {
+                    continue;
+                }
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                zipInputStream.transferTo(outputStream);
+                entries.put(name, outputStream.toByteArray());
+            }
+        }
+        return entries;
+    }
+
+    private byte[] firstWorksheet(Map<String, byte[]> entries) {
+        byte[] first = entries.get("xl/worksheets/sheet1.xml");
+        if (first != null) {
+            return first;
+        }
+        return entries.entrySet().stream()
+                .filter(entry -> entry.getKey().startsWith("xl/worksheets/sheet")
+                        && entry.getKey().endsWith(".xml"))
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private List<String> parseSharedStrings(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return List.of();
+        }
+        Document document = parseXml(bytes);
+        NodeList items = document.getElementsByTagName("si");
+        List<String> sharedStrings = new ArrayList<>();
+        for (int i = 0; i < items.getLength(); i++) {
+            Node item = items.item(i);
+            NodeList textNodes = ((org.w3c.dom.Element) item).getElementsByTagName("t");
+            StringBuilder text = new StringBuilder();
+            for (int j = 0; j < textNodes.getLength(); j++) {
+                text.append(textNodes.item(j).getTextContent());
+            }
+            sharedStrings.add(text.toString());
+        }
+        return sharedStrings;
+    }
+
+    private List<List<String>> parseSheetRows(byte[] sheetBytes, List<String> sharedStrings) {
+        Document document = parseXml(sheetBytes);
+        NodeList rowNodes = document.getElementsByTagName("row");
+        List<List<String>> rows = new ArrayList<>();
+        for (int i = 0; i < rowNodes.getLength(); i++) {
+            org.w3c.dom.Element rowElement = (org.w3c.dom.Element) rowNodes.item(i);
+            NodeList cellNodes = rowElement.getElementsByTagName("c");
+            List<String> values = new ArrayList<>();
+            for (int j = 0; j < cellNodes.getLength(); j++) {
+                org.w3c.dom.Element cell = (org.w3c.dom.Element) cellNodes.item(j);
+                int columnIndex = columnIndex(cell.getAttribute("r"));
+                while (values.size() <= columnIndex) {
+                    values.add("");
+                }
+                values.set(columnIndex, cellValue(cell, sharedStrings));
+            }
+            rows.add(values);
+        }
+        return rows;
+    }
+
+    private Document parseXml(byte[] bytes) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            factory.setXIncludeAware(false);
+            factory.setExpandEntityReferences(false);
+            return factory.newDocumentBuilder().parse(new ByteArrayInputStream(bytes));
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("Excel XML解析失败：" + exception.getMessage(), exception);
+        }
+    }
+
+    private String cellValue(org.w3c.dom.Element cell, List<String> sharedStrings) {
+        String type = cell.getAttribute("t");
+        if ("inlineStr".equals(type)) {
+            NodeList textNodes = cell.getElementsByTagName("t");
+            return textNodes.getLength() == 0 ? "" : textNodes.item(0).getTextContent().trim();
+        }
+
+        NodeList values = cell.getElementsByTagName("v");
+        if (values.getLength() == 0) {
+            return "";
+        }
+        String raw = values.item(0).getTextContent().trim();
+        if ("s".equals(type)) {
+            try {
+                int index = Integer.parseInt(raw);
+                return index >= 0 && index < sharedStrings.size() ? sharedStrings.get(index).trim() : "";
+            } catch (NumberFormatException exception) {
+                return "";
+            }
+        }
+        return raw;
+    }
+
+    private int columnIndex(String cellRef) {
+        if (cellRef == null || cellRef.isBlank()) {
+            return 0;
+        }
+        int index = 0;
+        for (int i = 0; i < cellRef.length(); i++) {
+            char ch = Character.toUpperCase(cellRef.charAt(i));
+            if (ch < 'A' || ch > 'Z') {
+                break;
+            }
+            index = index * 26 + (ch - 'A' + 1);
+        }
+        return Math.max(0, index - 1);
     }
 
     private boolean canRollback(Map<String, Object> log, int matchedCount) {
@@ -739,31 +1007,42 @@ public class QuestionService {
         question.setSubject(offset == 1 ? valueAt(fields, 0, "综合") : "综合");
         question.setType(valueAt(fields, offset));
         question.setContent(valueAt(fields, offset + 1));
-        question.setAnswer(valueAt(fields, offset + 2));
-        question.setDifficulty(valueAt(fields, offset + 3, "基础"));
-        question.setKnowledgePoint(valueAt(fields, offset + 4, null));
+        if (fields.size() - offset >= 7) {
+            question.setOptionA(valueAt(fields, offset + 2, null));
+            question.setOptionB(valueAt(fields, offset + 3, null));
+            question.setOptionC(valueAt(fields, offset + 4, null));
+            question.setOptionD(valueAt(fields, offset + 5, null));
+            question.setAnswer(valueAt(fields, offset + 6));
+            question.setDifficulty(valueAt(fields, offset + 7, "基础"));
+            question.setKnowledgePoint(valueAt(fields, offset + 8, null));
+            question.setAnalysis(valueAt(fields, offset + 9, null));
+            question.setScore(parseScore(valueAt(fields, offset + 10, null)));
+        } else {
+            question.setAnswer(valueAt(fields, offset + 2));
+            question.setDifficulty(valueAt(fields, offset + 3, "基础"));
+            question.setKnowledgePoint(valueAt(fields, offset + 4, null));
+            question.setAnalysis(valueAt(fields, offset + 5, null));
+            question.setScore(parseScore(valueAt(fields, offset + 6, null)));
+        }
         question.setCreatedBy(userId);
         return question;
     }
 
     private Question questionFromHeader(List<String> fields, Map<String, Integer> header, Long userId) {
         Question question = new Question();
-        question.setSubject(defaultIfBlank(valueByHeader(fields, header, "subject", "科目"), "综合"));
-        question.setType(valueByHeader(fields, header, "type", "题型", "题目类型"));
-        question.setContent(valueByHeader(fields, header, "content", "题目", "题干", "题目内容"));
-        question.setOptionA(valueByHeader(fields, header, "optiona", "option_a", "选项a", "a"));
-        question.setOptionB(valueByHeader(fields, header, "optionb", "option_b", "选项b", "b"));
-        question.setOptionC(valueByHeader(fields, header, "optionc", "option_c", "选项c", "c"));
-        question.setOptionD(valueByHeader(fields, header, "optiond", "option_d", "选项d", "d"));
-        question.setAnswer(valueByHeader(fields, header, "answer", "答案", "标准答案"));
-        question.setAnalysis(valueByHeader(fields, header, "analysis", "解析"));
+        question.setSubject(defaultIfBlank(valueByHeader(fields, header, "subject", "科目", "课程", "学科"), "综合"));
+        question.setType(valueByHeader(fields, header, "type", "题型", "题目类型", "类型"));
+        question.setContent(valueByHeader(fields, header, "content", "题目", "题干", "题目内容", "题干内容"));
+        question.setOptionA(valueByHeader(fields, header, "optiona", "option_a", "选项a", "a", "A选项"));
+        question.setOptionB(valueByHeader(fields, header, "optionb", "option_b", "选项b", "b", "B选项"));
+        question.setOptionC(valueByHeader(fields, header, "optionc", "option_c", "选项c", "c", "C选项"));
+        question.setOptionD(valueByHeader(fields, header, "optiond", "option_d", "选项d", "d", "D选项"));
+        question.setAnswer(valueByHeader(fields, header, "answer", "答案", "标准答案", "参考答案"));
+        question.setAnalysis(valueByHeader(fields, header, "analysis", "解析", "答案解析"));
         question.setDifficulty(defaultIfBlank(valueByHeader(fields, header, "difficulty", "难度"), "基础"));
-        question.setKnowledgePoint(valueByHeader(fields, header, "knowledgepoint", "knowledge_point", "知识点"));
+        question.setKnowledgePoint(valueByHeader(fields, header, "knowledgepoint", "knowledge_point", "知识点", "考点"));
         question.setCreatedBy(userId);
-        String score = valueByHeader(fields, header, "score", "分值");
-        if (score != null && !score.isBlank()) {
-            question.setScore(Integer.parseInt(score.trim()));
-        }
+        question.setScore(parseScore(valueByHeader(fields, header, "score", "分值", "题目分值", "满分")));
         return question;
     }
 
@@ -771,8 +1050,9 @@ public class QuestionService {
         return fields.stream()
                 .map(value -> value.trim().toLowerCase(Locale.ROOT).replace("_", ""))
                 .anyMatch(value -> value.equals("subject") || value.equals("科目")
-                        || value.equals("type") || value.equals("题型") || value.equals("题目类型")
+                        || value.equals("type") || value.equals("题型") || value.equals("题目类型") || value.equals("类型")
                         || value.equals("content") || value.equals("题目") || value.equals("题干") || value.equals("题目内容")
+                        || value.equals("optiona") || value.equals("选项a") || value.equals("a")
                         || value.equals("answer") || value.equals("答案") || value.equals("标准答案")
                         || value.equals("difficulty") || value.equals("难度")
                         || value.equals("knowledgepoint") || value.equals("知识点"));
@@ -831,6 +1111,18 @@ public class QuestionService {
         return defaultIfBlank(values.get(index), fallback);
     }
 
+    private Integer parseScore(String value) {
+        String text = defaultIfBlank(value, null);
+        if (text == null) {
+            return null;
+        }
+        try {
+            return (int) Math.round(Double.parseDouble(text.trim()));
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("分值格式不正确：" + text);
+        }
+    }
+
     private String requireText(String value, String message) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(message);
@@ -844,9 +1136,19 @@ public class QuestionService {
 
     private boolean looksLikeQuestionType(String value) {
         String text = defaultIfBlank(value, "");
+        String lower = text.toLowerCase(Locale.ROOT);
         return "单选题".equals(text)
+                || "单选".equals(text)
+                || "选择题".equals(text)
+                || "single".equals(lower)
                 || "多选题".equals(text)
+                || "多选".equals(text)
+                || "multiple".equals(lower)
                 || "填空题".equals(text)
+                || "填空".equals(text)
+                || "blank".equals(lower)
+                || "判断题".equals(text)
+                || "判断".equals(text)
                 || "大题".equals(text)
                 || "高数题".equals(text)
                 || "高数大题".equals(text)

@@ -83,7 +83,7 @@ public class QuestionMapper {
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     student_id BIGINT,
                     student_name VARCHAR(64),
-                    student_no VARCHAR(32) NOT NULL,
+                    student_no VARCHAR(64) NOT NULL,
                     question_id BIGINT NOT NULL,
                     answer TEXT,
                     is_correct TINYINT(1) NOT NULL DEFAULT 0,
@@ -99,6 +99,7 @@ public class QuestionMapper {
                     INDEX idx_practice_answers_mode (practice_mode)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """);
+        ensureVarcharLength("practice_answers", "student_no", 64, true);
         ensureColumn("practice_answers", "correction_answer", "TEXT");
         ensureColumn("practice_answers", "correction_reason", "TEXT");
         ensureColumn("practice_answers", "correction_summary", "TEXT");
@@ -683,6 +684,22 @@ public class QuestionMapper {
                 """, Integer.class, tableName, columnName);
         if (count == null || count == 0) {
             jdbcTemplate.execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + definition);
+        }
+    }
+
+    private void ensureVarcharLength(String tableName, String columnName, int minLength, boolean notNull) {
+        Integer currentLength = jdbcTemplate.queryForObject("""
+                SELECT CHARACTER_MAXIMUM_LENGTH
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = ?
+                  AND column_name = ?
+                """, Integer.class, tableName, columnName);
+        if (currentLength != null && currentLength < minLength) {
+            jdbcTemplate.execute("ALTER TABLE " + tableName
+                    + " MODIFY COLUMN " + columnName
+                    + " VARCHAR(" + minLength + ")"
+                    + (notNull ? " NOT NULL" : ""));
         }
     }
 }

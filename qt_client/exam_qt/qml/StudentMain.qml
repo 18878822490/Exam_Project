@@ -93,6 +93,7 @@ Rectangle {
             root.exams = studentApi.getPublishedExams()
             root.scoreHistory = studentApi.getScoreHistory("")
             root.syncActiveReportSubject()
+            root.aiSuggestions = root.aiSuggestionRows()
         }
     }
 
@@ -585,6 +586,15 @@ Rectangle {
             if (seen[id]) continue
             seen[id] = true
             count += 1
+        }
+        return count
+    }
+
+    function examStatusCount(status) {
+        var rows = examRows()
+        var count = 0
+        for (var i = 0; i < rows.length; ++i) {
+            if (examStatus(rows[i], i) === status) count += 1
         }
         return count
     }
@@ -2680,8 +2690,8 @@ Rectangle {
             width: parent.width
             spacing: 18
             SectionTitle { Layout.fillWidth: true; title: "我的考试"; subtitle: "查看所有考试安排、参加考试、查看成绩" }
-            StatusCountBadge { label: "待参加"; value: "2"; accent: "#f59e0b" }
-            StatusCountBadge { label: "已完成"; value: "3"; accent: "#22c55e" }
+            StatusCountBadge { label: "待参加"; value: String(root.examStatusCount("待参加")); accent: "#f59e0b" }
+            StatusCountBadge { label: "已完成"; value: String(root.examStatusCount("已完成")); accent: "#22c55e" }
         }
         Card {
             width: parent.width

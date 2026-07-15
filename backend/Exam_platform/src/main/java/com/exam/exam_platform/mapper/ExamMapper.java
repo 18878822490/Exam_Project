@@ -350,8 +350,17 @@ public class ExamMapper {
                                ) THEN '已完成'
                                WHEN COALESCE(ep.start_time, e.start_time) IS NOT NULL
                                     AND NOW() < COALESCE(ep.start_time, e.start_time) THEN '未开始'
-                               ELSE '已发布'
+                               WHEN COALESCE(ep.end_time, e.end_time) IS NOT NULL
+                                    AND NOW() > COALESCE(ep.end_time, e.end_time) THEN '已截止'
+                               ELSE COALESCE(NULLIF(ep.status, ''), '已发布')
                            END AS status,
+                           CASE
+                               WHEN COALESCE(ep.start_time, e.start_time) IS NOT NULL
+                                    AND NOW() < COALESCE(ep.start_time, e.start_time) THEN '未开始'
+                               WHEN COALESCE(ep.end_time, e.end_time) IS NOT NULL
+                                    AND NOW() > COALESCE(ep.end_time, e.end_time) THEN '已截止'
+                               ELSE '可参加'
+                           END AS time_status,
                            COALESCE((SELECT COUNT(*)
                                      FROM student_answers sa
                                      WHERE sa.exam_id = e.id AND sa.student_no = ?), 0) AS answer_count,
@@ -417,8 +426,17 @@ public class ExamMapper {
                            ) THEN '已完成'
                            WHEN COALESCE(ep.start_time, e.start_time) IS NOT NULL
                                 AND NOW() < COALESCE(ep.start_time, e.start_time) THEN '未开始'
-                           ELSE '已发布'
+                           WHEN COALESCE(ep.end_time, e.end_time) IS NOT NULL
+                                AND NOW() > COALESCE(ep.end_time, e.end_time) THEN '已截止'
+                           ELSE COALESCE(NULLIF(ep.status, ''), '已发布')
                        END AS status,
+                       CASE
+                           WHEN COALESCE(ep.start_time, e.start_time) IS NOT NULL
+                                AND NOW() < COALESCE(ep.start_time, e.start_time) THEN '未开始'
+                           WHEN COALESCE(ep.end_time, e.end_time) IS NOT NULL
+                                AND NOW() > COALESCE(ep.end_time, e.end_time) THEN '已截止'
+                           ELSE '可参加'
+                       END AS time_status,
                        COALESCE((SELECT COUNT(*)
                                  FROM student_answers sa
                                  WHERE sa.exam_id = e.id AND sa.student_no = ?), 0) AS answer_count,
